@@ -11,7 +11,7 @@ if sys.stdout and hasattr(sys.stdout, 'reconfigure'):
 if sys.stderr and hasattr(sys.stderr, 'reconfigure'):
     sys.stderr.reconfigure(encoding='utf-8')
 
-from pydub import AudioSegment
+# No longer using pydub, relying on yt-dlp postprocessors and direct subprocess calls
 
 def get_ffmpeg_path():
     """Get the path to the bundled ffmpeg executable."""
@@ -89,6 +89,11 @@ def download_youtube_as_mp3(youtube_url, output_dir):
         ydl_opts = {
             'format': 'bestaudio/best',
             'outtmpl': os.path.join(output_dir, '%(title)s.%(ext)s'),
+            'postprocessors': [{
+                'key': 'FFmpegExtractAudio',
+                'preferredcodec': 'mp3',
+                'preferredquality': '192',
+            }],
             'progress_hooks': [progress_hook],
             'ffmpeg_location': get_ffmpeg_path(),
         }
@@ -96,18 +101,12 @@ def download_youtube_as_mp3(youtube_url, output_dir):
         print("STATUS:Starting MP3 download...", flush=True)
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info_dict = ydl.extract_info(youtube_url, download=True)
-            audio_file = ydl.prepare_filename(info_dict)
-
-        print("STATUS:Converting to MP3...", flush=True)
-        mp3_file = os.path.splitext(audio_file)[0] + '.mp3'
-        
-        audio = AudioSegment.from_file(audio_file)
-        audio.export(mp3_file, format="mp3")
-
-        try:
-            os.remove(audio_file)
-        except Exception:
-            pass
+            # When using FFmpegExtractAudio, the final file will have the codec's extension (.mp3)
+            # We can construct the final filename based on outtmpl, or look at info_dict
+            # yt-dlp prepare_filename returns the original downloaded extension filename, 
+            # but since we convert it to mp3, we replace the extension.
+            base_file = ydl.prepare_filename(info_dict)
+            mp3_file = os.path.splitext(base_file)[0] + '.mp3'
 
         print(f"SUCCESS:{mp3_file}", flush=True)
     except Exception as e:
@@ -166,7 +165,13 @@ def convert_local_mp4_to_mp3(mp4_file_path, output_dir):
         print("STATUS:Converting MP4 to MP3...", flush=True)
         
         command = [get_ffmpeg_path(), '-y', '-i', mp4_file_path, '-q:a', '0', '-map', 'a', mp3_file_path]
-        subprocess.run(command, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        
+        # Hide CMD window on Windows
+        creationflags = 0
+        if os.name == 'nt':
+            creationflags = 0x08000000 # CREATE_NO_WINDOW
+            
+        subprocess.run(command, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, creationflags=creationflags)
 
         print(f"SUCCESS:{mp3_file_path}", flush=True)
     except Exception as e:
