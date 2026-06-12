@@ -28,4 +28,6 @@ public/assets/icon.ico
 # Ignore build artifacts
 /dist_backend/
 /dist_electron/
+build/
+
 
