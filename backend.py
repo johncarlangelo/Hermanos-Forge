@@ -388,8 +388,8 @@ def download_youtube_as_mp3(youtube_url, output_dir, ffmpeg_path=None):
                 'preferredquality': '192',
             }],
             'progress_hooks': [progress_hook],
-            'ffmpeg_location': ffmpeg_bin,
-            'ffprobe_location': ffprobe_bin,
+            'ffmpeg_location': os.path.dirname(ffmpeg_bin),
+            # 'ffprobe_location': ffprobe_bin,
         }
 
         print("STATUS:Starting MP3 download...", flush=True)
@@ -431,8 +431,8 @@ def download_youtube_as_mp4(youtube_url, output_dir, quality=None, ffmpeg_path=N
             'outtmpl': os.path.join(output_dir, '%(title)s.%(ext)s'),
             'merge_output_format': 'mp4',
             'progress_hooks': [progress_hook],
-            'ffmpeg_location': ffmpeg_bin,
-            'ffprobe_location': ffprobe_bin,
+            'ffmpeg_location': os.path.dirname(ffmpeg_bin),
+            # 'ffprobe_location': ffprobe_bin,
             'postprocessors': [{
                 'key': 'FFmpegVideoConvertor',
                 'preferedformat': 'mp4',
