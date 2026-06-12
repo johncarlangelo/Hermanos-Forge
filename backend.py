@@ -119,13 +119,20 @@ def get_ffmpeg_path(explicit_path=None):
             exe_path = norm_path(sys.executable)
             exe_dir = os.path.dirname(exe_path)
 
-            # Common places relative to the exe
-            add(os.path.join(exe_dir, 'ffmpeg.exe'))
-            add(os.path.join(exe_dir, 'ffmpeg', 'ffmpeg.exe'))
-            add(os.path.join(exe_dir, '..', 'ffmpeg', 'ffmpeg.exe'))
-            add(os.path.join(os.path.dirname(exe_dir), 'ffmpeg', 'ffmpeg.exe'))
+            # Preferred explicit candidates for onedir layout:
+            # 1) onedir: backend placed in .../app.asar.unpacked/dist_backend/backend/backend.exe
+            #    ffmpeg will live at .../app.asar.unpacked/ffmpeg/ffmpeg.exe -> up two levels
+            add(os.path.normpath(os.path.join(exe_dir, '..', '..', 'ffmpeg', 'ffmpeg.exe')))
+            # 2) fallback: ffmpeg sibling of dist_backend (up one level)
+            add(os.path.normpath(os.path.join(exe_dir, '..', 'ffmpeg', 'ffmpeg.exe')))
+            # 3) ffmpeg in a folder next to the exe
+            add(os.path.normpath(os.path.join(exe_dir, 'ffmpeg', 'ffmpeg.exe')))
+            # 4) ffmpeg.exe next to the exe
+            add(os.path.normpath(os.path.join(exe_dir, 'ffmpeg.exe')))
+            # 5) additional fallback: parent-level ffmpeg folder
+            add(os.path.normpath(os.path.join(os.path.dirname(exe_dir), 'ffmpeg', 'ffmpeg.exe')))
 
-            # Walk up a few parents looking for an ffmpeg/ directory
+            # Walk up a few parents looking for an ffmpeg/ directory (last resort)
             p = exe_dir
             for _ in range(6):
                 add(os.path.join(p, 'ffmpeg', 'ffmpeg.exe'))

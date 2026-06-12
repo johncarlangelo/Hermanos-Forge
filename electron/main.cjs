@@ -75,11 +75,13 @@ function getBackendExe() {
     } else {
         // In production, electron-builder places extraResources under:
         // <install>/resources/app.asar.unpacked/<to>/
-        const backendPath1 = path.join(process.resourcesPath, 'app.asar.unpacked', 'dist_backend', 'backend.exe');
-        const backendPath2 = path.join(process.resourcesPath, 'dist_backend', 'backend.exe');
+        const backendPath1 = path.join(process.resourcesPath, 'app.asar.unpacked', 'dist_backend', 'backend', 'backend.exe');
+        const backendPath2 = path.join(process.resourcesPath, 'app.asar.unpacked', 'dist_backend', 'backend.exe');
+        const backendPath3 = path.join(process.resourcesPath, 'dist_backend', 'backend', 'backend.exe');
 
         if (fs.existsSync(backendPath1)) return { cmd: backendPath1, args: [] };
         if (fs.existsSync(backendPath2)) return { cmd: backendPath2, args: [] };
+        if (fs.existsSync(backendPath3)) return { cmd: backendPath3, args: [] };
 
         // Default candidate (used later for error reporting)
         return { cmd: backendPath1, args: [] };
