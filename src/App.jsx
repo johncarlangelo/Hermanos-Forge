@@ -72,9 +72,11 @@ export default function App() {
     
     let outdir;
     if (window.electronAPI) {
-        outdir = await window.electronAPI.chooseDirectory();
+      outdir = await window.electronAPI.chooseDirectory();
     }
-    if (!outdir) outdir = 'C:\\Users\\johnc\\Downloads'; // Fallback
+    if (!outdir && window.electronAPI && window.electronAPI.getDefaultDownloadPath) {
+      outdir = await window.electronAPI.getDefaultDownloadPath();
+    }
     
     setIsDownloading(true);
     setProgress(0);
@@ -135,7 +137,7 @@ export default function App() {
     const file = await window.electronAPI.chooseFile();
     if (!file) return;
     
-    const outdir = await window.electronAPI.chooseDirectory() || 'C:\\Users\\johnc\\Downloads';
+    const outdir = (await window.electronAPI.chooseDirectory()) || (await window.electronAPI.getDefaultDownloadPath());
     
     setIsDownloading(true);
     setProgress(0);

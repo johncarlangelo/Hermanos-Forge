@@ -75,13 +75,14 @@ function getBackendExe() {
     } else {
         // In production, electron-builder places extraResources under:
         // <install>/resources/app.asar.unpacked/<to>/
-        const backendPath = path.join(
-            process.resourcesPath,
-            'app.asar.unpacked',
-            'dist_backend',
-            'backend.exe'
-        );
-        return { cmd: backendPath, args: [] };
+        const backendPath1 = path.join(process.resourcesPath, 'app.asar.unpacked', 'dist_backend', 'backend.exe');
+        const backendPath2 = path.join(process.resourcesPath, 'dist_backend', 'backend.exe');
+
+        if (fs.existsSync(backendPath1)) return { cmd: backendPath1, args: [] };
+        if (fs.existsSync(backendPath2)) return { cmd: backendPath2, args: [] };
+
+        // Default candidate (used later for error reporting)
+        return { cmd: backendPath1, args: [] };
     }
 }
 
@@ -101,7 +102,8 @@ function runBackendCommand(action, extraArgs = [], event) {
         
         const child = spawn(backend.cmd, args, {
             windowsHide: true,
-            env: { ...process.env, PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1' }
+            env: { ...process.env, PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1' },
+            cwd: path.dirname(backend.cmd) || undefined
         });
 
         // Track state so we never double-resolve/reject
@@ -214,6 +216,14 @@ ipcMain.handle('choose-directory', async () => {
         return result.filePaths[0];
     }
     return null;
+});
+
+ipcMain.handle('get-default-download-path', async () => {
+    try {
+        return app.getPath('downloads');
+    } catch (e) {
+        return app.getPath('home');
+    }
 });
 
 ipcMain.handle('choose-file', async () => {
