@@ -161,4 +161,4 @@ Hermanos Forge/
 
 ```
 
-*© Hermanos 2025 - For Hermanos. By Hermanos*
+*© Hermanos 2026 - For Hermanos. By Hermanos*
