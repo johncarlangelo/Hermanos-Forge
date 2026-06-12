@@ -100,9 +100,32 @@ function runBackendCommand(action, extraArgs = [], event) {
         
         console.log(`Running backend: ${backend.cmd} ${args.join(' ')}`);
         
+        // If available, locate bundled ffmpeg under the app resources and pass it to the backend
+        let ffPath = null;
+        try {
+            const candidates = [
+                path.join(process.resourcesPath, 'app.asar.unpacked', 'ffmpeg', 'bin', 'ffmpeg.exe'),
+                path.join(process.resourcesPath, 'app.asar.unpacked', 'ffmpeg', 'ffmpeg.exe'),
+                path.join(process.resourcesPath, 'ffmpeg', 'bin', 'ffmpeg.exe'),
+                path.join(process.resourcesPath, 'ffmpeg', 'ffmpeg.exe')
+            ];
+            for (const c of candidates) {
+                if (fs.existsSync(c)) { ffPath = c; break; }
+            }
+        } catch (e) {
+            ffPath = null;
+        }
+
+        // If we found a resource ffmpeg, pass it as a CLI override too so backend uses it deterministically
+        try {
+            if (ffPath) {
+                args.push('--ffmpeg-path', ffPath);
+            }
+        } catch (e) {}
+
         const child = spawn(backend.cmd, args, {
             windowsHide: true,
-            env: { ...process.env, PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1' },
+            env: { ...process.env, PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1', ELECTRON_RESOURCES_PATH: process.resourcesPath, ...(ffPath ? { FFMPEG_PATH: ffPath } : {}) },
             cwd: path.dirname(backend.cmd) || undefined
         });
 

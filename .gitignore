@@ -30,4 +30,13 @@ public/assets/icon.ico
 /dist_electron/
 build/
 
+# Python: bytecode and cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Test data and debug helpers (don't commit)
+/test_data/
+/scripts/test_ffmpeg_detect.py
+
 

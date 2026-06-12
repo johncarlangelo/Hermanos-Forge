@@ -3,6 +3,7 @@ import iconUrl from './assets/icon.svg';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Download, Settings, Clock, Trash2, FolderOpen, Video, Music, CheckCircle2, AlertCircle, Copy } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
+import pkg from '../package.json';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('download'); // download, history
@@ -237,6 +238,8 @@ export default function App() {
               </button>
             </div>
 
+            <div className="version-pill">v{pkg.version}</div>
+
             <ThemeToggle />
           </div>
         </header>
@@ -270,9 +273,7 @@ export default function App() {
                     />
                   </div>
                 </div>
-                <div className="flex-shrink-0">
-                  <button onClick={handleDownload} className="btn-primary h-12 px-5">Quick Download</button>
-                </div>
+                {/* Quick Download removed to encourage using the main Download control */}
               </div>
 
               {/* Settings Card */}
