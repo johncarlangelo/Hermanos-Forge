@@ -1,6 +1,15 @@
-# Hermanos Forge 🎬
 
-A sleek, modern YouTube video and audio downloader built with Electron + React. Download YouTube videos as **MP4** or **MP3**, select your preferred quality, and manage your download history — all from a beautiful dark-mode interface.
+<p align="center">
+  <img src="src/assets/icon.ico" alt="Hermanos Forge Logo" width="64" />
+  <br />
+  <br />
+  <img alt="GitHub Release" src="https://img.shields.io/github/v/release/johncarlangelo/Hermanos-Forge?style=for-the-badge">
+
+</p>
+
+# <p align="center">Hermanos Forge</p>
+
+A sleek, modern YouTube video and audio downloader built with Electron + React. Download YouTube videos as **MP4** or **MP3**, select your preferred quality, and manage your download history — all from a beautiful dark-mode interface. (soon to be multi tool)
 
 ---
 
@@ -9,11 +18,8 @@ A sleek, modern YouTube video and audio downloader built with Electron + React. 
 - 📥 **Download YouTube videos** as MP4 (with quality selection: 360p, 720p, 1080p, 4K)
 - 🎵 **Download YouTube videos** as MP3 audio
 - 🔄 **Convert local MP4 files** to MP3
-- 📊 **Smooth, accurate progress bar** — no more janky progress
 - 📁 **Download history** with file type tags (MP3/MP4)
 - 📂 **Open in File Location** button for every history entry
-- 🗑️ **Delete individual history items** or clear all at once
-- 🔔 **Toast notifications** for success and errors
 
 ---
 
