@@ -55,13 +55,27 @@ def get_ffmpeg_path():
     # Finally try common names (will use PATH)
     add('ffmpeg')
 
+    # Diagnostic output: print candidates and whether they exist
+    try:
+        for p in candidates:
+            try:
+                exists = os.path.exists(p)
+            except Exception:
+                exists = False
+            print(f"STATUS:FFMPEG-CANDIDATE:{p} -> {exists}", flush=True)
+    except Exception:
+        pass
+
     for p in candidates:
         try:
             if os.path.exists(p):
+                print(f"STATUS:FFMPEG-SELECTED:{p}", flush=True)
                 return p
         except Exception:
             continue
 
+    # Nothing found on disk, fall back to system 'ffmpeg'
+    print("STATUS:FFMPEG-SELECTED:ffmpeg (using system PATH)", flush=True)
     return 'ffmpeg'
 
 
@@ -72,9 +86,11 @@ def get_ffprobe_path(ffmpeg_path=None):
             d = os.path.dirname(ffmpeg_path)
             probe = os.path.join(d, 'ffprobe.exe')
             if os.path.exists(probe):
+                print(f"STATUS:FFPROBE-SELECTED:{probe}", flush=True)
                 return probe
     except Exception:
         pass
+    print("STATUS:FFPROBE-SELECTED:ffprobe (using system PATH)", flush=True)
     return 'ffprobe'
 
 def progress_hook(d):
@@ -144,6 +160,7 @@ def download_youtube_as_mp3(youtube_url, output_dir):
             }],
             'progress_hooks': [progress_hook],
             'ffmpeg_location': ffmpeg_bin,
+            'ffprobe_location': ffprobe_bin,
         }
 
         print("STATUS:Starting MP3 download...", flush=True)
@@ -186,6 +203,7 @@ def download_youtube_as_mp4(youtube_url, output_dir, quality=None):
             'merge_output_format': 'mp4',
             'progress_hooks': [progress_hook],
             'ffmpeg_location': ffmpeg_bin,
+            'ffprobe_location': ffprobe_bin,
             'postprocessors': [{
                 'key': 'FFmpegVideoConvertor',
                 'preferedformat': 'mp4',

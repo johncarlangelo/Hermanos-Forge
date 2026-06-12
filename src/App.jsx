@@ -30,9 +30,11 @@ export default function App() {
     if (window.electronAPI) {
       window.electronAPI.onProgressUpdate((event, percent) => {
         setProgress(percent);
+        try { console.log('electron status - PROGRESS:', percent); } catch (e) {}
       });
       window.electronAPI.onStatusUpdate((event, msg) => {
         setStatus(msg);
+        try { console.log('electron status - STATUS:', msg); } catch (e) {}
       });
     }
   }, []);
