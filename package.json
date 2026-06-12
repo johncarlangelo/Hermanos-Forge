@@ -1,7 +1,7 @@
 {
   "name": "hermanos-forge",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.0.1",
   "type": "module",
   "main": "electron/main.cjs",
   "scripts": {
@@ -40,6 +40,9 @@
         ]
       }
     ],
+    "nsis": {
+      "artifactName": "${productName} Setup ${version}.${ext}"
+    },
     "win": {
       "target": [
         "nsis"
