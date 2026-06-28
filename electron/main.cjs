@@ -212,7 +212,7 @@ function runBackendCommand(action, extraArgs = [], event) {
 }
 
 // IPC Handlers
-ipcMain.handle('stitch-clips', async (event, { urls, outputDir }) => {
+ipcMain.handle('stitch-clips', async (event, { urls, outputDir, noStitch }) => {
     return new Promise((resolve, reject) => {
         const backend = getBackendExe();
         if (!fs.existsSync(backend.cmd)) {
@@ -222,6 +222,7 @@ ipcMain.handle('stitch-clips', async (event, { urls, outputDir }) => {
         }
 
         const args = [...backend.args, '--action', 'stitch_clips', '--urls', JSON.stringify(urls), '--outdir', outputDir];
+        if (noStitch) args.push('--no-stitch');
 
         let ffPath = null;
         try {

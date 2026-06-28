@@ -59,7 +59,7 @@ const StatusPill = ({ state }) => {
 };
 
 export default function MassClipDownloader({ onStitchSuccess }) {
-  const [clips, setClips] = useState([makeClip()]);
+  const [clips, setClips] = useState([makeClip(), makeClip()]);
   const [outputDir, setOutputDir] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [isCoolingDown, setIsCoolingDown] = useState(false);
@@ -93,7 +93,8 @@ export default function MassClipDownloader({ onStitchSuccess }) {
       setIsProcessing(false);
       setIsCoolingDown(true);
       setGlobalStatus('Done! Resetting in 5 seconds...');
-      toast.success(`Stitched video saved: ${finalPath}`, { style: { borderRadius: '10px', background: '#1E293B', color: '#fff' } });
+      
+      toast.success(finalPath.endsWith('.mp4') ? `Stitched video saved: ${finalPath}` : `Clips downloaded to: ${finalPath}`, { style: { borderRadius: '10px', background: '#1E293B', color: '#fff' } });
       
       if (onStitchSuccess) {
         onStitchSuccess(finalPath, clipsRef.current);
@@ -102,7 +103,7 @@ export default function MassClipDownloader({ onStitchSuccess }) {
       setTimeout(() => {
         setIsCoolingDown(false);
         setGlobalStatus('');
-        setClips([makeClip()]);
+        setClips([makeClip(), makeClip()]);
       }, 5000);
     });
 
@@ -126,7 +127,7 @@ export default function MassClipDownloader({ onStitchSuccess }) {
 
   const clearAll = () => {
     if (isProcessing) return;
-    setClips([makeClip()]);
+    setClips([makeClip(), makeClip()]);
   };
 
   const selectFolder = async () => {
@@ -135,7 +136,7 @@ export default function MassClipDownloader({ onStitchSuccess }) {
     if (dir) setOutputDir(dir);
   };
 
-  const startStitching = async () => {
+  const startStitching = async (noStitch = false) => {
     const urls = clips.map((c) => c.url.trim()).filter(Boolean);
 
     if (urls.length === 0) {
@@ -157,7 +158,7 @@ export default function MassClipDownloader({ onStitchSuccess }) {
     try {
       if (window.stitchAPI) {
         setGlobalStatus('Starting download...');
-        await window.stitchAPI.stitchClips(urls, outputDir);
+        await window.stitchAPI.stitchClips(urls, outputDir, noStitch);
       }
     } catch (err) {
       setIsProcessing(false);
@@ -279,7 +280,7 @@ export default function MassClipDownloader({ onStitchSuccess }) {
           )}
           <div className="flex gap-4">
             <button
-              onClick={startStitching}
+              onClick={() => startStitching(false)}
             disabled={isProcessing || isCoolingDown}
             className="flex-[2] btn-primary h-14 text-lg flex items-center justify-center disabled:opacity-50"
           >
@@ -297,6 +298,16 @@ export default function MassClipDownloader({ onStitchSuccess }) {
               </>
             )}
           </button>
+
+          {!isProcessing && (
+            <button
+              onClick={() => startStitching(true)}
+              disabled={isCoolingDown}
+              className="flex-[1] bg-surface hover:bg-surfaceHover border border-border text-textPrimary h-14 rounded-lg font-medium transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center"
+            >
+              Mass Download (No Stitch)
+            </button>
+          )}
 
           {isProcessing && (
             <button

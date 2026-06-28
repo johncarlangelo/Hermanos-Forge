@@ -20,7 +20,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
 });
 
 contextBridge.exposeInMainWorld('stitchAPI', {
-    stitchClips: (urls, outputDir) => ipcRenderer.invoke('stitch-clips', { urls, outputDir }),
+    stitchClips: (urls, outputDir, noStitch = false) => ipcRenderer.invoke('stitch-clips', { urls, outputDir, noStitch }),
     cancelStitch: (outputDir) => ipcRenderer.invoke('cancel-stitch', { outputDir }),
     selectOutputFolder: () => ipcRenderer.invoke('select-output-folder'),
 

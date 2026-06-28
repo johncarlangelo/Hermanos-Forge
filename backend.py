@@ -517,10 +517,10 @@ def convert_local_mp4_to_mp3(mp4_file_path, output_dir, ffmpeg_path=None):
     except Exception as e:
         print(f"ERROR:{e}", flush=True)
 
-def stitch_clips_from_urls(urls, output_dir, ffmpeg_path=None):
+def stitch_clips_from_urls(urls, output_dir, ffmpeg_path=None, no_stitch=False):
     """
     Downloads each URL in order into output_dir, then stitches all
-    clips into a single video using ffmpeg's concat filter.
+    clips into a single video using ffmpeg's concat filter (unless no_stitch is True).
     """
     try:
         if not os.path.exists(output_dir):
@@ -562,6 +562,10 @@ def stitch_clips_from_urls(urls, output_dir, ffmpeg_path=None):
                 print(f"CLIP:{index}:error:{e}", flush=True)
                 print(f"ERROR:Clip {index + 1} failed to download: {e}", flush=True)
                 return
+
+        if no_stitch:
+            print(f"SUCCESS:{output_dir}", flush=True)
+            return
 
         print("STATUS:All clips downloaded. Stitching...", flush=True)
 
@@ -621,6 +625,7 @@ if __name__ == "__main__":
     parser.add_argument('--outdir', default=os.path.join(os.path.expanduser("~"), "Downloads"), help="Output directory")
     parser.add_argument('--quality', type=int, help="Maximum video height")
     parser.add_argument('--ffmpeg-path', help='Absolute path to ffmpeg executable (overrides detection)')
+    parser.add_argument('--no-stitch', action='store_true', help="Download clips without stitching")
 
     args = parser.parse_args()
 
@@ -637,4 +642,4 @@ if __name__ == "__main__":
             urls = json.loads(args.urls)
         except Exception:
             urls = []
-        stitch_clips_from_urls(urls, args.outdir, ffmpeg_path=args.ffmpeg_path)
+        stitch_clips_from_urls(urls, args.outdir, ffmpeg_path=args.ffmpeg_path, no_stitch=args.no_stitch)
