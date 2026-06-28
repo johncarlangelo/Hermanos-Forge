@@ -4,6 +4,14 @@ const { spawn, execSync } = require('child_process');
 const fs = require('fs');
 
 let mainWindow;
+let activeStitchProcess = null;
+let logsWindow = null;
+
+function sendLog(line) {
+    if (logsWindow && !logsWindow.isDestroyed()) {
+        logsWindow.webContents.send('log-update', line);
+    }
+}
 
 function createWindow() {
     mainWindow = new BrowserWindow({
@@ -151,6 +159,8 @@ function runBackendCommand(action, extraArgs = [], event) {
                 line = line.trim();
                 if (!line) return;
                 
+                sendLog(`[STDOUT] ${line}`);
+                
                 if (line.startsWith('PROGRESS:')) {
                     const percent = parseFloat(line.split(':')[1]);
                     if (event && !isNaN(percent)) event.sender.send('progress-update', percent);
@@ -177,7 +187,9 @@ function runBackendCommand(action, extraArgs = [], event) {
         });
 
         child.stderr.on('data', (data) => {
-            console.error(`Backend error: ${data.toString('utf8')}`);
+            const errText = data.toString('utf8');
+            console.error(`Backend error: ${errText}`);
+            sendLog(`[STDERR] ${errText.trim()}`);
         });
 
         child.on('close', (code) => {
@@ -200,6 +212,108 @@ function runBackendCommand(action, extraArgs = [], event) {
 }
 
 // IPC Handlers
+ipcMain.handle('stitch-clips', async (event, { urls, outputDir }) => {
+    return new Promise((resolve, reject) => {
+        const backend = getBackendExe();
+        if (!fs.existsSync(backend.cmd)) {
+            const msg = `Backend not found at ${backend.cmd}. Ensure you ran 'npm run package-backend' before building, or include the backend in extraResources.`;
+            console.error(msg);
+            return reject(new Error(msg));
+        }
+
+        const args = [...backend.args, '--action', 'stitch_clips', '--urls', JSON.stringify(urls), '--outdir', outputDir];
+
+        let ffPath = null;
+        try {
+            const candidates = [
+                path.join(process.resourcesPath, 'app.asar.unpacked', 'ffmpeg', 'bin', 'ffmpeg.exe'),
+                path.join(process.resourcesPath, 'app.asar.unpacked', 'ffmpeg', 'ffmpeg.exe'),
+                path.join(process.resourcesPath, 'ffmpeg', 'bin', 'ffmpeg.exe'),
+                path.join(process.resourcesPath, 'ffmpeg', 'ffmpeg.exe')
+            ];
+            for (const c of candidates) {
+                if (fs.existsSync(c)) { ffPath = c; break; }
+            }
+        } catch (e) {
+            ffPath = null;
+        }
+
+        if (ffPath) args.push('--ffmpeg-path', ffPath);
+
+        activeStitchProcess = spawn(backend.cmd, args, {
+            windowsHide: true,
+            env: { ...process.env, PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1', ELECTRON_RESOURCES_PATH: process.resourcesPath, ...(ffPath ? { FFMPEG_PATH: ffPath } : {}) },
+            cwd: path.dirname(backend.cmd) || undefined
+        });
+
+        activeStitchProcess.stdout.on('data', (data) => {
+            const text = data.toString('utf8');
+            const lines = text.split('\n').map(line => line.trim()).filter(Boolean);
+
+            for (const line of lines) {
+                sendLog(`[STITCH-STDOUT] ${line}`);
+                if (line.startsWith('CLIP:')) {
+                    const parts = line.split(':');
+                    const index = parseInt(parts[1], 10);
+                    const state = parts[2];
+                    const message = parts.slice(3).join(':');
+                    event.sender.send('stitch-clip-update', { index, state, message });
+                } else if (line.startsWith('STATUS:')) {
+                    event.sender.send('stitch-status', line.slice('STATUS:'.length));
+                } else if (line.startsWith('SUCCESS:')) {
+                    event.sender.send('stitch-success', line.slice('SUCCESS:'.length));
+                } else if (line.startsWith('ERROR:')) {
+                    event.sender.send('stitch-error', line.slice('ERROR:'.length));
+                } else {
+                    console.log(`Backend output: ${line}`);
+                }
+            }
+        });
+
+        activeStitchProcess.stderr.on('data', (data) => {
+            const errText = data.toString('utf8');
+            console.error(`Backend error: ${errText}`);
+            sendLog(`[STITCH-STDERR] ${errText.trim()}`);
+        });
+
+        activeStitchProcess.on('close', (code) => {
+            activeStitchProcess = null;
+            resolve({ canceled: false, code });
+        });
+
+        activeStitchProcess.on('error', (err) => {
+            activeStitchProcess = null;
+            reject(err);
+        });
+    });
+});
+
+ipcMain.handle('cancel-stitch', async (event, { outputDir }) => {
+    if (activeStitchProcess) {
+        activeStitchProcess.kill();
+        activeStitchProcess = null;
+    }
+
+    try {
+        const files = fs.readdirSync(outputDir);
+        for (const file of files) {
+            if (file.startsWith('clip_') && file.endsWith('.part')) {
+                fs.unlinkSync(path.join(outputDir, file));
+            }
+        }
+    } catch (e) {
+        console.error('Cleanup after cancel failed:', e);
+    }
+
+    return { canceled: true };
+});
+
+ipcMain.handle('select-output-folder', async () => {
+    const result = await dialog.showOpenDialog(mainWindow, { properties: ['openDirectory'] });
+    if (result.canceled || result.filePaths.length === 0) return null;
+    return result.filePaths[0];
+});
+
 ipcMain.handle('download-mp3', async (event, url, outdir) => {
     return runBackendCommand('download_mp3', ['--url', url, '--outdir', outdir], event);
 });
@@ -261,3 +375,32 @@ ipcMain.handle('choose-file', async () => {
     }
     return null;
 });
+
+ipcMain.handle('open-logs-window', () => {
+    if (logsWindow && !logsWindow.isDestroyed()) {
+        logsWindow.focus();
+        return;
+    }
+    logsWindow = new BrowserWindow({
+        width: 800,
+        height: 600,
+        title: 'Developer Logs',
+        webPreferences: {
+            preload: path.join(__dirname, 'preload.cjs'),
+            nodeIntegration: false,
+            contextIsolation: true
+        },
+        autoHideMenuBar: true,
+    });
+
+    const startUrl = process.env.ELECTRON_START_URL 
+        ? `${process.env.ELECTRON_START_URL}#logs` 
+        : `file://${path.join(__dirname, '../dist/index.html')}#logs`;
+    
+    logsWindow.loadURL(startUrl);
+
+    logsWindow.on('closed', () => {
+        logsWindow = null;
+    });
+});
+

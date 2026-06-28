@@ -5,6 +5,7 @@ import subprocess
 import shutil
 import json
 import yt_dlp
+import time
 
 # Force UTF-8 encoding for stdout/stderr to prevent charmap errors on Windows
 if sys.stdout and hasattr(sys.stdout, 'reconfigure'):
@@ -516,10 +517,106 @@ def convert_local_mp4_to_mp3(mp4_file_path, output_dir, ffmpeg_path=None):
     except Exception as e:
         print(f"ERROR:{e}", flush=True)
 
+def stitch_clips_from_urls(urls, output_dir, ffmpeg_path=None):
+    """
+    Downloads each URL in order into output_dir, then stitches all
+    clips into a single video using ffmpeg's concat filter.
+    """
+    try:
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+
+        ffmpeg_bin = get_ffmpeg_path(ffmpeg_path)
+        ffprobe_bin = get_ffprobe_path(ffmpeg_bin)
+        if os.path.isabs(ffmpeg_bin):
+            os.environ['PATH'] = os.path.dirname(ffmpeg_bin) + os.pathsep + os.environ.get('PATH', '')
+
+        clip_paths = []
+
+        for index, url in enumerate(urls):
+            print(f"CLIP:{index}:downloading", flush=True)
+            try:
+                outtmpl = os.path.join(output_dir, f"clip_{index:03d}.%(ext)s")
+                ydl_opts = {
+                    'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
+                    'outtmpl': outtmpl,
+                    'merge_output_format': 'mp4',
+                    'ffmpeg_location': ffmpeg_bin,
+                    'quiet': True,
+                    'no_warnings': True,
+                }
+                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                    info_dict = ydl.extract_info(url, download=True)
+
+                clip_file = ydl.prepare_filename(info_dict)
+                if not clip_file.endswith('.mp4'):
+                    clip_file = os.path.splitext(clip_file)[0] + '.mp4'
+
+                if not os.path.exists(clip_file):
+                    raise Exception("File missing after download")
+
+                clip_paths.append(clip_file)
+                print(f"CLIP:{index}:done", flush=True)
+
+            except Exception as e:
+                print(f"CLIP:{index}:error:{e}", flush=True)
+                print(f"ERROR:Clip {index + 1} failed to download: {e}", flush=True)
+                return
+
+        print("STATUS:All clips downloaded. Stitching...", flush=True)
+
+        target_w, target_h, target_fps = 1920, 1080, 30
+
+        cmd = [ffmpeg_bin, '-y']
+        for path in clip_paths:
+            cmd += ['-i', path]
+
+        filter_chunks = []
+        concat_inputs = ''
+        for i in range(len(clip_paths)):
+            filter_chunks.append(
+                f"[{i}:v]scale={target_w}:{target_h}:force_original_aspect_ratio=decrease,"
+                f"pad={target_w}:{target_h}:(ow-iw)/2:(oh-ih)/2:color=black,setsar=1,fps={target_fps}[v{i}]"
+            )
+            filter_chunks.append(
+                f"[{i}:a]aformat=sample_rates=44100:channel_layouts=stereo[a{i}]"
+            )
+            concat_inputs += f"[v{i}][a{i}]"
+
+        filter_complex = ';'.join(filter_chunks)
+        filter_complex += f";{concat_inputs}concat=n={len(clip_paths)}:v=1:a=1[outv][outa]"
+
+        output_filename = f"stitched_output_{int(time.time())}.mp4"
+        final_output = os.path.join(output_dir, output_filename)
+
+        cmd += [
+            '-filter_complex', filter_complex,
+            '-map', '[outv]', '-map', '[outa]',
+            '-c:v', 'libx264', '-preset', 'medium', '-crf', '23',
+            '-c:a', 'aac',
+            final_output,
+        ]
+
+        creationflags = 0x08000000 if os.name == 'nt' else 0
+        subprocess.run(
+            cmd, check=True,
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            creationflags=creationflags,
+        )
+
+        print(f"SUCCESS:{final_output}", flush=True)
+
+    except subprocess.CalledProcessError as e:
+        print(f"ERROR:Stitching failed: {e}", flush=True)
+    except Exception as e:
+        print(f"ERROR:{e}", flush=True)
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Hermanos Forge Backend")
-    parser.add_argument('--action', choices=['get_formats', 'download_mp3', 'download_mp4', 'convert_mp4'], required=True)
+    parser.add_argument('--action', choices=['get_formats', 'download_mp3', 'download_mp4', 'convert_mp4', 'stitch_clips'], required=True)
     parser.add_argument('--url', help="YouTube URL")
+    parser.add_argument('--urls', help="JSON list of clip URLs, in order")
     parser.add_argument('--file', help="Local MP4 file path for conversion")
     parser.add_argument('--outdir', default=os.path.join(os.path.expanduser("~"), "Downloads"), help="Output directory")
     parser.add_argument('--quality', type=int, help="Maximum video height")
@@ -535,3 +632,9 @@ if __name__ == "__main__":
         download_youtube_as_mp4(args.url, args.outdir, args.quality, ffmpeg_path=args.ffmpeg_path)
     elif args.action == 'convert_mp4':
         convert_local_mp4_to_mp3(args.file, args.outdir, ffmpeg_path=args.ffmpeg_path)
+    elif args.action == 'stitch_clips':
+        try:
+            urls = json.loads(args.urls)
+        except Exception:
+            urls = []
+        stitch_clips_from_urls(urls, args.outdir, ffmpeg_path=args.ffmpeg_path)
