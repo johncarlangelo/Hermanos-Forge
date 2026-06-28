@@ -59,8 +59,32 @@ const StatusPill = ({ state }) => {
 };
 
 export default function MassClipDownloader({ onStitchSuccess }) {
-  const [clips, setClips] = useState([makeClip(), makeClip()]);
-  const [outputDir, setOutputDir] = useState('');
+  const [clips, setClips] = useState(() => {
+    try {
+      const saved = localStorage.getItem('mass-clips');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return parsed.map(c => ({
+          ...c,
+          state: (c.state === 'downloading' || c.state === 'queued') ? 'idle' : c.state
+        }));
+      }
+    } catch (e) {}
+    return [makeClip(), makeClip()];
+  });
+  
+  const [outputDir, setOutputDir] = useState(() => {
+    return localStorage.getItem('mass-outputDir') || '';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('mass-clips', JSON.stringify(clips));
+  }, [clips]);
+
+  useEffect(() => {
+    localStorage.setItem('mass-outputDir', outputDir);
+  }, [outputDir]);
+
   const [isProcessing, setIsProcessing] = useState(false);
   const [isCoolingDown, setIsCoolingDown] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
