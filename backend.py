@@ -536,7 +536,7 @@ def stitch_clips_from_urls(urls, output_dir, ffmpeg_path=None, no_stitch=False):
         for index, url in enumerate(urls):
             print(f"CLIP:{index}:downloading", flush=True)
             try:
-                outtmpl = os.path.join(output_dir, f"clip_{index:03d}.%(ext)s")
+                outtmpl = os.path.join(output_dir, "%(title)s.%(ext)s")
                 ydl_opts = {
                     'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
                     'outtmpl': outtmpl,
