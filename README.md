@@ -87,7 +87,7 @@ This compiles `backend.py` into `dist_backend/backend.exe` using PyInstaller.
 > **Why PyInstaller if we're using Electron?** They serve completely different roles:
 > - **Electron** is the *window and UI shell* — it replaced Tkinter and renders the React interface.
 > - **PyInstaller** compiles *only the Python download engine* (`backend.py` + yt-dlp + pydub) into a single invisible `backend.exe`. Electron cannot run `.py` files directly, so it silently spawns `backend.exe` in the background whenever you click Download.
-> - **electron-builder** then bundles Electron + `backend.exe` + ffmpeg into the final Setup installer.
+> - **electron-builder** then bundles Electron + `backend.exe` + ffmpeg (and its `.dll` libraries) into the final Setup installer.
 >
 > End users get one installer. Zero Python. Zero CMD. Everything is pre-packaged inside.
 
@@ -97,7 +97,7 @@ This compiles `backend.py` into `dist_backend/backend.exe` using PyInstaller.
 npm run electron:build
 ```
 
-This packages the entire app (React UI + Electron + backend.exe + ffmpeg) into a ready-to-distribute Windows Setup installer located in:
+This packages the entire app (React UI + Electron + backend.exe + ffmpeg + shared `.dll` libraries) into a ready-to-distribute Windows Setup installer located in:
 
 ```
 dist_electron/
@@ -130,7 +130,8 @@ Hermanos Forge/
 │   └── App.jsx             # React UI (all pages and logic)
 ├── ffmpeg/
 │   ├── ffmpeg.exe          # Bundled FFmpeg binary
-│   └── ffprobe.exe         # Bundled FFprobe binary
+│   ├── ffprobe.exe         # Bundled FFprobe binary
+│   └── *.dll               # FFmpeg shared libraries (avcodec, avutil, etc.)
 ├── package.json
 └── vite.config.js
 ```
@@ -141,7 +142,7 @@ Hermanos Forge/
 
 | Problem | Solution |
 |---------|----------|
-| Download says "ffmpeg not found" | Make sure `ffmpeg/ffmpeg.exe` is inside the project folder. |
+| Download says "ffmpeg not found" | Make sure `ffmpeg/ffmpeg.exe` and all its required `.dll` files are inside the project folder. |
 | Video qualities don't appear | yt-dlp may be outdated. Run `py -m pip install --upgrade yt-dlp`. |
 | "Python was not found" error | Ensure Python is installed and your system uses `py` or `python` as the command. |
 | App opens but backend fails | Run `npm run package-backend` first to compile `backend.py`. |
