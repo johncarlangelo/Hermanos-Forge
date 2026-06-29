@@ -265,3 +265,24 @@ ipcMain.handle('choose-file', async () => {
     }
     return null;
 });
+
+ipcMain.handle('check-system-status', async () => {
+    const backend = getBackendExe();
+    let bState = 'MISSING';
+    if (path.isAbsolute(backend.cmd)) {
+        bState = fs.existsSync(backend.cmd) ? 'ONLINE' : 'MISSING';
+    } else {
+        // e.g. 'py' system fallback
+        bState = 'ONLINE (System)';
+    }
+
+    const basePath = app.isPackaged ? process.resourcesPath : app.getAppPath();
+    const ffPath = path.join(basePath, 'ffmpeg', 'ffmpeg.exe');
+    const probePath = path.join(basePath, 'ffmpeg', 'ffprobe.exe');
+    
+    return {
+        backend: { state: bState, path: backend.cmd },
+        ffmpeg: { state: fs.existsSync(ffPath) ? 'ONLINE' : 'MISSING', path: ffPath },
+        ffprobe: { state: fs.existsSync(probePath) ? 'ONLINE' : 'MISSING', path: probePath }
+    };
+});
