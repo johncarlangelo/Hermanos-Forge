@@ -23,7 +23,8 @@ export default function App() {
   const [systemStatus, setSystemStatus] = useState({
     backend: { state: 'CHECKING', path: 'Fetching...' },
     ffmpeg: { state: 'CHECKING', path: 'Fetching...' },
-    ffprobe: { state: 'CHECKING', path: 'Fetching...' }
+    ffprobe: { state: 'CHECKING', path: 'Fetching...' },
+    dlls: []
   });
 
   const refreshStatus = async () => {
@@ -302,10 +303,21 @@ export default function App() {
                       </button>
                     </div>
                     
-                    <div className="space-y-2">
-                       <StatusItem name="Python Backend" status={systemStatus.backend.state} path={systemStatus.backend.path} />
-                       <StatusItem name="FFmpeg" status={systemStatus.ffmpeg.state} path={systemStatus.ffmpeg.path} />
-                       <StatusItem name="FFprobe" status={systemStatus.ffprobe.state} path={systemStatus.ffprobe.path} />
+                    <div className="space-y-2 max-h-72 overflow-y-auto pr-2 custom-scrollbar">
+                       <StatusItem name="Python Backend" status={systemStatus.backend?.state || 'CHECKING'} path={systemStatus.backend?.path} />
+                       <StatusItem name="FFmpeg" status={systemStatus.ffmpeg?.state || 'CHECKING'} path={systemStatus.ffmpeg?.path} />
+                       <StatusItem name="FFprobe" status={systemStatus.ffprobe?.state || 'CHECKING'} path={systemStatus.ffprobe?.path} />
+                       
+                       {systemStatus.dlls && systemStatus.dlls.length > 0 && (
+                         <>
+                           <div className="text-[10px] font-semibold text-textSecondary uppercase tracking-wider pt-3 pb-1 border-t border-border/40 mt-3">
+                             Shared Libraries (DLLs)
+                           </div>
+                           {systemStatus.dlls.map(dll => (
+                             <StatusItem key={dll.name} name={dll.name} status={dll.state} path={dll.path} />
+                           ))}
+                         </>
+                       )}
                     </div>
                   </motion.div>
                 )}

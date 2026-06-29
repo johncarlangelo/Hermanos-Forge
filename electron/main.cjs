@@ -277,12 +277,33 @@ ipcMain.handle('check-system-status', async () => {
     }
 
     const basePath = app.isPackaged ? process.resourcesPath : app.getAppPath();
-    const ffPath = path.join(basePath, 'ffmpeg', 'ffmpeg.exe');
-    const probePath = path.join(basePath, 'ffmpeg', 'ffprobe.exe');
+    const ffmpegDir = path.join(basePath, 'ffmpeg');
+    const ffPath = path.join(ffmpegDir, 'ffmpeg.exe');
+    const probePath = path.join(ffmpegDir, 'ffprobe.exe');
+    
+    // Find all .dll files in ffmpeg directory
+    const dlls = [];
+    try {
+        if (fs.existsSync(ffmpegDir)) {
+            const files = fs.readdirSync(ffmpegDir);
+            for (const file of files) {
+                if (file.toLowerCase().endsWith('.dll')) {
+                    dlls.push({
+                        name: file,
+                        state: 'ONLINE',
+                        path: path.join(ffmpegDir, file)
+                    });
+                }
+            }
+        }
+    } catch (e) {
+        console.error('Error scanning DLLs', e);
+    }
     
     return {
         backend: { state: bState, path: backend.cmd },
         ffmpeg: { state: fs.existsSync(ffPath) ? 'ONLINE' : 'MISSING', path: ffPath },
-        ffprobe: { state: fs.existsSync(probePath) ? 'ONLINE' : 'MISSING', path: probePath }
+        ffprobe: { state: fs.existsSync(probePath) ? 'ONLINE' : 'MISSING', path: probePath },
+        dlls: dlls
     };
 });
