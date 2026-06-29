@@ -18,6 +18,7 @@ A sleek, modern YouTube video and audio downloader built with Electron + React. 
 - 📥 **Download YouTube videos** as MP4 (with quality selection: 360p, 720p, 1080p, 4K)
 - 🎵 **Download YouTube videos** as MP3 audio
 - 🔄 **Convert local MP4 files** to MP3
+- 🌐 **Supports thousands of websites** (not just YouTube!). See the full list of [supported sites here](https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md).
 - 📁 **Download history** with file type tags (MP3/MP4)
 - 📂 **Open in File Location** button for every history entry
 
@@ -38,7 +39,7 @@ Double-click the `.exe` file and follow the on-screen installation steps. That's
 The installer bundles everything inside:
 - ✅ The app UI
 - ✅ The Python backend (compiled to a single `.exe`, no Python needed)
-- ✅ FFmpeg for video/audio processing
+- ✅ FFmpeg for video/audio processing (including all required `.dll` shared libraries)
 - ✅ yt-dlp for downloading
 
 **No Command Prompt. No pip install. No Python. Just click and install.**
