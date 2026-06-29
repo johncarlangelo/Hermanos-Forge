@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import iconUrl from './assets/icon.svg';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Download, Settings, Clock, Trash2, FolderOpen, Video, Music, CheckCircle2, AlertCircle, Copy } from 'lucide-react';
+import { Download, Settings, Clock, Trash2, FolderOpen, Video, Music, CheckCircle2, AlertCircle, Copy, Activity, Server, RefreshCw } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import pkg from '../package.json';
 
@@ -16,6 +16,36 @@ export default function App() {
   const [status, setStatus] = useState('');
   const [progress, setProgress] = useState(0);
   const [isDownloading, setIsDownloading] = useState(false);
+  
+  // Status Modal State
+  const [isStatusOpen, setIsStatusOpen] = useState(false);
+  const [isRefreshingStatus, setIsRefreshingStatus] = useState(false);
+  const [systemStatus, setSystemStatus] = useState({
+    backend: { state: 'CHECKING', path: 'Fetching...' },
+    ffmpeg: { state: 'CHECKING', path: 'Fetching...' },
+    ffprobe: { state: 'CHECKING', path: 'Fetching...' },
+    dlls: []
+  });
+
+  const refreshStatus = async () => {
+    setIsRefreshingStatus(true);
+    if (window.electronAPI && window.electronAPI.checkSystemStatus) {
+      try {
+        const status = await window.electronAPI.checkSystemStatus();
+        setSystemStatus(status);
+      } catch (err) {
+        console.error('Failed to fetch system status', err);
+      }
+    }
+    setIsRefreshingStatus(false);
+  };
+
+  // Auto-refresh when the modal is opened
+  useEffect(() => {
+    if (isStatusOpen) {
+      refreshStatus();
+    }
+  }, [isStatusOpen]);
   
   const [history, setHistory] = useState(() => {
     const saved = localStorage.getItem('download-history');
@@ -239,6 +269,60 @@ export default function App() {
             </div>
 
             <div className="version-pill">v{pkg.version}</div>
+
+            {/* System Status Button & Modal */}
+            <div className="relative">
+              <button 
+                onClick={() => setIsStatusOpen(!isStatusOpen)}
+                className={`p-2 rounded-full border shadow-sm transition-all ${isStatusOpen ? 'bg-primary/10 border-primary text-primary' : 'bg-surface border-border hover:scale-105'}`}
+                title="System Status"
+              >
+                <Activity className="w-[18px] h-[18px]" />
+              </button>
+
+              <AnimatePresence>
+                {isStatusOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute right-0 mt-3 w-80 bg-surface/95 backdrop-blur-xl border border-border rounded-xl shadow-2xl p-4 z-50 overflow-hidden"
+                  >
+                    <div className="flex justify-between items-center mb-4">
+                      <h3 className="font-semibold text-textPrimary flex items-center gap-2">
+                        <Server className="w-4 h-4 text-primary" /> System Status
+                      </h3>
+                      <button 
+                        onClick={refreshStatus} 
+                        disabled={isRefreshingStatus} 
+                        className={`p-1.5 hover:bg-background rounded-md transition-colors ${isRefreshingStatus ? 'text-primary' : 'text-textSecondary hover:text-textPrimary'}`}
+                        title="Refresh Status"
+                      >
+                        <RefreshCw className={`w-4 h-4 ${isRefreshingStatus ? 'animate-spin' : ''}`} />
+                      </button>
+                    </div>
+                    
+                    <div className="space-y-2 max-h-72 overflow-y-auto pr-2 custom-scrollbar">
+                       <StatusItem name="Python Backend" status={systemStatus.backend?.state || 'CHECKING'} path={systemStatus.backend?.path} />
+                       <StatusItem name="FFmpeg" status={systemStatus.ffmpeg?.state || 'CHECKING'} path={systemStatus.ffmpeg?.path} />
+                       <StatusItem name="FFprobe" status={systemStatus.ffprobe?.state || 'CHECKING'} path={systemStatus.ffprobe?.path} />
+                       
+                       {systemStatus.dlls && systemStatus.dlls.length > 0 && (
+                         <>
+                           <div className="text-[10px] font-semibold text-textSecondary uppercase tracking-wider pt-3 pb-1 border-t border-border/40 mt-3">
+                             Shared Libraries (DLLs)
+                           </div>
+                           {systemStatus.dlls.map(dll => (
+                             <StatusItem key={dll.name} name={dll.name} status={dll.state} path={dll.path} />
+                           ))}
+                         </>
+                       )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
 
             <ThemeToggle />
           </div>
@@ -488,5 +572,36 @@ export default function App() {
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
         )}
       </button>
+    );
+  }
+
+  function StatusItem({ name, status, path }) {
+    let colorClass = 'bg-blue-500/10 text-blue-500 border border-blue-500/20'; // Default / CHECKING
+    const isChecking = status === 'CHECKING';
+    if (status.includes('ONLINE')) {
+      colorClass = 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20';
+    } else if (status === 'MISSING') {
+      colorClass = 'bg-rose-500/10 text-rose-500 border border-rose-500/20';
+    }
+
+    return (
+      <div className="flex flex-col gap-1 p-2.5 rounded-lg bg-background/60 border border-border/60 hover:bg-background/80 transition-colors">
+        <div className="flex justify-between items-center">
+          <span className="text-sm font-medium text-textPrimary">{name}</span>
+          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full tracking-wide flex items-center ${colorClass}`}>
+            {status}
+            {isChecking && (
+              <span className="inline-flex items-center gap-[2px] ml-1.5">
+                <motion.span animate={{ y: [0, -2.5, 0] }} transition={{ duration: 0.6, repeat: Infinity, ease: "easeInOut", delay: 0 }} className="w-[3px] h-[3px] bg-current rounded-full" />
+                <motion.span animate={{ y: [0, -2.5, 0] }} transition={{ duration: 0.6, repeat: Infinity, ease: "easeInOut", delay: 0.15 }} className="w-[3px] h-[3px] bg-current rounded-full" />
+                <motion.span animate={{ y: [0, -2.5, 0] }} transition={{ duration: 0.6, repeat: Infinity, ease: "easeInOut", delay: 0.3 }} className="w-[3px] h-[3px] bg-current rounded-full" />
+              </span>
+            )}
+          </span>
+        </div>
+        <div className="text-[10px] text-textSecondary font-mono truncate mt-0.5" title={path}>
+          {path}
+        </div>
+      </div>
     );
   }
