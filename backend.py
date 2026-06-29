@@ -15,19 +15,14 @@ if sys.stderr and hasattr(sys.stderr, 'reconfigure'):
 # No longer using pydub, relying on yt-dlp postprocessors and direct subprocess calls
 
 def get_ffmpeg_path(explicit_path=None):
-    """Get the path to the bundled ffmpeg executable."""
-    if explicit_path:
+    """Get the path to the bundled ffmpeg executable.
+    Relies primarily on Electron passing the exact path via CLI args.
+    """
+    if explicit_path and os.path.exists(explicit_path):
         return explicit_path
 
-    if getattr(sys, 'frozen', False):
-        exe_dir = os.path.dirname(os.path.abspath(sys.executable))
-        resources_dir = os.path.dirname(exe_dir)
-        ffmpeg_exe = os.path.join(resources_dir, 'ffmpeg', 'ffmpeg.exe')
-        return ffmpeg_exe
-    else:
-        base_path = os.path.dirname(os.path.abspath(__file__))
-        ffmpeg_exe = os.path.join(base_path, 'ffmpeg', 'ffmpeg.exe')
-        return ffmpeg_exe
+    # Fallback only for standalone testing outside of Electron
+    return shutil.which('ffmpeg') or 'ffmpeg'
 
 def get_ffprobe_path(ffmpeg_path=None):
     """Locate ffprobe in the same folder as ffmpeg."""
