@@ -18,6 +18,6 @@ labels: bug
 ## Environment
 
 - App version: 
-- OS: 
+- OS: Windows `<Windows Version>`
 
 ## Additional context
