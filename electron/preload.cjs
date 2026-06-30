@@ -11,4 +11,5 @@ contextBridge.exposeInMainWorld('electronAPI', {
     chooseDirectory: () => ipcRenderer.invoke('choose-directory'),
     chooseFile: () => ipcRenderer.invoke('choose-file'),
     getDefaultDownloadPath: () => ipcRenderer.invoke('get-default-download-path'),
+    checkSystemStatus: () => ipcRenderer.invoke('check-system-status'),
 });
