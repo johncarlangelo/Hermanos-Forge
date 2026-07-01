@@ -102,7 +102,7 @@ This packages the entire app (React UI + Electron + backend.exe + ffmpeg) into a
 
 ```
 dist_electron/
-  Hermanos Forge Setup 1.1.1.exe  <- THIS IS THE .exe FILE, RUN THIS
+  Hermanos Forge Setup X.X.X.exe  <- THIS IS THE .exe FILE, RUN THIS
 ```
 
 ---
