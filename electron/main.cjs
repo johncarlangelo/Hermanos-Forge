@@ -2,9 +2,19 @@ const { app, BrowserWindow, ipcMain, shell, dialog } = require('electron');
 const path = require('path');
 const { spawn, execSync } = require('child_process');
 const fs = require('fs');
+const ffmpeg = require('fluent-ffmpeg');
+
+// Set fluent-ffmpeg paths for bundled executables
+const basePath = app.isPackaged ? process.resourcesPath : app.getAppPath();
+const ffmpegPath = path.join(basePath, 'ffmpeg', 'ffmpeg.exe');
+const ffprobePath = path.join(basePath, 'ffmpeg', 'ffprobe.exe');
+
+ffmpeg.setFfmpegPath(ffmpegPath);
+ffmpeg.setFfprobePath(ffprobePath);
 
 let mainWindow;
 let activeStitchProcess = null;
+let activeSingleDownloadProcess = null;
 let logsWindow = null;
 
 function sendLog(line) {
@@ -73,9 +83,13 @@ function getBackendExe() {
     const isDev = process.env.ELECTRON_START_URL ? true : false;
     
     if (isDev) {
-        const exePath = path.join(__dirname, '../dist_backend/backend.exe');
-        if (fs.existsSync(exePath)) {
-            return { cmd: exePath, args: [] };
+        const exePath1 = path.join(__dirname, '../dist_backend/backend/backend.exe');
+        const exePath2 = path.join(__dirname, '../dist_backend/backend.exe');
+        if (fs.existsSync(exePath1)) {
+            return { cmd: exePath1, args: [] };
+        }
+        if (fs.existsSync(exePath2)) {
+            return { cmd: exePath2, args: [] };
         }
         // Fall back to running the .py script directly with Python
         const pyCmd = getPythonCommand();
@@ -100,7 +114,8 @@ function runBackendCommand(action, extraArgs = [], event) {
     return new Promise((resolve, reject) => {
         const backend = getBackendExe();
             // If the backend executable (or fallback) doesn't exist, fail fast with a clear message
-            if (!fs.existsSync(backend.cmd)) {
+            // We only check if the command is an absolute path. For system commands like 'py', fs.existsSync will be false
+            if (path.isAbsolute(backend.cmd) && !fs.existsSync(backend.cmd)) {
                 const msg = `Backend not found at ${backend.cmd}. Ensure you ran 'npm run package-backend' before building, or include the backend in extraResources.`;
                 console.error(msg);
                 if (event && event.sender) event.sender.send('status-update', msg);
@@ -111,18 +126,8 @@ function runBackendCommand(action, extraArgs = [], event) {
         console.log(`Running backend: ${backend.cmd} ${args.join(' ')}`);
         
         // If available, locate bundled ffmpeg under the app resources and pass it to the backend
-        let ffPath = null;
-        try {
-            const candidates = [
-                path.join(process.resourcesPath, 'app.asar.unpacked', 'ffmpeg', 'bin', 'ffmpeg.exe'),
-                path.join(process.resourcesPath, 'app.asar.unpacked', 'ffmpeg', 'ffmpeg.exe'),
-                path.join(process.resourcesPath, 'ffmpeg', 'bin', 'ffmpeg.exe'),
-                path.join(process.resourcesPath, 'ffmpeg', 'ffmpeg.exe')
-            ];
-            for (const c of candidates) {
-                if (fs.existsSync(c)) { ffPath = c; break; }
-            }
-        } catch (e) {
+        let ffPath = ffmpegPath;
+        if (!fs.existsSync(ffPath)) {
             ffPath = null;
         }
 
@@ -138,6 +143,8 @@ function runBackendCommand(action, extraArgs = [], event) {
             env: { ...process.env, PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1', ELECTRON_RESOURCES_PATH: process.resourcesPath, ...(ffPath ? { FFMPEG_PATH: ffPath } : {}) },
             cwd: path.dirname(backend.cmd) || undefined
         });
+
+        activeSingleDownloadProcess = child;
 
         // Track state so we never double-resolve/reject
         let settled = false;
@@ -193,6 +200,7 @@ function runBackendCommand(action, extraArgs = [], event) {
         });
 
         child.on('close', (code) => {
+            activeSingleDownloadProcess = null;
             if (settled) return; // Already resolved/rejected by SUCCESS/ERROR line
 
             if (code === 0) {
@@ -206,6 +214,7 @@ function runBackendCommand(action, extraArgs = [], event) {
         });
         
         child.on('error', (err) => {
+            activeSingleDownloadProcess = null;
             doReject(new Error(`Failed to start backend process: ${err.message}`));
         });
     });
@@ -309,6 +318,15 @@ ipcMain.handle('cancel-stitch', async (event, { outputDir }) => {
     return { canceled: true };
 });
 
+ipcMain.handle('cancel-single-download', async () => {
+    if (activeSingleDownloadProcess) {
+        activeSingleDownloadProcess.kill();
+        activeSingleDownloadProcess = null;
+        return { canceled: true };
+    }
+    return { canceled: false };
+});
+
 ipcMain.handle('select-output-folder', async () => {
     const result = await dialog.showOpenDialog(mainWindow, { properties: ['openDirectory'] });
     if (result.canceled || result.filePaths.length === 0) return null;
@@ -405,3 +423,44 @@ ipcMain.handle('open-logs-window', () => {
     });
 });
 
+ipcMain.handle('check-system-status', async () => {
+    const backend = getBackendExe();
+    let bState = 'MISSING';
+    if (path.isAbsolute(backend.cmd)) {
+        bState = fs.existsSync(backend.cmd) ? 'ONLINE' : 'MISSING';
+    } else {
+        // e.g. 'py' system fallback
+        bState = 'ONLINE (System)';
+    }
+
+    const basePath = app.isPackaged ? process.resourcesPath : app.getAppPath();
+    const ffmpegDir = path.join(basePath, 'ffmpeg');
+    const ffPath = path.join(ffmpegDir, 'ffmpeg.exe');
+    const probePath = path.join(ffmpegDir, 'ffprobe.exe');
+    
+    // Find all .dll files in ffmpeg directory
+    const dlls = [];
+    try {
+        if (fs.existsSync(ffmpegDir)) {
+            const files = fs.readdirSync(ffmpegDir);
+            for (const file of files) {
+                if (file.toLowerCase().endsWith('.dll')) {
+                    dlls.push({
+                        name: file,
+                        state: 'ONLINE',
+                        path: path.join(ffmpegDir, file)
+                    });
+                }
+            }
+        }
+    } catch (e) {
+        console.error('Error scanning DLLs', e);
+    }
+    
+    return {
+        backend: { state: bState, path: backend.cmd },
+        ffmpeg: { state: fs.existsSync(ffPath) ? 'ONLINE' : 'MISSING', path: ffPath },
+        ffprobe: { state: fs.existsSync(probePath) ? 'ONLINE' : 'MISSING', path: probePath },
+        dlls: dlls
+    };
+});

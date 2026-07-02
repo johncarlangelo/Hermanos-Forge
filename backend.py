@@ -17,247 +17,46 @@ if sys.stderr and hasattr(sys.stderr, 'reconfigure'):
 
 def get_ffmpeg_path(explicit_path=None):
     """Get the path to the bundled ffmpeg executable.
-
-    Tries a number of places relative to the running executable. When
-    frozen by PyInstaller the `sys.executable` value is used; in dev the
-    package source path is used. If nothing is found, falls back to
-    the system `ffmpeg` on PATH.
+    Relies primarily on Electron passing the exact path via CLI args.
     """
-    candidates = []
-    seen = set()
+    if explicit_path and os.path.exists(explicit_path):
+        return explicit_path
 
-    # Prefer an explicit CLI-provided path first (most deterministic)
-    try:
-        if explicit_path:
-            ef = norm_path(explicit_path)
-            try:
-                exists = os.path.exists(ef)
-            except Exception:
-                exists = False
-            print(f"STATUS:FFMPEG-EXPLICIT-CANDIDATE:{ef} -> {exists}", flush=True)
-            if exists:
-                print(f"STATUS:FFMPEG-SELECTED:{ef} (explicit)", flush=True)
-                return ef
-    except Exception:
-        pass
-
-    # Respect explicit environment override next (useful when spawned from Electron)
-    try:
-        env_ff = os.environ.get('FFMPEG_PATH') or os.environ.get('FFMPEG_EXE') or os.environ.get('FFMPEG_BIN')
-        if env_ff:
-            ef = norm_path(env_ff)
-            try:
-                exists = os.path.exists(ef)
-            except Exception:
-                exists = False
-            print(f"STATUS:FFMPEG-ENV-CANDIDATE:{ef} -> {exists}", flush=True)
-            if exists:
-                print(f"STATUS:FFMPEG-SELECTED:{ef} (from ENV)", flush=True)
-                return ef
-    except Exception:
-        pass
-
-    # If Electron passed its resources path, prefer candidates under that layout
-    try:
-        electron_resources = os.environ.get('ELECTRON_RESOURCES_PATH') or os.environ.get('RESOURCES_PATH') or os.environ.get('APP_RESOURCES')
-        if electron_resources:
-            add(os.path.join(electron_resources, 'app.asar.unpacked', 'ffmpeg', 'bin', 'ffmpeg.exe'))
-            add(os.path.join(electron_resources, 'app.asar.unpacked', 'ffmpeg', 'ffmpeg.exe'))
-            add(os.path.join(electron_resources, 'ffmpeg', 'bin', 'ffmpeg.exe'))
-            add(os.path.join(electron_resources, 'ffmpeg', 'ffmpeg.exe'))
-    except Exception:
-        pass
-
-    def norm_path(p):
-        try:
-            if not p or p in ('ffmpeg', 'ffprobe'):
-                return p
-            return os.path.normpath(os.path.abspath(p))
-        except Exception:
-            return p
-
-    def add(p):
-        if not p:
-            return
-        np = norm_path(p)
-        if np not in seen:
-            seen.add(np)
-            candidates.append(np)
-
-    def _find_ffmpeg_by_walk(start_dirs, max_depth=3):
-        """Search for ffmpeg executable under a set of start directories with limited depth.
-
-        Returns the first matching absolute path or None.
-        """
-        try:
-            names = ('ffmpeg.exe', 'ffmpeg')
-            for start in start_dirs:
-                if not start:
-                    continue
-                start = norm_path(start)
-                if not os.path.exists(start):
-                    continue
-                for dirpath, dirnames, filenames in os.walk(start):
-                    # limit recursive depth
-                    try:
-                        rel = os.path.relpath(dirpath, start)
-                        depth = 0 if rel == '.' else rel.count(os.sep) + 1
-                    except Exception:
-                        depth = 0
-                    if depth > max_depth:
-                        dirnames[:] = []
-                        continue
-                    for fn in filenames:
-                        if fn.lower() in names:
-                            return norm_path(os.path.join(dirpath, fn))
-        except Exception:
-            pass
-        return None
-
-    try:
-        if getattr(sys, 'frozen', False):
-            # Running from PyInstaller-built exe
-            exe_path = norm_path(sys.executable)
-            exe_dir = os.path.dirname(exe_path)
-
-            # Preferred explicit candidates for onedir layout:
-            # 1) onedir: backend placed in .../app.asar.unpacked/dist_backend/backend/backend.exe
-            #    ffmpeg will live at .../app.asar.unpacked/ffmpeg/ffmpeg.exe -> up two levels
-            add(os.path.normpath(os.path.join(exe_dir, '..', '..', 'ffmpeg', 'ffmpeg.exe')))
-            # 2) fallback: ffmpeg sibling of dist_backend (up one level)
-            add(os.path.normpath(os.path.join(exe_dir, '..', 'ffmpeg', 'ffmpeg.exe')))
-            # 3) ffmpeg in a folder next to the exe
-            add(os.path.normpath(os.path.join(exe_dir, 'ffmpeg', 'ffmpeg.exe')))
-            # 4) ffmpeg.exe next to the exe
-            add(os.path.normpath(os.path.join(exe_dir, 'ffmpeg.exe')))
-            # 5) additional fallback: parent-level ffmpeg folder
-            add(os.path.normpath(os.path.join(os.path.dirname(exe_dir), 'ffmpeg', 'ffmpeg.exe')))
-
-            # Walk up a few parents looking for an ffmpeg/ directory (last resort)
-            p = exe_dir
-            for _ in range(6):
-                add(os.path.join(p, 'ffmpeg', 'ffmpeg.exe'))
-                p = os.path.dirname(p)
-                if not p or p == os.path.dirname(p):
-                    break
-
-            # Also consider Electron's installed layout: insert
-            # 'resources/app.asar.unpacked' under parent directories.
-            p = exe_dir
-            for _ in range(6):
-                add(os.path.join(p, 'resources', 'app.asar.unpacked', 'ffmpeg', 'ffmpeg.exe'))
-                add(os.path.join(p, 'resources', 'ffmpeg', 'ffmpeg.exe'))
-                p = os.path.dirname(p)
-                if not p or p == os.path.dirname(p):
-                    break
-        else:
-            base_path = os.path.dirname(os.path.abspath(__file__))
-            add(os.path.join(base_path, 'ffmpeg', 'ffmpeg.exe'))
-            add(os.path.join(base_path, 'ffmpeg', 'bin', 'ffmpeg.exe'))
-            add(os.path.join(base_path, 'ffmpeg.exe'))
-    except Exception:
-        pass
-
-    # Try a limited-depth search under likely install / resources directories
-    try:
-        roots = []
-        if getattr(sys, 'frozen', False):
-            try:
-                exe_path = norm_path(sys.executable)
-                exe_dir = os.path.dirname(exe_path)
-                roots.append(exe_dir)
-                p = exe_dir
-                for _ in range(4):
-                    p = os.path.dirname(p)
-                    if not p or p == os.path.dirname(p):
-                        break
-                    roots.append(p)
-                # also consider resources folders next to these roots
-                extra = []
-                for r in list(roots):
-                    extra.append(os.path.join(r, 'resources'))
-                    extra.append(os.path.join(r, 'resources', 'app.asar.unpacked'))
-                roots.extend(extra)
-            except Exception:
-                pass
-        else:
-            roots.append(os.path.dirname(os.path.abspath(__file__)))
-
-        found = _find_ffmpeg_by_walk(roots, max_depth=4)
-        if found:
-            add(found)
-    except Exception:
-        pass
-
-    # Finally try common names (will use PATH)
-    add('ffmpeg')
-
-    # Diagnostic output: print normalized candidates and whether they exist
-    try:
-        for p in candidates:
-            try:
-                exists = False
-                if p and p not in ('ffmpeg', 'ffprobe'):
-                    exists = os.path.exists(p)
-            except Exception:
-                exists = False
-            print(f"STATUS:FFMPEG-CANDIDATE:{p} -> {exists}", flush=True)
-    except Exception:
-        pass
-
-    # Prefer a concrete file on disk
-    for p in candidates:
-        try:
-            if p and p not in ('ffmpeg', 'ffprobe') and os.path.exists(p):
-                print(f"STATUS:FFMPEG-SELECTED:{p}", flush=True)
-                return p
-        except Exception:
-            continue
-
-    # Check for system ffmpeg on PATH
-    try:
-        sys_ff = shutil.which('ffmpeg')
-        if sys_ff:
-            sys_ff = norm_path(sys_ff)
-            print(f"STATUS:FFMPEG-SELECTED:{sys_ff} (from PATH)", flush=True)
-            return sys_ff
-    except Exception:
-        pass
-
-    # Nothing found; return the generic name so subprocess will try PATH
-    print("STATUS:FFMPEG-SELECTED:ffmpeg (using system PATH)", flush=True)
-    return 'ffmpeg'
-
+    # Fallback only for standalone testing outside of Electron
+    return shutil.which('ffmpeg') or 'ffmpeg'
 
 def get_ffprobe_path(ffmpeg_path=None):
-    """Locate ffprobe in the same folder as ffmpeg, or fall back to 'ffprobe'.
+    """Locate ffprobe in the same folder as ffmpeg."""
+    if ffmpeg_path:
+        return os.path.join(os.path.dirname(ffmpeg_path), 'ffprobe.exe')
+    return 'ffprobe.exe'
 
-    If `ffmpeg_path` is an absolute file, prefer `ffprobe.exe` next to it.
-    Otherwise try the system `ffprobe` via PATH.
-    """
+def transcode_to_h264_if_needed(file_path, ffmpeg_bin):
+    """Checks if the video is H.264. If not, transcodes it to H.264 inplace."""
+    ffprobe_bin = get_ffprobe_path(ffmpeg_bin)
     try:
-        if ffmpeg_path and os.path.isabs(ffmpeg_path) and os.path.exists(ffmpeg_path):
-            d = os.path.dirname(ffmpeg_path)
-            probe = os.path.join(d, 'ffprobe.exe')
-            probe = os.path.normpath(os.path.abspath(probe))
-            if os.path.exists(probe):
-                print(f"STATUS:FFPROBE-SELECTED:{probe}", flush=True)
-                return probe
-    except Exception:
-        pass
-
-    # Try system ffprobe
-    try:
-        sys_probe = shutil.which('ffprobe')
-        if sys_probe:
-            sys_probe = os.path.normpath(os.path.abspath(sys_probe))
-            print(f"STATUS:FFPROBE-SELECTED:{sys_probe} (from PATH)", flush=True)
-            return sys_probe
-    except Exception:
-        pass
-
-    print("STATUS:FFPROBE-SELECTED:ffprobe (using system PATH)", flush=True)
-    return 'ffprobe'
+        if not os.path.exists(file_path):
+            return
+        
+        # Check codec
+        cmd = [ffprobe_bin, '-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=codec_name', '-of', 'default=noprint_wrappers=1:nokey=1', file_path]
+        creationflags = 0x08000000 if os.name == 'nt' else 0
+        result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, creationflags=creationflags)
+        codec = result.stdout.strip()
+        
+        if codec and codec.lower() != 'h264':
+            print(f"STATUS:Converting {codec} to H.264 for compatibility...", flush=True)
+            temp_output = file_path + ".temp.mp4"
+            transcode_cmd = [
+                ffmpeg_bin, '-y', '-i', file_path,
+                '-c:v', 'libx264', '-preset', 'medium', '-crf', '23',
+                '-c:a', 'copy',
+                temp_output
+            ]
+            subprocess.run(transcode_cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, creationflags=creationflags)
+            os.replace(temp_output, file_path)
+    except Exception as e:
+        print(f"ERROR:Transcode check failed: {e}", flush=True)
 
 def progress_hook(d):
     """Hook to print progress in a format Electron can easily parse."""
@@ -389,7 +188,7 @@ def download_youtube_as_mp3(youtube_url, output_dir, ffmpeg_path=None):
                 'preferredquality': '192',
             }],
             'progress_hooks': [progress_hook],
-            'ffmpeg_location': os.path.dirname(ffmpeg_bin),
+            'ffmpeg_location': ffmpeg_bin,
             # 'ffprobe_location': ffprobe_bin,
         }
 
@@ -432,7 +231,7 @@ def download_youtube_as_mp4(youtube_url, output_dir, quality=None, ffmpeg_path=N
             'outtmpl': os.path.join(output_dir, '%(title)s.%(ext)s'),
             'merge_output_format': 'mp4',
             'progress_hooks': [progress_hook],
-            'ffmpeg_location': os.path.dirname(ffmpeg_bin),
+            'ffmpeg_location': ffmpeg_bin,
             # 'ffprobe_location': ffprobe_bin,
             'postprocessors': [{
                 'key': 'FFmpegVideoConvertor',
@@ -447,6 +246,8 @@ def download_youtube_as_mp4(youtube_url, output_dir, quality=None, ffmpeg_path=N
             
             if not output_file.endswith('.mp4'):
                 output_file = os.path.splitext(output_file)[0] + '.mp4'
+
+            transcode_to_h264_if_needed(output_file, ffmpeg_bin)
 
         print(f"SUCCESS:{output_file}", flush=True)
     except Exception as e:
@@ -538,7 +339,7 @@ def stitch_clips_from_urls(urls, output_dir, ffmpeg_path=None, no_stitch=False):
             try:
                 outtmpl = os.path.join(output_dir, "%(title)s.%(ext)s")
                 ydl_opts = {
-                    'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
+                    'format': 'bestvideo[ext=mp4][vcodec^=avc]+bestaudio[ext=m4a]/bestvideo[ext=mp4]+bestaudio[ext=m4a]/best',
                     'outtmpl': outtmpl,
                     'merge_output_format': 'mp4',
                     'ffmpeg_location': ffmpeg_bin,
@@ -556,7 +357,10 @@ def stitch_clips_from_urls(urls, output_dir, ffmpeg_path=None, no_stitch=False):
                     raise Exception("File missing after download")
 
                 clip_paths.append(clip_file)
-                print(f"CLIP:{index}:done", flush=True)
+                transcode_to_h264_if_needed(clip_file, ffmpeg_bin)
+
+                title = info_dict.get('title', f"Clip {index + 1}")
+                print(f"CLIP:{index}:done:{title}::{clip_file}", flush=True)
 
             except Exception as e:
                 print(f"CLIP:{index}:error:{e}", flush=True)

@@ -39,4 +39,5 @@ __pycache__/
 /test_data/
 /scripts/test_ffmpeg_detect.py
 
-
+# Skills
+.agent

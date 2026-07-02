@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { X, Plus, FolderOpen, Scissors, OctagonX, CheckCircle, AlertCircle, Clock, Loader2, XCircle } from 'lucide-react';
+import { X, Plus, FolderOpen, Scissors, OctagonX, CheckCircle, AlertCircle, Clock, Loader2, XCircle, Download } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 
 const ROW_STATE = {
@@ -58,7 +59,7 @@ const StatusPill = ({ state }) => {
   );
 };
 
-export default function MassClipDownloader({ onStitchSuccess }) {
+export default function MassClipDownloader({ onStitchSuccess, globalOutputDir, onRequestGlobalOutput }) {
   const [clips, setClips] = useState(() => {
     try {
       const saved = localStorage.getItem('mass-clips');
@@ -72,20 +73,13 @@ export default function MassClipDownloader({ onStitchSuccess }) {
     } catch (e) {}
     return [makeClip(), makeClip()];
   });
-  
-  const [outputDir, setOutputDir] = useState(() => {
-    return localStorage.getItem('mass-outputDir') || '';
-  });
 
   useEffect(() => {
     localStorage.setItem('mass-clips', JSON.stringify(clips));
   }, [clips]);
 
-  useEffect(() => {
-    localStorage.setItem('mass-outputDir', outputDir);
-  }, [outputDir]);
-
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isMassDownloading, setIsMassDownloading] = useState(false);
   const [isCoolingDown, setIsCoolingDown] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [globalStatus, setGlobalStatus] = useState('');
@@ -115,6 +109,7 @@ export default function MassClipDownloader({ onStitchSuccess }) {
 
     const unsubSuccess = window.stitchAPI.onSuccess((finalPath) => {
       setIsProcessing(false);
+      setIsMassDownloading(false);
       setIsCoolingDown(true);
       setGlobalStatus('Done! Resetting in 5 seconds...');
       
@@ -133,6 +128,7 @@ export default function MassClipDownloader({ onStitchSuccess }) {
 
     const unsubError = window.stitchAPI.onError((msg) => {
       setIsProcessing(false);
+      setIsMassDownloading(false);
       setGlobalStatus('');
       toast.error(msg, { style: { borderRadius: '10px', background: '#1E293B', color: '#fff' } });
     });
@@ -154,12 +150,6 @@ export default function MassClipDownloader({ onStitchSuccess }) {
     setClips([makeClip(), makeClip()]);
   };
 
-  const selectFolder = async () => {
-    if (!window.stitchAPI) return;
-    const dir = await window.stitchAPI.selectOutputFolder();
-    if (dir) setOutputDir(dir);
-  };
-
   const startStitching = async (noStitch = false) => {
     const urls = clips.map((c) => c.url.trim()).filter(Boolean);
 
@@ -167,7 +157,12 @@ export default function MassClipDownloader({ onStitchSuccess }) {
       toast.error('Add at least one clip URL first.', { style: { borderRadius: '10px', background: '#1E293B', color: '#fff' } });
       return;
     }
-    if (!outputDir) {
+    
+    let targetDir = globalOutputDir;
+    if (!targetDir && onRequestGlobalOutput) {
+      targetDir = await onRequestGlobalOutput();
+    }
+    if (!targetDir) {
       toast.error('Select an output folder first.', { style: { borderRadius: '10px', background: '#1E293B', color: '#fff' } });
       return;
     }
@@ -178,14 +173,16 @@ export default function MassClipDownloader({ onStitchSuccess }) {
         .map((c) => ({ ...c, state: ROW_STATE.QUEUED, message: '' }))
     );
     setIsProcessing(true);
+    setIsMassDownloading(noStitch);
 
     try {
       if (window.stitchAPI) {
         setGlobalStatus('Starting download...');
-        await window.stitchAPI.stitchClips(urls, outputDir, noStitch);
+        await window.stitchAPI.stitchClips(urls, targetDir, noStitch);
       }
     } catch (err) {
       setIsProcessing(false);
+      setIsMassDownloading(false);
       setGlobalStatus('');
       toast.error(`Unexpected error: ${err.message}`, { style: { borderRadius: '10px', background: '#1E293B', color: '#fff' } });
     }
@@ -194,9 +191,10 @@ export default function MassClipDownloader({ onStitchSuccess }) {
   const confirmCancel = async () => {
     setShowCancelModal(false);
     if (window.stitchAPI) {
-      await window.stitchAPI.cancelStitch(outputDir);
+      await window.stitchAPI.cancelStitch(globalOutputDir);
     }
     setIsProcessing(false);
+    setIsMassDownloading(false);
     setGlobalStatus('');
     setClips((prev) =>
       prev.map((c) =>
@@ -215,8 +213,12 @@ export default function MassClipDownloader({ onStitchSuccess }) {
     return 'border-border';
   };
 
+  const validClips = clips.filter((c) => c.url.trim());
+  const doneClips = validClips.filter((c) => c.state === ROW_STATE.DONE || c.state === ROW_STATE.ERROR);
+  const massProgress = validClips.length > 0 ? (doneClips.length / validClips.length) * 100 : 0;
+
   return (
-    <div className="h-full flex flex-col gap-6">
+    <div className="flex flex-col gap-6">
       <div className="glass-panel p-6 flex flex-col gap-4 max-h-[50vh] overflow-hidden">
         <div className="flex justify-between items-center mb-2">
           <h2 className="text-xl font-semibold flex items-center">
@@ -272,31 +274,8 @@ export default function MassClipDownloader({ onStitchSuccess }) {
         </div>
       </div>
 
-      <div className="glass-panel p-6 flex-1 flex flex-col justify-between">
-        <div className="flex flex-col gap-4">
-          <h2 className="text-xl font-semibold flex items-center">
-            <FolderOpen className="w-5 h-5 mr-2 text-primary" />
-            Output Location
-          </h2>
-          <button
-            onClick={selectFolder}
-            disabled={isProcessing || isCoolingDown}
-            className="flex items-center gap-3 text-left p-4 border border-border rounded-xl bg-surface hover:bg-surfaceHover disabled:opacity-50 transition-colors"
-          >
-            <FolderOpen className="w-6 h-6 text-primary flex-shrink-0" />
-            <div className="flex flex-col overflow-hidden">
-              <span className="font-medium text-textPrimary">Select Output Folder</span>
-              <span className="text-sm text-textSecondary truncate">
-                {outputDir ? outputDir : 'No folder selected'}
-              </span>
-            </div>
-          </button>
-          <p className="text-xs text-textSecondary px-1">
-            Downloaded clips and the final stitched video will be saved here.
-          </p>
-        </div>
-
-        <div className="mt-6 flex flex-col gap-3">
+      <div className="glass-panel p-6 flex flex-col gap-4">
+        <div className="flex flex-col gap-3">
           {(globalStatus && (isProcessing || isCoolingDown)) && (
             <div className="text-sm text-primary font-medium text-center animate-pulse">
               {globalStatus}
@@ -345,9 +324,62 @@ export default function MassClipDownloader({ onStitchSuccess }) {
         </div>
       </div>
 
+      {/* Mass Download Progress Modal */}
+      <AnimatePresence>
+        {isProcessing && isMassDownloading && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[110] flex items-center justify-center bg-black/70 backdrop-blur-md"
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 10 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 10 }}
+              className="bg-surface/95 border border-border p-8 rounded-2xl shadow-2xl max-w-md w-full mx-4 relative overflow-hidden"
+            >
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent animate-pulse" />
+              
+              <div className="flex flex-col items-center text-center mb-6">
+                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                  <Download className="w-8 h-8 text-primary animate-bounce" />
+                </div>
+                <h3 className="text-2xl font-bold mb-1">Mass Downloading</h3>
+                <p className="text-textSecondary text-sm max-w-[250px] truncate" title={globalStatus || 'Starting...'}>
+                  {globalStatus || 'Starting...'}
+                </p>
+              </div>
+
+              <div className="space-y-2 mb-6">
+                <div className="flex justify-between text-sm font-medium">
+                  <span className="text-textSecondary">Progress ({doneClips.length}/{validClips.length})</span>
+                  <span className="text-primary font-mono text-lg">{massProgress.toFixed(1)}%</span>
+                </div>
+                <div className="w-full bg-background/50 border border-border/50 rounded-full h-3 overflow-hidden shadow-inner">
+                  <motion.div
+                    className="bg-gradient-to-r from-primary to-primary/80 h-full rounded-full shadow-[0_0_10px_rgba(var(--primary),0.5)]"
+                    initial={{ width: 0 }}
+                    animate={{ width: `${massProgress}%` }}
+                    transition={{ ease: "easeOut", duration: 0.2 }}
+                  />
+                </div>
+              </div>
+
+              <button
+                onClick={() => setShowCancelModal(true)}
+                className="w-full flex items-center justify-center gap-2 text-base h-12 rounded-xl bg-red-600/10 hover:bg-red-600/20 text-red-500 font-medium transition-colors border border-red-600/20"
+              >
+                <OctagonX size={18} /> Cancel Download
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {showCancelModal && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50 p-4">
-          <div className="bg-surface border border-border rounded-xl p-6 w-full max-w-sm flex flex-col gap-5 shadow-2xl">
+        <div className="fixed inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-[120] p-4">
+          <div className="bg-surface/95 border border-border rounded-2xl p-6 w-full max-w-sm flex flex-col gap-5 shadow-2xl">
             <h3 className="text-lg font-bold text-textPrimary">Cancel Process?</h3>
             <p className="text-sm text-textSecondary">
               Are you sure you want to cancel the current download and stitch process? Clips already finished downloading will be kept.
@@ -371,4 +403,4 @@ export default function MassClipDownloader({ onStitchSuccess }) {
       )}
     </div>
   );
-}
+};

@@ -20,6 +20,7 @@ A sleek, modern YouTube video and audio downloader built with Electron + React. 
 - 🔄 **Convert local MP4 files** to MP3
 - ✂️ **Mass Clip Downloader**: Download multiple clips and automatically stitch them into a single video.
 - 💻 **Developer Logs Window**: View real-time background logs directly within the app.
+- 🌐 **Supports thousands of websites** (not just YouTube!). See the full list of [supported sites here](https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md).
 - 📁 **Download history** with file type tags (MP3/MP4/Mass Clip)
 - 📂 **Open in File Location** button for every history entry
 
@@ -40,7 +41,7 @@ Double-click the `.exe` file and follow the on-screen installation steps. That's
 The installer bundles everything inside:
 - ✅ The app UI
 - ✅ The Python backend (compiled to a single `.exe`, no Python needed)
-- ✅ FFmpeg for video/audio processing
+- ✅ FFmpeg for video/audio processing (including all required `.dll` shared libraries)
 - ✅ yt-dlp for downloading
 
 **No Command Prompt. No pip install. No Python. Just click and install.**
@@ -88,7 +89,7 @@ This compiles `backend.py` into `dist_backend/backend.exe` using PyInstaller.
 > **Why PyInstaller if we're using Electron?** They serve completely different roles:
 > - **Electron** is the *window and UI shell* — it replaced Tkinter and renders the React interface.
 > - **PyInstaller** compiles *only the Python download engine* (`backend.py` + yt-dlp + pydub) into a single invisible `backend.exe`. Electron cannot run `.py` files directly, so it silently spawns `backend.exe` in the background whenever you click Download.
-> - **electron-builder** then bundles Electron + `backend.exe` + ffmpeg into the final Setup installer.
+> - **electron-builder** then bundles Electron + `backend.exe` + ffmpeg (and its `.dll` libraries) into the final Setup installer.
 >
 > End users get one installer. Zero Python. Zero CMD. Everything is pre-packaged inside.
 
@@ -98,7 +99,7 @@ This compiles `backend.py` into `dist_backend/backend.exe` using PyInstaller.
 npm run electron:build
 ```
 
-This packages the entire app (React UI + Electron + backend.exe + ffmpeg) into a ready-to-distribute Windows Setup installer located in:
+This packages the entire app (React UI + Electron + backend.exe + ffmpeg + shared `.dll` libraries) into a ready-to-distribute Windows Setup installer located in:
 
 ```
 dist_electron/
@@ -133,7 +134,8 @@ Hermanos Forge/
 │   └── LogsWindow.jsx      # Developer logs window
 ├── ffmpeg/
 │   ├── ffmpeg.exe          # Bundled FFmpeg binary
-│   └── ffprobe.exe         # Bundled FFprobe binary
+│   ├── ffprobe.exe         # Bundled FFprobe binary
+│   └── *.dll               # FFmpeg shared libraries (avcodec, avutil, etc.)
 ├── package.json
 └── vite.config.js
 ```
@@ -144,7 +146,7 @@ Hermanos Forge/
 
 | Problem | Solution |
 |---------|----------|
-| Download says "ffmpeg not found" | Make sure `ffmpeg/ffmpeg.exe` is inside the project folder. |
+| Download says "ffmpeg not found" | Make sure `ffmpeg/ffmpeg.exe` and all its required `.dll` files are inside the project folder. |
 | Video qualities don't appear | yt-dlp may be outdated. Run `py -m pip install --upgrade yt-dlp`. |
 | "Python was not found" error | Ensure Python is installed and your system uses `py` or `python` as the command. |
 | App opens but backend fails | Run `npm run package-backend` first to compile `backend.py`. |

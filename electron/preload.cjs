@@ -3,6 +3,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('electronAPI', {
     downloadYoutubeAsMp3: (url, outdir) => ipcRenderer.invoke('download-mp3', url, outdir),
     downloadYoutubeAsMp4: (url, outdir, quality) => ipcRenderer.invoke('download-mp4', url, outdir, quality),
+    cancelDownload: () => ipcRenderer.invoke('cancel-single-download'),
     convertLocalMp4: (file, outdir) => ipcRenderer.invoke('convert-mp4', file, outdir),
     getAvailableFormats: (url) => ipcRenderer.invoke('get-formats', url),
     onProgressUpdate: (callback) => ipcRenderer.on('progress-update', callback),
@@ -16,7 +17,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
         const handler = (_event, line) => callback(line);
         ipcRenderer.on('log-update', handler);
         return () => ipcRenderer.removeListener('log-update', handler);
-    }
+    },
+    checkSystemStatus: () => ipcRenderer.invoke('check-system-status')
 });
 
 contextBridge.exposeInMainWorld('stitchAPI', {
@@ -43,5 +45,5 @@ contextBridge.exposeInMainWorld('stitchAPI', {
         const handler = (_event, msg) => callback(msg);
         ipcRenderer.on('stitch-error', handler);
         return () => ipcRenderer.removeListener('stitch-error', handler);
-    },
+    }
 });
