@@ -79,7 +79,6 @@ export default function MassClipDownloader({ onStitchSuccess, globalOutputDir, o
   }, [clips]);
 
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isMassDownloading, setIsMassDownloading] = useState(false);
   const [isCoolingDown, setIsCoolingDown] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [globalStatus, setGlobalStatus] = useState('');
@@ -95,9 +94,8 @@ export default function MassClipDownloader({ onStitchSuccess, globalOutputDir, o
     if (!window.stitchAPI) return;
 
     const unsubClip = window.stitchAPI.onClipUpdate(({ index, state, message }) => {
-      setClips((prev) =>
-        prev.map((c, i) => (i === index ? { ...c, state, message: message || '' } : c))
-      );
+      clipsRef.current = clipsRef.current.map((c, i) => (i === index ? { ...c, state, message: message || '' } : c));
+      setClips(clipsRef.current);
     });
 
     const unsubStatus = window.stitchAPI.onStatus((msg) => {
@@ -109,7 +107,6 @@ export default function MassClipDownloader({ onStitchSuccess, globalOutputDir, o
 
     const unsubSuccess = window.stitchAPI.onSuccess((finalPath) => {
       setIsProcessing(false);
-      setIsMassDownloading(false);
       setIsCoolingDown(true);
       setGlobalStatus('Done! Resetting in 5 seconds...');
       
@@ -128,7 +125,6 @@ export default function MassClipDownloader({ onStitchSuccess, globalOutputDir, o
 
     const unsubError = window.stitchAPI.onError((msg) => {
       setIsProcessing(false);
-      setIsMassDownloading(false);
       setGlobalStatus('');
       toast.error(msg, { style: { borderRadius: '10px', background: '#1E293B', color: '#fff' } });
     });
@@ -173,7 +169,6 @@ export default function MassClipDownloader({ onStitchSuccess, globalOutputDir, o
         .map((c) => ({ ...c, state: ROW_STATE.QUEUED, message: '' }))
     );
     setIsProcessing(true);
-    setIsMassDownloading(noStitch);
 
     try {
       if (window.stitchAPI) {
@@ -182,7 +177,6 @@ export default function MassClipDownloader({ onStitchSuccess, globalOutputDir, o
       }
     } catch (err) {
       setIsProcessing(false);
-      setIsMassDownloading(false);
       setGlobalStatus('');
       toast.error(`Unexpected error: ${err.message}`, { style: { borderRadius: '10px', background: '#1E293B', color: '#fff' } });
     }
@@ -194,7 +188,6 @@ export default function MassClipDownloader({ onStitchSuccess, globalOutputDir, o
       await window.stitchAPI.cancelStitch(globalOutputDir);
     }
     setIsProcessing(false);
-    setIsMassDownloading(false);
     setGlobalStatus('');
     setClips((prev) =>
       prev.map((c) =>
@@ -212,10 +205,6 @@ export default function MassClipDownloader({ onStitchSuccess, globalOutputDir, o
     if (state === ROW_STATE.DONE) return 'border-green-500';
     return 'border-border';
   };
-
-  const validClips = clips.filter((c) => c.url.trim());
-  const doneClips = validClips.filter((c) => c.state === ROW_STATE.DONE || c.state === ROW_STATE.ERROR);
-  const massProgress = validClips.length > 0 ? (doneClips.length / validClips.length) * 100 : 0;
 
   return (
     <div className="flex flex-col gap-6">
@@ -323,59 +312,6 @@ export default function MassClipDownloader({ onStitchSuccess, globalOutputDir, o
           </div>
         </div>
       </div>
-
-      {/* Mass Download Progress Modal */}
-      <AnimatePresence>
-        {isProcessing && isMassDownloading && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[110] flex items-center justify-center bg-black/70 backdrop-blur-md"
-          >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0, y: 10 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.95, opacity: 0, y: 10 }}
-              className="bg-surface/95 border border-border p-8 rounded-2xl shadow-2xl max-w-md w-full mx-4 relative overflow-hidden"
-            >
-              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent animate-pulse" />
-              
-              <div className="flex flex-col items-center text-center mb-6">
-                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                  <Download className="w-8 h-8 text-primary animate-bounce" />
-                </div>
-                <h3 className="text-2xl font-bold mb-1">Mass Downloading</h3>
-                <p className="text-textSecondary text-sm max-w-[250px] truncate" title={globalStatus || 'Starting...'}>
-                  {globalStatus || 'Starting...'}
-                </p>
-              </div>
-
-              <div className="space-y-2 mb-6">
-                <div className="flex justify-between text-sm font-medium">
-                  <span className="text-textSecondary">Progress ({doneClips.length}/{validClips.length})</span>
-                  <span className="text-primary font-mono text-lg">{massProgress.toFixed(1)}%</span>
-                </div>
-                <div className="w-full bg-background/50 border border-border/50 rounded-full h-3 overflow-hidden shadow-inner">
-                  <motion.div
-                    className="bg-gradient-to-r from-primary to-primary/80 h-full rounded-full shadow-[0_0_10px_rgba(var(--primary),0.5)]"
-                    initial={{ width: 0 }}
-                    animate={{ width: `${massProgress}%` }}
-                    transition={{ ease: "easeOut", duration: 0.2 }}
-                  />
-                </div>
-              </div>
-
-              <button
-                onClick={() => setShowCancelModal(true)}
-                className="w-full flex items-center justify-center gap-2 text-base h-12 rounded-xl bg-red-600/10 hover:bg-red-600/20 text-red-500 font-medium transition-colors border border-red-600/20"
-              >
-                <OctagonX size={18} /> Cancel Download
-              </button>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {showCancelModal && (
         <div className="fixed inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-[120] p-4">
