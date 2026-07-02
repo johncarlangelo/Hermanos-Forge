@@ -18,8 +18,10 @@ A sleek, modern YouTube video and audio downloader built with Electron + React. 
 - 📥 **Download YouTube videos** as MP4 (with quality selection: 360p, 720p, 1080p, 4K)
 - 🎵 **Download YouTube videos** as MP3 audio
 - 🔄 **Convert local MP4 files** to MP3
+- ✂️ **Mass Clip Downloader**: Download multiple clips and automatically stitch them into a single video.
+- 💻 **Developer Logs Window**: View real-time background logs directly within the app.
 - 🌐 **Supports thousands of websites** (not just YouTube!). See the full list of [supported sites here](https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md).
-- 📁 **Download history** with file type tags (MP3/MP4)
+- 📁 **Download history** with file type tags (MP3/MP4/Mass Clip)
 - 📂 **Open in File Location** button for every history entry
 
 ---
@@ -101,7 +103,7 @@ This packages the entire app (React UI + Electron + backend.exe + ffmpeg + share
 
 ```
 dist_electron/
-  Hermanos Forge Setup 1.0.0.exe  <- THIS IS THE .exe FILE, RUN THIS
+  Hermanos Forge Setup X.X.X.exe  <- THIS IS THE .exe FILE, RUN THIS
 ```
 
 ---
@@ -127,7 +129,9 @@ Hermanos Forge/
 │   ├── main.cjs            # Electron main process + IPC handlers
 │   └── preload.cjs         # Context bridge for renderer ↔ main IPC
 ├── src/
-│   └── App.jsx             # React UI (all pages and logic)
+│   ├── App.jsx             # React UI (main application and routing)
+│   ├── MassClipDownloader.jsx # Mass clip stitching interface
+│   └── LogsWindow.jsx      # Developer logs window
 ├── ffmpeg/
 │   ├── ffmpeg.exe          # Bundled FFmpeg binary
 │   ├── ffprobe.exe         # Bundled FFprobe binary
