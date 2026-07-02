@@ -15,6 +15,14 @@ if sys.stderr and hasattr(sys.stderr, 'reconfigure'):
 
 # No longer using pydub, relying on yt-dlp postprocessors and direct subprocess calls
 
+# Monkey-patch subprocess.Popen to always hide console windows on Windows (prevents terminal flash during yt-dlp FFmpeg calls)
+if os.name == 'nt':
+    _original_popen = subprocess.Popen
+    def _patched_popen(*args, **kwargs):
+        kwargs['creationflags'] = kwargs.get('creationflags', 0) | 0x08000000
+        return _original_popen(*args, **kwargs)
+    subprocess.Popen = _patched_popen
+
 def get_ffmpeg_path(explicit_path=None):
     """Get the path to the bundled ffmpeg executable.
     Relies primarily on Electron passing the exact path via CLI args.
