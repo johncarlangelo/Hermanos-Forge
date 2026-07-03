@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import iconUrl from './assets/icon.svg';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Download, Settings, Clock, Trash2, FolderOpen, Video, Music, CheckCircle2, AlertCircle, Copy, Scissors, Menu, Terminal, Activity, Server, RefreshCw, PanelLeftClose, PanelLeftOpen, ChevronLeft, ChevronRight, X, OctagonX } from 'lucide-react';
+import { Download, Settings, Clock, Trash2, FolderOpen, Video, Music, AlertCircle, Copy, Scissors, Terminal, Activity, Server, RefreshCw, PanelLeftClose, PanelLeftOpen, ChevronLeft, ChevronRight, X, OctagonX } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import pkg from '../package.json';
 import MassClipDownloader from './MassClipDownloader';
@@ -46,6 +46,7 @@ export default function App() {
   // Auto-refresh when the modal is opened
   useEffect(() => {
     if (isStatusOpen) {
+      // eslint-disable-next-line
       refreshStatus();
     }
   }, [isStatusOpen]);
@@ -98,11 +99,11 @@ export default function App() {
     if (window.electronAPI) {
       window.electronAPI.onProgressUpdate((event, percent) => {
         setProgress(percent);
-        try { console.log('electron status - PROGRESS:', percent); } catch (e) { }
+        try { console.log('electron status - PROGRESS:', percent); } catch { /* ignore */ }
       });
       window.electronAPI.onStatusUpdate((event, msg) => {
         setStatus(msg);
-        try { console.log('electron status - STATUS:', msg); } catch (e) { }
+        try { console.log('electron status - STATUS:', msg); } catch { /* ignore */ }
       });
     }
   }, []);
@@ -122,7 +123,7 @@ export default function App() {
             setSelectedQuality(fetchedFormats[fetchedFormats.length - 1].height.toString()); // Best by default
           }
         }
-      } catch (err) {
+      } catch {
         console.error("Failed to fetch formats");
         toast.error("Failed to fetch video qualities. You can still try downloading with 'Best Available' settings.", {
           style: {
@@ -269,10 +270,6 @@ export default function App() {
 
   const deleteHistoryItem = (id) => {
     setHistory(history.filter(h => h.id !== id));
-  };
-
-  const clearHistory = () => {
-    setHistory([]);
   };
 
   return (
@@ -983,7 +980,7 @@ function ThemeToggle() {
       const stored = localStorage.getItem('theme');
       if (stored) return stored === 'dark';
       return true; // Default to dark mode
-    } catch (e) { return true; }
+    } catch { return true; }
   });
 
   useEffect(() => {

@@ -9,7 +9,10 @@ export default function LogsWindow() {
     if (!window.electronAPI) return;
     
     const unsub = window.electronAPI.onLogUpdate((line) => {
-      setLogs((prev) => [...prev, line]);
+      setLogs((prev) => {
+        const next = [...prev, line];
+        return next.length > 500 ? next.slice(next.length - 500) : next;
+      });
     });
 
     return () => unsub();

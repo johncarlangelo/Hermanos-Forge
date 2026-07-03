@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { X, Plus, FolderOpen, Scissors, OctagonX, CheckCircle, AlertCircle, Clock, Loader2, XCircle, Download } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { X, Plus, Scissors, OctagonX, CheckCircle, AlertCircle, Clock, Loader2, XCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const ROW_STATE = {
@@ -70,7 +69,7 @@ export default function MassClipDownloader({ onStitchSuccess, globalOutputDir, o
           state: (c.state === 'downloading' || c.state === 'queued') ? 'idle' : c.state
         }));
       }
-    } catch (e) {}
+    } catch { /* ignore */ }
     return [makeClip(), makeClip()];
   });
 
@@ -131,6 +130,7 @@ export default function MassClipDownloader({ onStitchSuccess, globalOutputDir, o
 
     cleanupFnsRef.current = [unsubClip, unsubStatus, unsubSuccess, unsubError];
     return () => cleanupFnsRef.current.forEach((fn) => fn && fn());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const addClip = () => setClips((prev) => [...prev, makeClip()]);
