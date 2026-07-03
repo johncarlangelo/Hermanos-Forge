@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import iconUrl from './assets/icon.svg';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Download, Settings, Clock, Trash2, FolderOpen, Video, Music, AlertCircle, Copy, Scissors, Terminal, Activity, Server, RefreshCw, PanelLeftClose, PanelLeftOpen, ChevronLeft, ChevronRight, X, OctagonX } from 'lucide-react';
+import { Download, Settings, Clock, Trash2, FolderOpen, Video, Music, AlertCircle, Copy, Scissors, Terminal, Activity, Server, RefreshCw, PanelLeftClose, PanelLeftOpen, ChevronLeft, ChevronRight, X, OctagonX, Check } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import pkg from '../package.json';
 import MassClipDownloader from './MassClipDownloader';
@@ -19,6 +19,15 @@ export default function App() {
   const [status, setStatus] = useState('');
   const [progress, setProgress] = useState(0);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [urlError, setUrlError] = useState(false);
+
+  // Playlist States
+  const [isInspecting, setIsInspecting] = useState(false);
+  const [playlistEntries, setPlaylistEntries] = useState([]);
+  const [selectedPlaylistVideos, setSelectedPlaylistVideos] = useState([]);
+  const [playlistDownloadQueue, setPlaylistDownloadQueue] = useState([]);
+  const [showPlaylistModal, setShowPlaylistModal] = useState(false);
+  const currentDownloadingVideoIdRef = useRef(null);
 
   // Status Modal State
   const [isStatusOpen, setIsStatusOpen] = useState(false);
@@ -99,42 +108,156 @@ export default function App() {
     if (window.electronAPI) {
       window.electronAPI.onProgressUpdate((event, percent) => {
         setProgress(percent);
-        try { console.log('electron status - PROGRESS:', percent); } catch { /* ignore */ }
+        if (currentDownloadingVideoIdRef.current) {
+          setPlaylistDownloadQueue(prev => prev.map(item => 
+            item.id === currentDownloadingVideoIdRef.current 
+              ? { ...item, progress: percent } 
+              : item
+          ));
+        }
       });
       window.electronAPI.onStatusUpdate((event, msg) => {
         setStatus(msg);
-        try { console.log('electron status - STATUS:', msg); } catch { /* ignore */ }
+        if (currentDownloadingVideoIdRef.current) {
+          setPlaylistDownloadQueue(prev => prev.map(item => 
+            item.id === currentDownloadingVideoIdRef.current 
+              ? { ...item, status: msg } 
+              : item
+          ));
+        }
       });
     }
   }, []);
 
+  const fetchFormats = async (urlToFetch) => {
+    setIsFetchingFormats(true);
+    try {
+      if (window.electronAPI) {
+        const fetchedFormats = await window.electronAPI.getAvailableFormats(urlToFetch);
+        if (fetchedFormats && fetchedFormats.length > 0) {
+          setFormats(fetchedFormats);
+          setSelectedQuality(fetchedFormats[fetchedFormats.length - 1].height.toString()); // Best by default
+        }
+      }
+    } catch (err) {
+      console.error("Failed to fetch formats", err);
+      setUrlError(true);
+      toast.error(err.message?.includes('Private video') 
+        ? "This video is private and cannot be downloaded." 
+        : "Failed to fetch video qualities.", 
+        { style: { borderRadius: '10px', background: '#1E293B', color: '#fff' } });
+    } finally {
+      setIsFetchingFormats(false);
+    }
+  };
+
   const handleUrlChange = async (e) => {
     const newUrl = e.target.value;
     setUrl(newUrl);
+    setUrlError(false);
+    setPlaylistEntries([]);
+    setSelectedPlaylistVideos([]);
 
-    // Auto fetch formats if valid YT url and MP4 selected
-    if (newUrl && (newUrl.includes('youtube.com') || newUrl.includes('youtu.be')) && downloadType === 'mp4') {
-      setIsFetchingFormats(true);
+    if (newUrl && (newUrl.includes('youtube.com') || newUrl.includes('youtu.be'))) {
+      setIsInspecting(true);
       try {
-        if (window.electronAPI) {
-          const fetchedFormats = await window.electronAPI.getAvailableFormats(newUrl);
-          if (fetchedFormats && fetchedFormats.length > 0) {
-            setFormats(fetchedFormats);
-            setSelectedQuality(fetchedFormats[fetchedFormats.length - 1].height.toString()); // Best by default
+        if (window.electronAPI && window.electronAPI.inspectUrl) {
+          const inspectResult = await window.electronAPI.inspectUrl(newUrl);
+          if (inspectResult && inspectResult._type === 'playlist' && inspectResult.entries) {
+            setPlaylistEntries(inspectResult.entries);
+            setSelectedPlaylistVideos(inspectResult.entries.map(v => v.id));
+            setShowPlaylistModal(true);
+            setIsInspecting(false);
+            return;
           }
         }
-      } catch {
-        console.error("Failed to fetch formats");
-        toast.error("Failed to fetch video qualities. You can still try downloading with 'Best Available' settings.", {
-          style: {
-            borderRadius: '10px',
-            background: '#1E293B',
-            color: '#fff',
-          },
-        });
-      } finally {
-        setIsFetchingFormats(false);
+      } catch (err) {
+        console.error("Failed to inspect url", err);
+        setUrlError(true);
+        toast.error(err.message?.includes('Private video') 
+          ? "This video is private and cannot be downloaded." 
+          : "Failed to inspect the link.", 
+          { style: { borderRadius: '10px', background: '#1E293B', color: '#fff' } });
       }
+      setIsInspecting(false);
+      
+      // Auto fetch formats if valid YT url and MP4 selected
+      if (downloadType === 'mp4') {
+        fetchFormats(newUrl);
+      }
+    }
+  };
+
+  const handlePlaylistDownload = async () => {
+    if (selectedPlaylistVideos.length === 0) {
+      toast.error("Please select at least one video to download.");
+      return;
+    }
+
+    let outdir = globalOutputDir;
+    if (!outdir) {
+      if (window.electronAPI) outdir = await window.electronAPI.chooseDirectory();
+      if (!outdir) return; 
+    }
+
+    setShowPlaylistModal(false);
+    setIsDownloading(true);
+    downloadCancelRef.current = false;
+
+    const videosToDownload = playlistEntries.filter(v => selectedPlaylistVideos.includes(v.id));
+    
+    const initialQueue = videosToDownload.map(v => ({
+      id: v.id,
+      url: v.url,
+      title: v.title,
+      progress: 0,
+      status: 'Queued',
+      error: false
+    }));
+    
+    setPlaylistDownloadQueue(initialQueue);
+
+    for (let i = 0; i < videosToDownload.length; i++) {
+      if (downloadCancelRef.current) break;
+      const video = videosToDownload[i];
+      currentDownloadingVideoIdRef.current = video.id;
+      
+      setPlaylistDownloadQueue(prev => prev.map(item => item.id === video.id ? { ...item, status: 'Starting...' } : item));
+      
+      try {
+        let result;
+        if (downloadType === 'mp4') {
+          result = await window.electronAPI.downloadYoutubeAsMp4(video.url, outdir, null, true); // Best quality, noPlaylist=true
+        } else {
+          result = await window.electronAPI.downloadYoutubeAsMp3(video.url, outdir, true); // noPlaylist=true
+        }
+        
+        setPlaylistDownloadQueue(prev => prev.map(item => item.id === video.id ? { ...item, status: 'Done', progress: 100 } : item));
+        
+        const newHistoryItem = {
+          id: Date.now() + i,
+          url: video.url,
+          filename: result.filepath.split('\\').pop(),
+          filepath: result.filepath,
+          type: downloadType,
+          date: new Date().toLocaleString()
+        };
+        setHistory(prev => [newHistoryItem, ...prev]);
+
+      } catch (err) {
+        if (downloadCancelRef.current) break;
+        setPlaylistDownloadQueue(prev => prev.map(item => item.id === video.id ? { ...item, status: `Error: ${err.message}`, error: true } : item));
+      }
+    }
+
+    currentDownloadingVideoIdRef.current = null;
+    if (!downloadCancelRef.current) {
+      setStatus('All selected videos downloaded!');
+      setTimeout(() => {
+        setIsDownloading(false);
+        setPlaylistDownloadQueue([]);
+        setUrl('');
+      }, 3000);
     }
   };
 
@@ -160,9 +283,9 @@ export default function App() {
     try {
       let result;
       if (downloadType === 'mp4') {
-        result = await window.electronAPI.downloadYoutubeAsMp4(url, outdir, parseInt(selectedQuality) || null);
+        result = await window.electronAPI.downloadYoutubeAsMp4(url, outdir, parseInt(selectedQuality) || null, true);
       } else {
-        result = await window.electronAPI.downloadYoutubeAsMp3(url, outdir);
+        result = await window.electronAPI.downloadYoutubeAsMp3(url, outdir, true);
       }
 
       setStatus('Completed!');
@@ -319,6 +442,22 @@ export default function App() {
                 </div>
               </div>
 
+              {playlistDownloadQueue.length > 0 && (
+                <div className="mt-4 space-y-2 max-h-40 overflow-y-auto pr-2 custom-scrollbar">
+                  {playlistDownloadQueue.map((item) => (
+                    <div key={item.id} className="bg-background/40 border border-border/60 rounded-lg p-2 flex flex-col gap-1">
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="font-medium text-textPrimary truncate mr-2" title={item.title}>{item.title}</span>
+                        <span className={`${item.error ? 'text-red-400' : item.progress === 100 ? 'text-green-400' : 'text-primary'}`}>{item.status}</span>
+                      </div>
+                      <div className="w-full bg-background/50 rounded-full h-1.5 overflow-hidden">
+                        <div className={`h-full ${item.error ? 'bg-red-500' : item.progress === 100 ? 'bg-green-500' : 'bg-primary'}`} style={{ width: `${item.progress}%` }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               <button
                 onClick={() => setShowDownloadCancelModal(true)}
                 className="w-full mt-6 flex items-center justify-center gap-2 text-base h-12 rounded-xl bg-red-600/10 hover:bg-red-600/20 text-red-500 font-medium transition-colors border border-red-600/20"
@@ -355,6 +494,134 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {/* Playlist Selection Modal */}
+      <AnimatePresence>
+        {showPlaylistModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 10 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 10 }}
+              className="bg-surface/95 border border-border p-6 rounded-2xl shadow-2xl max-w-2xl w-full mx-4 flex flex-col max-h-[85vh]"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-primary/10 rounded-lg">
+                    <Video className="w-6 h-6 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-textPrimary">Playlist Detected</h3>
+                    <p className="text-sm text-textSecondary">Select the videos you want to download.</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => {
+                    setShowPlaylistModal(false);
+                    setUrl('');
+                    setPlaylistEntries([]);
+                    setSelectedPlaylistVideos([]);
+                  }} 
+                  className="text-textSecondary hover:text-white transition-colors p-2"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="flex justify-between items-center mb-4 px-1">
+                <label className="flex items-center gap-3 cursor-pointer group text-sm font-medium text-textPrimary hover:text-white transition-colors">
+                  <div className="relative flex items-center justify-center">
+                    <input
+                      type="checkbox"
+                      checked={selectedPlaylistVideos.length === playlistEntries.filter(v => v.title && v.title !== '[Private video]' && v.title !== '[Deleted video]').length && playlistEntries.length > 0}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          const validIds = playlistEntries
+                            .filter(v => v.title && v.title !== '[Private video]' && v.title !== '[Deleted video]')
+                            .map(v => v.id);
+                          setSelectedPlaylistVideos(validIds);
+                        } else {
+                          setSelectedPlaylistVideos([]);
+                        }
+                      }}
+                      className="peer sr-only"
+                    />
+                    <div className="w-5 h-5 border-[1.5px] border-white/20 bg-white/5 rounded flex items-center justify-center peer-checked:bg-primary peer-checked:border-primary group-hover:border-primary/70 transition-all duration-200 shadow-sm">
+                      <Check className="w-3.5 h-3.5 text-white opacity-0 peer-checked:opacity-100 transition-opacity duration-200" strokeWidth={3} />
+                    </div>
+                  </div>
+                  Select All ({playlistEntries.length})
+                </label>
+                <span className="text-sm text-primary font-medium">{selectedPlaylistVideos.length} selected</span>
+              </div>
+
+              <div className="flex-1 overflow-y-auto custom-scrollbar border border-border/50 rounded-xl bg-background/30 p-2 space-y-1 mb-6">
+                {playlistEntries.map((video, index) => {
+                  const isUnavailable = !video.title || video.title === '[Private video]' || video.title === '[Deleted video]';
+                  const displayTitle = video.title || 'Unknown Video';
+                  
+                  return (
+                    <label key={video.id} className={`flex items-center gap-4 p-3 rounded-xl transition-all duration-200 border border-transparent group ${isUnavailable ? 'opacity-50 cursor-not-allowed bg-surface/20' : 'hover:bg-surface/60 cursor-pointer hover:border-border/50'}`}>
+                      <div className="relative flex items-center justify-center">
+                        <input
+                          type="checkbox"
+                          checked={selectedPlaylistVideos.includes(video.id)}
+                          disabled={isUnavailable}
+                          onChange={(e) => {
+                            if (isUnavailable) return;
+                            if (e.target.checked) {
+                              setSelectedPlaylistVideos(prev => [...prev, video.id]);
+                            } else {
+                              setSelectedPlaylistVideos(prev => prev.filter(id => id !== video.id));
+                            }
+                          }}
+                          className="peer sr-only"
+                        />
+                        <div className={`w-5 h-5 border-[1.5px] rounded flex items-center justify-center transition-all duration-200 shadow-sm ${isUnavailable ? 'border-white/10 bg-white/5' : 'border-white/20 bg-white/5 peer-checked:bg-primary peer-checked:border-primary group-hover:border-primary/70'}`}>
+                          <Check className="w-3.5 h-3.5 text-white opacity-0 peer-checked:opacity-100 transition-opacity duration-200" strokeWidth={3} />
+                        </div>
+                      </div>
+                      <div className="flex-1 min-w-0 flex items-center gap-2">
+                        <p className={`text-sm font-medium truncate ${isUnavailable ? 'text-textSecondary line-through' : 'text-textPrimary'}`}>
+                          {index + 1}. {displayTitle}
+                        </p>
+                        {isUnavailable && <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0" title="This video is private or deleted" />}
+                      </div>
+                    </label>
+                  );
+                })}
+              </div>
+
+              <div className="flex gap-3 justify-end flex-shrink-0">
+                <button
+                  onClick={() => {
+                    setShowPlaylistModal(false);
+                    setUrl('');
+                    setPlaylistEntries([]);
+                    setSelectedPlaylistVideos([]);
+                  }}
+                  className="px-5 py-2.5 rounded-xl font-medium bg-background border border-border text-textSecondary hover:text-white transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handlePlaylistDownload}
+                  disabled={selectedPlaylistVideos.length === 0}
+                  className="px-5 py-2.5 rounded-xl font-medium btn-primary disabled:opacity-50 disabled:pointer-events-none flex items-center gap-2"
+                >
+                  <Download className="w-4 h-4" />
+                  Download Selected
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Clear History Modal */}
       <AnimatePresence>
@@ -748,8 +1015,14 @@ export default function App() {
                           onChange={handleUrlChange}
                           placeholder="Paste link here..."
                           className="input-field h-12 text-lg"
-                          disabled={isDownloading}
+                          disabled={isDownloading || isInspecting}
                         />
+                        {isInspecting && (
+                          <div className="absolute right-3 top-3 text-textSecondary flex items-center text-sm gap-2">
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                            Inspecting...
+                          </div>
+                        )}
                       </div>
                     </div>
                     {/* Quick Download removed to encourage using the main Download control */}
@@ -810,7 +1083,7 @@ export default function App() {
                       </button>
                       <button
                         onClick={handleDownload}
-                        disabled={!url || isDownloading}
+                        disabled={!url || isDownloading || isFetchingFormats || isInspecting || urlError || playlistEntries.length > 0}
                         className="flex-[2] btn-primary h-14 text-lg flex items-center justify-center"
                       >
                         {isDownloading ? (

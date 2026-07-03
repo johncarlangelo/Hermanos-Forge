@@ -1,8 +1,9 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('electronAPI', {
-    downloadYoutubeAsMp3: (url, outdir) => ipcRenderer.invoke('download-mp3', url, outdir),
-    downloadYoutubeAsMp4: (url, outdir, quality) => ipcRenderer.invoke('download-mp4', url, outdir, quality),
+    downloadYoutubeAsMp3: (url, outdir, noPlaylist) => ipcRenderer.invoke('download-mp3', url, outdir, noPlaylist),
+    downloadYoutubeAsMp4: (url, outdir, quality, noPlaylist) => ipcRenderer.invoke('download-mp4', url, outdir, quality, noPlaylist),
+    inspectUrl: (url) => ipcRenderer.invoke('inspect-url', url),
     cancelDownload: () => ipcRenderer.invoke('cancel-single-download'),
     convertLocalMp4: (file, outdir) => ipcRenderer.invoke('convert-mp4', file, outdir),
     getAvailableFormats: (url) => ipcRenderer.invoke('get-formats', url),
