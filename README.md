@@ -9,16 +9,16 @@
 
 # <p align="center">Hermanos Forge</p>
 
-A sleek, modern YouTube video and audio downloader built with Electron + React. Download YouTube videos as **MP4** or **MP3**, select your preferred quality, and manage your download history — all from a beautiful dark-mode interface. (soon to be multi tool)
+A sleek, modern video and audio downloader built with Electron + React. Download media as **MP4** or **MP3** from thousands of supported websites, select your preferred quality, and manage your download history — all from a premium dark-mode interface. (soon to be multi tool)
 
 ---
 
 ## ✨ Features
 
-- 📥 **Download YouTube videos** as MP4 (with quality selection: 360p, 720p, 1080p, 4K)
-- 🎵 **Download YouTube videos** as MP3 audio
+- 📥 **Download videos** as MP4 (with quality selection: 360p, 720p, 1080p, 4K)
+- 🎵 **Download audio** as MP3
 - 🔄 **Convert local MP4 files** to MP3
-- ✂️ **Mass Clip Downloader**: Download multiple clips and automatically stitch them into a single video.
+- ✂️ **Mass Clip Downloader**: Download multiple clips and automatically stitch them into a single video (or download them by batch).
 - 💻 **Developer Logs Window**: View real-time background logs directly within the app.
 - 🌐 **Supports thousands of websites** (not just YouTube!). See the full list of [supported sites here](https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md).
 - 📁 **Download history** with file type tags (MP3/MP4/Mass Clip)
