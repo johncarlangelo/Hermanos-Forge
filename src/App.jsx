@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import iconUrl from './assets/icon.svg';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Download, Settings, Clock, Trash2, FolderOpen, Video, Music, AlertCircle, Copy, Scissors, Terminal, Activity, Server, RefreshCw, PanelLeftClose, PanelLeftOpen, ChevronLeft, ChevronRight, X, OctagonX, Check, Loader2 } from 'lucide-react';
+import { Download, Settings, Clock, Trash2, FolderOpen, Video, Music, AlertCircle, Copy, Scissors, Terminal, Activity, Server, RefreshCw, PanelLeftClose, PanelLeftOpen, ChevronLeft, ChevronRight, X, OctagonX, Check, Loader2, Timer } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import pkg from '../package.json';
 import MassClipDownloader from './MassClipDownloader';
+import SelectiveDownloader from './SelectiveDownloader';
+import CustomSelect from './CustomSelect';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('download'); // download, history
@@ -795,10 +797,10 @@ export default function App() {
           </button>
 
           <button
-            onClick={() => setActiveTab('history')}
-            className={`group relative flex items-center h-12 rounded-xl transition-all px-4 w-full justify-start ${activeTab === 'history' ? 'text-primary' : 'text-textSecondary'} hover:text-white hover:bg-surfaceHover`}
+            onClick={() => setActiveTab('selective-duration')}
+            className={`group relative flex items-center h-12 rounded-xl transition-all px-4 w-full justify-start ${activeTab === 'selective-duration' ? 'text-primary' : 'text-textSecondary'} hover:text-white hover:bg-surfaceHover`}
           >
-            <Clock className="w-5 h-5 flex-shrink-0" />
+            <Timer className="w-5 h-5 flex-shrink-0" />
             <AnimatePresence initial={false}>
               {!isSidebarCollapsed && (
                 <motion.span
@@ -808,14 +810,34 @@ export default function App() {
                   transition={{ duration: 0.2 }}
                   className="font-medium whitespace-nowrap ml-3 overflow-hidden"
                 >
-                  History
+                  Selective Duration
                 </motion.span>
               )}
             </AnimatePresence>
-            {isSidebarCollapsed && <div className="absolute left-full ml-4 opacity-0 group-hover:opacity-100 px-3 py-1.5 bg-surface border border-border rounded-lg text-sm font-medium text-textPrimary whitespace-nowrap transition-all shadow-lg pointer-events-none z-50">History</div>}
+            {isSidebarCollapsed && <div className="absolute left-full ml-4 opacity-0 group-hover:opacity-100 px-3 py-1.5 bg-surface border border-border rounded-lg text-sm font-medium text-textPrimary whitespace-nowrap transition-all shadow-lg pointer-events-none z-50">Selective Duration</div>}
           </button>
 
           <div className="mt-auto pt-4 flex flex-col gap-2">
+            <button
+              onClick={() => setActiveTab('history')}
+              className={`group relative flex items-center h-12 rounded-xl transition-all px-4 w-full justify-start ${activeTab === 'history' ? 'text-primary' : 'text-textSecondary'} hover:text-white hover:bg-surfaceHover`}
+            >
+              <Clock className="w-5 h-5 flex-shrink-0" />
+              <AnimatePresence initial={false}>
+                {!isSidebarCollapsed && (
+                  <motion.span
+                    initial={{ opacity: 0, width: 0 }}
+                    animate={{ opacity: 1, width: 'auto' }}
+                    exit={{ opacity: 0, width: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="font-medium whitespace-nowrap ml-3 overflow-hidden"
+                  >
+                    History
+                  </motion.span>
+                )}
+              </AnimatePresence>
+              {isSidebarCollapsed && <div className="absolute left-full ml-4 opacity-0 group-hover:opacity-100 px-3 py-1.5 bg-surface border border-border rounded-lg text-sm font-medium text-textPrimary whitespace-nowrap transition-all shadow-lg pointer-events-none z-50">History</div>}
+            </button>
             <button
               onClick={() => setIsOutputFolderModalOpen(true)}
               className={`group relative flex items-center h-12 rounded-xl transition-all px-4 w-full justify-start text-textSecondary hover:text-white hover:bg-surfaceHover`}
@@ -943,14 +965,9 @@ export default function App() {
         {/* Scrollable Content Area */}
         <main className="flex-1 overflow-y-auto custom-scrollbar relative">
           <div className="max-w-5xl mx-auto w-full h-full p-6">
-            <AnimatePresence mode="wait">
-              {activeTab === 'mass-stitch' ? (
-                <motion.div
-                  key="mass-stitch-tab"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className="min-h-full flex flex-col"
+            <div className="w-full h-full relative">
+                <div
+                  className={`min-h-full flex flex-col ${activeTab === 'mass-stitch' ? 'block' : 'hidden'}`}
                 >
                   <MassClipDownloader 
                     globalOutputDir={globalOutputDir}
@@ -992,14 +1009,31 @@ export default function App() {
                       setHistory(prev => [newHistoryItem, ...prev]);
                     }
                   }} />
-                </motion.div>
-              ) : activeTab === 'download' ? (
-                <motion.div
-                  key="download-tab"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className="min-h-full flex flex-col gap-6"
+                </div>
+                
+                <div
+                  className={`min-h-full flex flex-col ${activeTab === 'selective-duration' ? 'block' : 'hidden'}`}
+                >
+                  <SelectiveDownloader 
+                    globalOutputDir={globalOutputDir} 
+                    onRequestGlobalOutput={handleGlobalOutputRequest}
+                    onDownloadSuccess={(filepath, start, end, url, videoTitle) => {
+                      const newHistoryItem = {
+                        id: Date.now(),
+                        url: url,
+                        filename: videoTitle || filepath.split('\\').pop(),
+                        durationTimestamp: `${start} - ${end}`,
+                        filepath,
+                        type: 'clip',
+                        date: new Date().toLocaleString()
+                      };
+                      setHistory(prev => [newHistoryItem, ...prev]);
+                    }}
+                  />
+                </div>
+                
+                <div
+                  className={`min-h-full flex flex-col gap-6 ${activeTab === 'download' ? 'block' : 'hidden'}`}
                 >
                   {/* URL Input Card */}
                   <div className="glass-panel p-6 flex items-center gap-6">
@@ -1067,17 +1101,16 @@ export default function App() {
                           )}
                         </div>
                         <div className="relative">
-                          <select
+                          <CustomSelect
+                            options={[
+                              { value: '', label: 'Best Available' },
+                              ...formats.map(f => ({ value: f.height, label: f.resolution }))
+                            ]}
                             value={selectedQuality}
-                            onChange={(e) => setSelectedQuality(e.target.value)}
+                            onChange={(val) => setSelectedQuality(val)}
                             disabled={isDownloading || formats.length === 0}
-                            className="input-field h-[58px] appearance-none cursor-pointer"
-                          >
-                            <option value="">Best Available</option>
-                            {formats.map(f => (
-                              <option key={f.format_id} value={f.height}>{f.resolution}</option>
-                            ))}
-                          </select>
+                            className="h-[58px]"
+                          />
                         </div>
                       </div>
                     </div>
@@ -1101,21 +1134,16 @@ export default function App() {
                               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                             </svg>
-                            Processing...
+                        Processing...
                           </span>
                         ) : 'Download'}
                       </button>
                     </div>
                   </div>
-
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="history-tab"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className="h-full flex flex-col"
+                </div>
+                
+                <div
+                  className={`h-full flex flex-col ${activeTab === 'history' ? 'block' : 'hidden'}`}
                 >
                   <div className="glass-panel p-6 flex-1 flex flex-col overflow-hidden">
                     <div className="flex justify-between items-center mb-4">
@@ -1142,6 +1170,12 @@ export default function App() {
                         Single Downloads
                       </button>
                       <button
+                        onClick={() => { setHistoryTab('selective'); setHistoryPage(1); }}
+                        className={`pb-2 text-sm font-medium transition-colors border-b-2 ${historyTab === 'selective' ? 'border-primary text-primary' : 'border-transparent text-textSecondary hover:text-textPrimary'}`}
+                      >
+                        Selective Duration
+                      </button>
+                      <button
                         onClick={() => { setHistoryTab('stitch'); setHistoryPage(1); }}
                         className={`pb-2 text-sm font-medium transition-colors border-b-2 ${historyTab === 'stitch' ? 'border-primary text-primary' : 'border-transparent text-textSecondary hover:text-textPrimary'}`}
                       >
@@ -1151,7 +1185,12 @@ export default function App() {
 
                     <div className="flex-1 overflow-y-auto pr-2 space-y-3 custom-scrollbar flex flex-col">
                       {(() => {
-                        const filteredHistory = history.filter(h => historyTab === 'stitch' ? h.type === 'stitch' : h.type !== 'stitch');
+                        const filteredHistory = history.filter(h => {
+                          if (historyTab === 'single') return h.type === 'mp3' || h.type === 'mp4';
+                          if (historyTab === 'selective') return h.type === 'clip';
+                          if (historyTab === 'stitch') return h.type === 'stitch';
+                          return false;
+                        });
                         const itemsPerPage = 5;
                         const totalPages = Math.max(1, Math.ceil(filteredHistory.length / itemsPerPage));
                         const paginatedHistory = filteredHistory.slice((historyPage - 1) * itemsPerPage, historyPage * itemsPerPage);
@@ -1160,7 +1199,7 @@ export default function App() {
                           return (
                             <div className="h-full flex flex-col items-center justify-center text-textSecondary flex-1">
                               <FolderOpen className="w-12 h-12 mb-4 opacity-50" />
-                              <p>No {historyTab === 'stitch' ? 'mass clip' : 'download'} history yet.</p>
+                              <p>No {historyTab === 'stitch' ? 'mass clip' : historyTab === 'selective' ? 'selective duration' : 'download'} history yet.</p>
                             </div>
                           );
                         }
@@ -1176,11 +1215,16 @@ export default function App() {
                                   className="bg-background/40 border border-border rounded-lg p-4 flex items-center justify-between group hover:bg-surface transition-colors"
                                 >
                                   <div className="flex items-center overflow-hidden mr-4">
-                                    <div className={`p-3 rounded-lg mr-4 flex-shrink-0 ${item.type === 'mp4' ? 'bg-blue-500/10 text-blue-400' : item.type === 'stitch' ? 'bg-green-500/10 text-green-400' : 'bg-purple-500/10 text-purple-400'}`}>
-                                      {item.type === 'mp4' ? <Video className="w-5 h-5" /> : item.type === 'stitch' ? <Scissors className="w-5 h-5" /> : <Music className="w-5 h-5" />}
+                                    <div className={`p-3 rounded-lg mr-4 flex-shrink-0 ${item.type === 'mp4' || item.type === 'clip' ? 'bg-blue-500/10 text-blue-400' : item.type === 'stitch' ? 'bg-green-500/10 text-green-400' : 'bg-purple-500/10 text-purple-400'}`}>
+                                      {item.type === 'mp4' || item.type === 'clip' ? <Video className="w-5 h-5" /> : item.type === 'stitch' ? <Scissors className="w-5 h-5" /> : <Music className="w-5 h-5" />}
                                     </div>
                                     <div className="overflow-hidden">
                                       <h3 className="font-medium text-textPrimary truncate max-w-[200px] sm:max-w-[300px]" title={item.filename}>{item.filename}</h3>
+                                      {item.type === 'clip' && item.durationTimestamp && (
+                                        <div className="text-xs text-textPrimary font-semibold truncate max-w-[200px] sm:max-w-[300px] my-1">
+                                          Selected Duration Timestamp: {item.durationTimestamp}
+                                        </div>
+                                      )}
                                       <div className="text-xs text-primary truncate max-w-[200px] sm:max-w-[300px] my-1" title={item.url}>{item.url}</div>
                                       <div className="flex items-center text-xs text-textSecondary mt-1">
                                         <span className="uppercase font-semibold tracking-wider mr-3">{item.type}</span>
@@ -1246,9 +1290,8 @@ export default function App() {
                       })()}
                     </div>
                   </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+                </div>
+            </div>
           </div>
         </main>
       </div>

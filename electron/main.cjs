@@ -180,6 +180,12 @@ function runBackendCommand(action, extraArgs = [], event) {
                         lastSuccess = formats;
                         doResolve(formats);
                     } catch (e) {}
+                } else if (line.startsWith('METADATA:')) {
+                    try {
+                        const metadata = JSON.parse(line.substring(9));
+                        lastSuccess = metadata;
+                        doResolve(metadata);
+                    } catch (e) {}
                 } else if (line.startsWith('INSPECT:')) {
                     try {
                         const result = JSON.parse(line.substring(8));
@@ -358,6 +364,17 @@ ipcMain.handle('convert-mp4', async (event, file, outdir) => {
 
 ipcMain.handle('get-formats', async (event, url) => {
     return runBackendCommand('get_formats', ['--url', url], event);
+});
+
+ipcMain.handle('get-video-metadata', async (event, url) => {
+    return runBackendCommand('get_metadata', ['--url', url], event);
+});
+
+ipcMain.handle('download-clip', async (event, url, outdir, start, end, quality, precise) => {
+    let args = ['--url', url, '--outdir', outdir, '--start', start.toString(), '--end', end.toString()];
+    if (quality) args.push('--quality', quality.toString());
+    if (precise) args.push('--precise');
+    return runBackendCommand('download_clip', args, event);
 });
 
 ipcMain.handle('inspect-url', async (event, url) => {

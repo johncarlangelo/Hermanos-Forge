@@ -118,3 +118,8 @@
 ::-webkit-scrollbar-thumb {
   @apply bg-surface hover:bg-surfaceHover rounded-full;
 }
+
+.timeline-scrollbar::-webkit-scrollbar-thumb:horizontal {
+  @apply bg-primary border border-border;
+  opacity: 0.8;
+}
