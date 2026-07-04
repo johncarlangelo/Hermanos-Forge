@@ -180,6 +180,12 @@ function runBackendCommand(action, extraArgs = [], event) {
                         lastSuccess = formats;
                         doResolve(formats);
                     } catch (e) {}
+                } else if (line.startsWith('INSPECT:')) {
+                    try {
+                        const result = JSON.parse(line.substring(8));
+                        lastSuccess = result;
+                        doResolve(result);
+                    } catch (e) {}
                 } else if (line.startsWith('SUCCESS:')) {
                     const filepath = line.substring(8).trim();
                     lastSuccess = { success: true, filepath };
@@ -333,13 +339,16 @@ ipcMain.handle('select-output-folder', async () => {
     return result.filePaths[0];
 });
 
-ipcMain.handle('download-mp3', async (event, url, outdir) => {
-    return runBackendCommand('download_mp3', ['--url', url, '--outdir', outdir], event);
+ipcMain.handle('download-mp3', async (event, url, outdir, noPlaylist) => {
+    let args = ['--url', url, '--outdir', outdir];
+    if (noPlaylist) args.push('--no-playlist');
+    return runBackendCommand('download_mp3', args, event);
 });
 
-ipcMain.handle('download-mp4', async (event, url, outdir, quality) => {
+ipcMain.handle('download-mp4', async (event, url, outdir, quality, noPlaylist) => {
     let args = ['--url', url, '--outdir', outdir];
     if (quality) args.push('--quality', quality.toString());
+    if (noPlaylist) args.push('--no-playlist');
     return runBackendCommand('download_mp4', args, event);
 });
 
@@ -349,6 +358,10 @@ ipcMain.handle('convert-mp4', async (event, file, outdir) => {
 
 ipcMain.handle('get-formats', async (event, url) => {
     return runBackendCommand('get_formats', ['--url', url], event);
+});
+
+ipcMain.handle('inspect-url', async (event, url) => {
+    return runBackendCommand('inspect_url', ['--url', url], event);
 });
 
 ipcMain.handle('open-location', async (event, filePath) => {

@@ -81,6 +81,7 @@ def get_available_formats(youtube_url):
     ydl_opts = {
         'quiet': True,
         'no_warnings': True,
+        'noplaylist': True,
     }
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -109,7 +110,46 @@ def get_available_formats(youtube_url):
     except Exception as e:
         print(f"ERROR:Failed to fetch formats: {e}", flush=True)
 
-def download_youtube_as_mp3(youtube_url, output_dir, ffmpeg_path=None):
+def inspect_url(youtube_url):
+    ydl_opts = {
+        'extract_flat': True,
+        'quiet': True,
+        'no_warnings': True,
+        'ignoreerrors': True,
+    }
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(youtube_url, download=False, process=False)
+            
+            result = {
+                '_type': info.get('_type', 'video'),
+                'id': info.get('id'),
+                'title': info.get('title'),
+            }
+            
+            if result['_type'] == 'playlist' or 'entries' in info:
+                # Sometimes youtube returns _type: 'playlist' or just has entries
+                result['_type'] = 'playlist'
+                entries = info.get('entries', [])
+                
+                # yt-dlp might return a generator, safely convert to list
+                if not isinstance(entries, list):
+                    entries = list(entries)
+                    
+                result['entries'] = [
+                    {
+                        'id': e.get('id'),
+                        'url': e.get('url'),
+                        'title': e.get('title'),
+                        'duration': e.get('duration')
+                    } for e in entries if isinstance(e, dict) and (e.get('id') or e.get('url'))
+                ]
+            
+            print(f"INSPECT:{json.dumps(result)}", flush=True)
+    except Exception as e:
+        print(f"ERROR:Failed to inspect url: {e}", flush=True)
+
+def download_youtube_as_mp3(youtube_url, output_dir, ffmpeg_path=None, no_playlist=False):
     try:
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
@@ -198,6 +238,7 @@ def download_youtube_as_mp3(youtube_url, output_dir, ffmpeg_path=None):
             'progress_hooks': [progress_hook],
             'ffmpeg_location': ffmpeg_bin,
             # 'ffprobe_location': ffprobe_bin,
+            'noplaylist': no_playlist,
         }
 
         print("STATUS:Starting MP3 download...", flush=True)
@@ -214,7 +255,7 @@ def download_youtube_as_mp3(youtube_url, output_dir, ffmpeg_path=None):
     except Exception as e:
         print(f"ERROR:{e}", flush=True)
 
-def download_youtube_as_mp4(youtube_url, output_dir, quality=None, ffmpeg_path=None):
+def download_youtube_as_mp4(youtube_url, output_dir, quality=None, ffmpeg_path=None, no_playlist=False):
     try:
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
@@ -241,6 +282,7 @@ def download_youtube_as_mp4(youtube_url, output_dir, quality=None, ffmpeg_path=N
             'progress_hooks': [progress_hook],
             'ffmpeg_location': ffmpeg_bin,
             # 'ffprobe_location': ffprobe_bin,
+            'noplaylist': no_playlist,
             'postprocessors': [{
                 'key': 'FFmpegVideoConvertor',
                 'preferedformat': 'mp4',
@@ -430,7 +472,7 @@ def stitch_clips_from_urls(urls, output_dir, ffmpeg_path=None, no_stitch=False):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Hermanos Forge Backend")
-    parser.add_argument('--action', choices=['get_formats', 'download_mp3', 'download_mp4', 'convert_mp4', 'stitch_clips'], required=True)
+    parser.add_argument('--action', choices=['get_formats', 'download_mp3', 'download_mp4', 'convert_mp4', 'stitch_clips', 'inspect_url'], required=True)
     parser.add_argument('--url', help="YouTube URL")
     parser.add_argument('--urls', help="JSON list of clip URLs, in order")
     parser.add_argument('--file', help="Local MP4 file path for conversion")
@@ -438,15 +480,18 @@ if __name__ == "__main__":
     parser.add_argument('--quality', type=int, help="Maximum video height")
     parser.add_argument('--ffmpeg-path', help='Absolute path to ffmpeg executable (overrides detection)')
     parser.add_argument('--no-stitch', action='store_true', help="Download clips without stitching")
+    parser.add_argument('--no-playlist', action='store_true', help="Download only single video from a playlist link")
 
     args = parser.parse_args()
 
     if args.action == 'get_formats':
         get_available_formats(args.url)
+    elif args.action == 'inspect_url':
+        inspect_url(args.url)
     elif args.action == 'download_mp3':
-        download_youtube_as_mp3(args.url, args.outdir, ffmpeg_path=args.ffmpeg_path)
+        download_youtube_as_mp3(args.url, args.outdir, ffmpeg_path=args.ffmpeg_path, no_playlist=args.no_playlist)
     elif args.action == 'download_mp4':
-        download_youtube_as_mp4(args.url, args.outdir, args.quality, ffmpeg_path=args.ffmpeg_path)
+        download_youtube_as_mp4(args.url, args.outdir, args.quality, ffmpeg_path=args.ffmpeg_path, no_playlist=args.no_playlist)
     elif args.action == 'convert_mp4':
         convert_local_mp4_to_mp3(args.file, args.outdir, ffmpeg_path=args.ffmpeg_path)
     elif args.action == 'stitch_clips':
