@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import iconUrl from './assets/icon.svg';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Download, Settings, Clock, Trash2, FolderOpen, Video, Music, AlertCircle, Copy, Scissors, Terminal, Activity, Server, RefreshCw, PanelLeftClose, PanelLeftOpen, ChevronLeft, ChevronRight, X, OctagonX, Check } from 'lucide-react';
+import { Download, Settings, Clock, Trash2, FolderOpen, Video, Music, AlertCircle, Copy, Scissors, Terminal, Activity, Server, RefreshCw, PanelLeftClose, PanelLeftOpen, ChevronLeft, ChevronRight, X, OctagonX, Check, Loader2 } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import pkg from '../package.json';
 import MassClipDownloader from './MassClipDownloader';
@@ -1007,7 +1007,15 @@ export default function App() {
                       <Download className="w-6 h-6 text-primary" />
                     </div>
                     <div className="flex-1">
-                      <label className="block text-sm font-medium text-textSecondary mb-2">Video URL</label>
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="block text-sm font-medium text-textSecondary">Video URL</label>
+                        {isInspecting && (
+                          <div className="flex items-center px-2.5 py-1 rounded-md text-[10px] uppercase font-bold tracking-wider bg-blue-500/20 text-blue-400 border border-blue-500/30 flex-shrink-0 shadow-sm">
+                            <Loader2 size={12} className="mr-1.5 animate-spin" />
+                            INSPECTING
+                          </div>
+                        )}
+                      </div>
                       <div className="relative">
                         <input
                           type="text"
@@ -1017,12 +1025,6 @@ export default function App() {
                           className="input-field h-12 text-lg"
                           disabled={isDownloading || isInspecting}
                         />
-                        {isInspecting && (
-                          <div className="absolute right-3 top-3 text-textSecondary flex items-center text-sm gap-2">
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
-                            Inspecting...
-                          </div>
-                        )}
                       </div>
                     </div>
                     {/* Quick Download removed to encourage using the main Download control */}
@@ -1055,9 +1057,16 @@ export default function App() {
 
                       {/* Quality Selection (Only for MP4) */}
                       <div className={`flex-1 min-w-[200px] transition-opacity ${downloadType === 'mp4' ? 'opacity-100' : 'opacity-30 pointer-events-none'}`}>
-                        <label className="block text-sm font-medium text-textSecondary mb-3">Video Quality</label>
+                        <div className="flex items-center justify-between mb-3">
+                          <label className="block text-sm font-medium text-textSecondary">Video Quality</label>
+                          {isFetchingFormats && (
+                            <div className="flex items-center px-2.5 py-1 rounded-md text-[10px] uppercase font-bold tracking-wider bg-blue-500/20 text-blue-400 border border-blue-500/30 flex-shrink-0 shadow-sm">
+                              <Loader2 size={12} className="mr-1.5 animate-spin" />
+                              FETCHING
+                            </div>
+                          )}
+                        </div>
                         <div className="relative">
-                          {isFetchingFormats && <div className="absolute right-3 top-3 animate-spin rounded-full h-5 w-5 border-b-2 border-primary"></div>}
                           <select
                             value={selectedQuality}
                             onChange={(e) => setSelectedQuality(e.target.value)}
