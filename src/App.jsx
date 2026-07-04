@@ -92,11 +92,11 @@ export default function App() {
 
   const handleGlobalOutputRequest = async () => {
     if (window.electronAPI) {
-       const dir = await window.electronAPI.chooseDirectory();
-       if (dir) {
-          setGlobalOutputDir(dir);
-          return dir;
-       }
+      const dir = await window.electronAPI.chooseDirectory();
+      if (dir) {
+        setGlobalOutputDir(dir);
+        return dir;
+      }
     }
     return null;
   };
@@ -111,9 +111,9 @@ export default function App() {
       window.electronAPI.onProgressUpdate((event, percent) => {
         setProgress(percent);
         if (currentDownloadingVideoIdRef.current) {
-          setPlaylistDownloadQueue(prev => prev.map(item => 
-            item.id === currentDownloadingVideoIdRef.current 
-              ? { ...item, progress: percent } 
+          setPlaylistDownloadQueue(prev => prev.map(item =>
+            item.id === currentDownloadingVideoIdRef.current
+              ? { ...item, progress: percent }
               : item
           ));
         }
@@ -121,9 +121,9 @@ export default function App() {
       window.electronAPI.onStatusUpdate((event, msg) => {
         setStatus(msg);
         if (currentDownloadingVideoIdRef.current) {
-          setPlaylistDownloadQueue(prev => prev.map(item => 
-            item.id === currentDownloadingVideoIdRef.current 
-              ? { ...item, status: msg } 
+          setPlaylistDownloadQueue(prev => prev.map(item =>
+            item.id === currentDownloadingVideoIdRef.current
+              ? { ...item, status: msg }
               : item
           ));
         }
@@ -144,9 +144,9 @@ export default function App() {
     } catch (err) {
       console.error("Failed to fetch formats", err);
       setUrlError(true);
-      toast.error(err.message?.includes('Private video') 
-        ? "This video is private and cannot be downloaded." 
-        : "Failed to fetch video qualities.", 
+      toast.error(err.message?.includes('Private video')
+        ? "This video is private and cannot be downloaded."
+        : "Failed to fetch video qualities.",
         { style: { borderRadius: '10px', background: '#1E293B', color: '#fff' } });
     } finally {
       setIsFetchingFormats(false);
@@ -176,13 +176,13 @@ export default function App() {
       } catch (err) {
         console.error("Failed to inspect url", err);
         setUrlError(true);
-        toast.error(err.message?.includes('Private video') 
-          ? "This video is private and cannot be downloaded." 
-          : "Failed to inspect the link.", 
+        toast.error(err.message?.includes('Private video')
+          ? "This video is private and cannot be downloaded."
+          : "Failed to inspect the link.",
           { style: { borderRadius: '10px', background: '#1E293B', color: '#fff' } });
       }
       setIsInspecting(false);
-      
+
       // Auto fetch formats if valid YT url and MP4 selected
       if (downloadType === 'mp4') {
         fetchFormats(newUrl);
@@ -199,7 +199,7 @@ export default function App() {
     let outdir = globalOutputDir;
     if (!outdir) {
       if (window.electronAPI) outdir = await window.electronAPI.chooseDirectory();
-      if (!outdir) return; 
+      if (!outdir) return;
     }
 
     setShowPlaylistModal(false);
@@ -207,7 +207,7 @@ export default function App() {
     downloadCancelRef.current = false;
 
     const videosToDownload = playlistEntries.filter(v => selectedPlaylistVideos.includes(v.id));
-    
+
     const initialQueue = videosToDownload.map(v => ({
       id: v.id,
       url: v.url,
@@ -216,16 +216,16 @@ export default function App() {
       status: 'Queued',
       error: false
     }));
-    
+
     setPlaylistDownloadQueue(initialQueue);
 
     for (let i = 0; i < videosToDownload.length; i++) {
       if (downloadCancelRef.current) break;
       const video = videosToDownload[i];
       currentDownloadingVideoIdRef.current = video.id;
-      
+
       setPlaylistDownloadQueue(prev => prev.map(item => item.id === video.id ? { ...item, status: 'Starting...' } : item));
-      
+
       try {
         let result;
         if (downloadType === 'mp4') {
@@ -233,9 +233,9 @@ export default function App() {
         } else {
           result = await window.electronAPI.downloadYoutubeAsMp3(video.url, outdir, true); // noPlaylist=true
         }
-        
+
         setPlaylistDownloadQueue(prev => prev.map(item => item.id === video.id ? { ...item, status: 'Done', progress: 100 } : item));
-        
+
         const newHistoryItem = {
           id: Date.now() + i,
           url: video.url,
@@ -272,8 +272,8 @@ export default function App() {
         outdir = await window.electronAPI.chooseDirectory();
       }
       if (!outdir) {
-         // User cancelled prompt, abort download
-         return; 
+        // User cancelled prompt, abort download
+        return;
       }
     }
 
@@ -418,7 +418,7 @@ export default function App() {
             >
               {/* Animated background glow */}
               <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent animate-pulse" />
-              
+
               <div className="flex flex-col items-center text-center mb-6">
                 <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
                   <Download className="w-8 h-8 text-primary animate-bounce" />
@@ -522,13 +522,13 @@ export default function App() {
                     <p className="text-sm text-textSecondary">Select the videos you want to download.</p>
                   </div>
                 </div>
-                <button 
+                <button
                   onClick={() => {
                     setShowPlaylistModal(false);
                     setUrl('');
                     setPlaylistEntries([]);
                     setSelectedPlaylistVideos([]);
-                  }} 
+                  }}
                   className="text-textSecondary hover:text-white transition-colors p-2"
                 >
                   <X className="w-5 h-5" />
@@ -566,7 +566,7 @@ export default function App() {
                 {playlistEntries.map((video, index) => {
                   const isUnavailable = !video.title || video.title === '[Private video]' || video.title === '[Deleted video]';
                   const displayTitle = video.title || 'Unknown Video';
-                  
+
                   return (
                     <label key={video.id} className={`flex items-center gap-4 p-3 rounded-xl transition-all duration-200 border border-transparent group ${isUnavailable ? 'opacity-50 cursor-not-allowed bg-surface/20' : 'hover:bg-surface/60 cursor-pointer hover:border-border/50'}`}>
                       <div className="relative flex items-center justify-center">
@@ -693,17 +693,17 @@ export default function App() {
               <p className="text-textSecondary text-sm mb-4">
                 Choose where your single downloads and mass clips will be saved.
               </p>
-              
+
               <div className="bg-background/50 border border-border rounded-xl p-3 mb-6 flex flex-col gap-2">
-                 <span className="text-xs font-semibold uppercase text-textSecondary tracking-wider">Current Location</span>
-                 <span className="font-mono text-sm break-all text-textPrimary">{globalOutputDir || 'Not set'}</span>
+                <span className="text-xs font-semibold uppercase text-textSecondary tracking-wider">Current Location</span>
+                <span className="font-mono text-sm break-all text-textPrimary">{globalOutputDir || 'Not set'}</span>
               </div>
 
               <div className="flex gap-3 justify-end">
                 <button
                   onClick={async () => {
-                     const dir = await handleGlobalOutputRequest();
-                     if (dir) setIsOutputFolderModalOpen(false);
+                    const dir = await handleGlobalOutputRequest();
+                    if (dir) setIsOutputFolderModalOpen(false);
                   }}
                   className="px-4 py-2 rounded-lg font-medium bg-primary/20 border border-primary/30 text-primary hover:bg-primary/30 transition-colors"
                 >
@@ -966,16 +966,16 @@ export default function App() {
         <main className="flex-1 overflow-y-auto custom-scrollbar relative">
           <div className="max-w-5xl mx-auto w-full h-full p-6">
             <div className="w-full h-full relative">
-                <motion.div
-                  initial={false}
-                  animate={{ opacity: activeTab === 'mass-stitch' ? 1 : 0, y: activeTab === 'mass-stitch' ? 0 : 10 }}
-                  transition={{ duration: 0.2 }}
-                  className={`min-h-full flex flex-col ${activeTab === 'mass-stitch' ? 'block' : 'hidden'}`}
-                >
-                  <MassClipDownloader 
-                    globalOutputDir={globalOutputDir}
-                    onRequestGlobalOutput={handleGlobalOutputRequest}
-                    onStitchSuccess={(filepath, clips) => {
+              <motion.div
+                initial={false}
+                animate={{ opacity: activeTab === 'mass-stitch' ? 1 : 0, y: activeTab === 'mass-stitch' ? 0 : 10 }}
+                transition={{ duration: 0.2 }}
+                className={`min-h-full flex flex-col ${activeTab === 'mass-stitch' ? 'block' : 'hidden'}`}
+              >
+                <MassClipDownloader
+                  globalOutputDir={globalOutputDir}
+                  onRequestGlobalOutput={handleGlobalOutputRequest}
+                  onStitchSuccess={(filepath, clips) => {
                     const validClips = clips.filter(c => c.url.trim());
                     if (validClips.length > 0) {
                       const newItems = validClips.map((c, i) => {
@@ -1012,297 +1012,297 @@ export default function App() {
                       setHistory(prev => [newHistoryItem, ...prev]);
                     }
                   }} />
-                </motion.div>
-                
-                <motion.div
-                  initial={false}
-                  animate={{ opacity: activeTab === 'selective-duration' ? 1 : 0, y: activeTab === 'selective-duration' ? 0 : 10 }}
-                  transition={{ duration: 0.2 }}
-                  className={`min-h-full flex flex-col ${activeTab === 'selective-duration' ? 'block' : 'hidden'}`}
-                >
-                  <SelectiveDownloader 
-                    globalOutputDir={globalOutputDir} 
-                    onRequestGlobalOutput={handleGlobalOutputRequest}
-                    onDownloadSuccess={(filepath, start, end, url, videoTitle) => {
-                      const newHistoryItem = {
-                        id: Date.now(),
-                        url: url,
-                        filename: videoTitle || filepath.split('\\').pop(),
-                        durationTimestamp: `${start} - ${end}`,
-                        filepath,
-                        type: 'clip',
-                        date: new Date().toLocaleString()
-                      };
-                      setHistory(prev => [newHistoryItem, ...prev]);
-                    }}
-                  />
-                </motion.div>
-                
-                <motion.div
-                  initial={false}
-                  animate={{ opacity: activeTab === 'download' ? 1 : 0, y: activeTab === 'download' ? 0 : 10 }}
-                  transition={{ duration: 0.2 }}
-                  className={`min-h-full flex flex-col gap-6 ${activeTab === 'download' ? 'block' : 'hidden'}`}
-                >
-                  {/* URL Input Card */}
-                  <div className="glass-panel p-6 flex items-center gap-6">
-                    <div className="flex-shrink-0 p-3 bg-primary/10 rounded-lg">
-                      <Download className="w-6 h-6 text-primary" />
+              </motion.div>
+
+              <motion.div
+                initial={false}
+                animate={{ opacity: activeTab === 'selective-duration' ? 1 : 0, y: activeTab === 'selective-duration' ? 0 : 10 }}
+                transition={{ duration: 0.2 }}
+                className={`min-h-full flex flex-col ${activeTab === 'selective-duration' ? 'block' : 'hidden'}`}
+              >
+                <SelectiveDownloader
+                  globalOutputDir={globalOutputDir}
+                  onRequestGlobalOutput={handleGlobalOutputRequest}
+                  onDownloadSuccess={(filepath, start, end, url, videoTitle) => {
+                    const newHistoryItem = {
+                      id: Date.now(),
+                      url: url,
+                      filename: videoTitle || filepath.split('\\').pop(),
+                      durationTimestamp: `${start} - ${end}`,
+                      filepath,
+                      type: 'clip',
+                      date: new Date().toLocaleString()
+                    };
+                    setHistory(prev => [newHistoryItem, ...prev]);
+                  }}
+                />
+              </motion.div>
+
+              <motion.div
+                initial={false}
+                animate={{ opacity: activeTab === 'download' ? 1 : 0, y: activeTab === 'download' ? 0 : 10 }}
+                transition={{ duration: 0.2 }}
+                className={`min-h-full flex flex-col gap-6 ${activeTab === 'download' ? 'block' : 'hidden'}`}
+              >
+                {/* URL Input Card */}
+                <div className="glass-panel p-6 flex items-center gap-6">
+                  <div className="flex-shrink-0 p-3 bg-primary/10 rounded-lg">
+                    <Download className="w-6 h-6 text-primary" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="block text-sm font-medium text-textSecondary">Video URL</label>
+                      {isInspecting && (
+                        <div className="flex items-center px-2.5 py-1 rounded-md text-[10px] uppercase font-bold tracking-wider bg-blue-500/20 text-blue-400 border border-blue-500/30 flex-shrink-0 shadow-sm">
+                          <Loader2 size={12} className="mr-1.5 animate-spin" />
+                          INSPECTING
+                        </div>
+                      )}
                     </div>
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between mb-2">
-                        <label className="block text-sm font-medium text-textSecondary">Video URL</label>
-                        {isInspecting && (
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={url}
+                        onChange={handleUrlChange}
+                        placeholder="Paste link here..."
+                        className="input-field h-12 text-lg"
+                        disabled={isDownloading || isInspecting}
+                      />
+                    </div>
+                  </div>
+                  {/* Quick Download removed to encourage using the main Download control */}
+                </div>
+
+                {/* Settings Card */}
+                <div className="glass-panel p-6 flex-1 flex flex-col">
+                  <div className="flex items-center mb-6">
+                    <Settings className="w-5 h-5 mr-2 text-primary" />
+                    <h2 className="text-xl font-semibold">Download Options</h2>
+                  </div>
+
+                  <div className="flex flex-col lg:flex-row gap-6">
+                    {/* Format Selection */}
+                    <div className="flex-1 min-w-[280px]">
+                      <label className="block text-sm font-medium text-textSecondary mb-3">Format</label>
+                      <div className="flex gap-4">
+                        <label className={`flex-1 flex items-center justify-center p-4 border rounded-xl cursor-pointer transition-all whitespace-nowrap ${downloadType === 'mp4' ? 'bg-primary/20 border-primary' : 'border-border hover:bg-surfaceHover'}`}>
+                          <input type="radio" name="format" value="mp4" checked={downloadType === 'mp4'} onChange={() => setDownloadType('mp4')} className="hidden" disabled={isDownloading} />
+                          <Video className={`w-5 h-5 mr-2 flex-shrink-0 ${downloadType === 'mp4' ? 'text-primary' : 'text-textSecondary'}`} />
+                          <span className={downloadType === 'mp4' ? 'font-medium text-primary' : 'text-textSecondary'}>MP4 Video</span>
+                        </label>
+                        <label className={`flex-1 flex items-center justify-center p-4 border rounded-xl cursor-pointer transition-all whitespace-nowrap ${downloadType === 'mp3' ? 'bg-primary/20 border-primary' : 'border-border hover:bg-surfaceHover'}`}>
+                          <input type="radio" name="format" value="mp3" checked={downloadType === 'mp3'} onChange={() => setDownloadType('mp3')} className="hidden" disabled={isDownloading} />
+                          <Music className={`w-5 h-5 mr-2 flex-shrink-0 ${downloadType === 'mp3' ? 'text-primary' : 'text-textSecondary'}`} />
+                          <span className={downloadType === 'mp3' ? 'font-medium text-primary' : 'text-textSecondary'}>MP3 Audio</span>
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* Quality Selection (Only for MP4) */}
+                    <div className={`flex-1 min-w-[200px] transition-opacity ${downloadType === 'mp4' ? 'opacity-100' : 'opacity-30 pointer-events-none'}`}>
+                      <div className="flex items-center justify-between mb-3">
+                        <label className="block text-sm font-medium text-textSecondary">Video Quality</label>
+                        {isFetchingFormats && (
                           <div className="flex items-center px-2.5 py-1 rounded-md text-[10px] uppercase font-bold tracking-wider bg-blue-500/20 text-blue-400 border border-blue-500/30 flex-shrink-0 shadow-sm">
                             <Loader2 size={12} className="mr-1.5 animate-spin" />
-                            INSPECTING
+                            FETCHING
                           </div>
                         )}
                       </div>
                       <div className="relative">
-                        <input
-                          type="text"
-                          value={url}
-                          onChange={handleUrlChange}
-                          placeholder="Paste link here..."
-                          className="input-field h-12 text-lg"
-                          disabled={isDownloading || isInspecting}
+                        <CustomSelect
+                          options={[
+                            { value: '', label: 'Best Available' },
+                            ...formats.map(f => ({ value: f.height, label: f.resolution }))
+                          ]}
+                          value={selectedQuality}
+                          onChange={(val) => setSelectedQuality(val)}
+                          disabled={isDownloading || formats.length === 0}
+                          className="h-[58px]"
                         />
                       </div>
                     </div>
-                    {/* Quick Download removed to encourage using the main Download control */}
                   </div>
 
-                  {/* Settings Card */}
-                  <div className="glass-panel p-6 flex-1 flex flex-col">
-                    <div className="flex items-center mb-6">
-                      <Settings className="w-5 h-5 mr-2 text-primary" />
-                      <h2 className="text-xl font-semibold">Download Options</h2>
-                    </div>
-
-                    <div className="flex flex-col lg:flex-row gap-6">
-                      {/* Format Selection */}
-                      <div className="flex-1 min-w-[280px]">
-                        <label className="block text-sm font-medium text-textSecondary mb-3">Format</label>
-                        <div className="flex gap-4">
-                          <label className={`flex-1 flex items-center justify-center p-4 border rounded-xl cursor-pointer transition-all whitespace-nowrap ${downloadType === 'mp4' ? 'bg-primary/20 border-primary' : 'border-border hover:bg-surfaceHover'}`}>
-                            <input type="radio" name="format" value="mp4" checked={downloadType === 'mp4'} onChange={() => setDownloadType('mp4')} className="hidden" disabled={isDownloading} />
-                            <Video className={`w-5 h-5 mr-2 flex-shrink-0 ${downloadType === 'mp4' ? 'text-primary' : 'text-textSecondary'}`} />
-                            <span className={downloadType === 'mp4' ? 'font-medium text-primary' : 'text-textSecondary'}>MP4 Video</span>
-                          </label>
-                          <label className={`flex-1 flex items-center justify-center p-4 border rounded-xl cursor-pointer transition-all whitespace-nowrap ${downloadType === 'mp3' ? 'bg-primary/20 border-primary' : 'border-border hover:bg-surfaceHover'}`}>
-                            <input type="radio" name="format" value="mp3" checked={downloadType === 'mp3'} onChange={() => setDownloadType('mp3')} className="hidden" disabled={isDownloading} />
-                            <Music className={`w-5 h-5 mr-2 flex-shrink-0 ${downloadType === 'mp3' ? 'text-primary' : 'text-textSecondary'}`} />
-                            <span className={downloadType === 'mp3' ? 'font-medium text-primary' : 'text-textSecondary'}>MP3 Audio</span>
-                          </label>
-                        </div>
-                      </div>
-
-                      {/* Quality Selection (Only for MP4) */}
-                      <div className={`flex-1 min-w-[200px] transition-opacity ${downloadType === 'mp4' ? 'opacity-100' : 'opacity-30 pointer-events-none'}`}>
-                        <div className="flex items-center justify-between mb-3">
-                          <label className="block text-sm font-medium text-textSecondary">Video Quality</label>
-                          {isFetchingFormats && (
-                            <div className="flex items-center px-2.5 py-1 rounded-md text-[10px] uppercase font-bold tracking-wider bg-blue-500/20 text-blue-400 border border-blue-500/30 flex-shrink-0 shadow-sm">
-                              <Loader2 size={12} className="mr-1.5 animate-spin" />
-                              FETCHING
-                            </div>
-                          )}
-                        </div>
-                        <div className="relative">
-                          <CustomSelect
-                            options={[
-                              { value: '', label: 'Best Available' },
-                              ...formats.map(f => ({ value: f.height, label: f.resolution }))
-                            ]}
-                            value={selectedQuality}
-                            onChange={(val) => setSelectedQuality(val)}
-                            disabled={isDownloading || formats.length === 0}
-                            className="h-[58px]"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="mt-auto pt-6 flex gap-4">
-                      <button
-                        onClick={handleConvertLocal}
-                        disabled={isDownloading}
-                        className="flex-1 bg-surface hover:bg-surfaceHover border border-border text-textPrimary h-14 rounded-lg font-medium transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center"
-                      >
-                        Convert Local MP4
-                      </button>
-                      <button
-                        onClick={handleDownload}
-                        disabled={!url || isDownloading || isFetchingFormats || isInspecting || urlError || playlistEntries.length > 0}
-                        className="flex-[2] btn-primary h-14 text-lg flex items-center justify-center"
-                      >
-                        {isDownloading ? (
-                          <span className="flex items-center">
-                            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                        Processing...
-                          </span>
-                        ) : 'Download'}
-                      </button>
-                    </div>
+                  <div className="mt-auto pt-6 flex gap-4">
+                    <button
+                      onClick={handleConvertLocal}
+                      disabled={isDownloading}
+                      className="flex-1 bg-surface hover:bg-surfaceHover border border-border text-textPrimary h-14 rounded-lg font-medium transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center"
+                    >
+                      Convert Local MP4
+                    </button>
+                    <button
+                      onClick={handleDownload}
+                      disabled={!url || isDownloading || isFetchingFormats || isInspecting || urlError || playlistEntries.length > 0}
+                      className="flex-[2] btn-primary h-14 text-lg flex items-center justify-center"
+                    >
+                      {isDownloading ? (
+                        <span className="flex items-center">
+                          <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          Processing...
+                        </span>
+                      ) : 'Download'}
+                    </button>
                   </div>
-                </motion.div>
-                
-                <motion.div
-                  initial={false}
-                  animate={{ opacity: activeTab === 'history' ? 1 : 0, y: activeTab === 'history' ? 0 : 10 }}
-                  transition={{ duration: 0.2 }}
-                  className={`h-full flex flex-col ${activeTab === 'history' ? 'block' : 'hidden'}`}
-                >
-                  <div className="glass-panel p-6 flex-1 flex flex-col overflow-hidden">
-                    <div className="flex justify-between items-center mb-4">
-                      <div className="flex items-center">
-                        <Clock className="w-5 h-5 mr-2 text-primary" />
-                        <h2 className="text-xl font-semibold">Download History</h2>
-                      </div>
-                      {history.length > 0 && (
-                        <button
-                          onClick={() => setShowClearModal(true)}
-                          className="text-sm text-red-400 hover:text-red-300 transition-colors flex items-center"
-                        >
-                          <Trash2 className="w-4 h-4 mr-1" />
-                          Clear All
-                        </button>
-                      )}
+                </div>
+              </motion.div>
+
+              <motion.div
+                initial={false}
+                animate={{ opacity: activeTab === 'history' ? 1 : 0, y: activeTab === 'history' ? 0 : 10 }}
+                transition={{ duration: 0.2 }}
+                className={`h-full flex flex-col ${activeTab === 'history' ? 'block' : 'hidden'}`}
+              >
+                <div className="glass-panel p-6 flex-1 flex flex-col overflow-hidden">
+                  <div className="flex justify-between items-center mb-4">
+                    <div className="flex items-center">
+                      <Clock className="w-5 h-5 mr-2 text-primary" />
+                      <h2 className="text-xl font-semibold">Download History</h2>
                     </div>
-
-                    <div className="flex gap-4 border-b border-border mb-4">
+                    {history.length > 0 && (
                       <button
-                        onClick={() => { setHistoryTab('single'); setHistoryPage(1); }}
-                        className={`pb-2 text-sm font-medium transition-colors border-b-2 ${historyTab === 'single' ? 'border-primary text-primary' : 'border-transparent text-textSecondary hover:text-textPrimary'}`}
+                        onClick={() => setShowClearModal(true)}
+                        className="text-sm text-red-400 hover:text-red-300 transition-colors flex items-center"
                       >
-                        Single Downloads
+                        <Trash2 className="w-4 h-4 mr-1" />
+                        Clear All
                       </button>
-                      <button
-                        onClick={() => { setHistoryTab('selective'); setHistoryPage(1); }}
-                        className={`pb-2 text-sm font-medium transition-colors border-b-2 ${historyTab === 'selective' ? 'border-primary text-primary' : 'border-transparent text-textSecondary hover:text-textPrimary'}`}
-                      >
-                        Selective Duration
-                      </button>
-                      <button
-                        onClick={() => { setHistoryTab('stitch'); setHistoryPage(1); }}
-                        className={`pb-2 text-sm font-medium transition-colors border-b-2 ${historyTab === 'stitch' ? 'border-primary text-primary' : 'border-transparent text-textSecondary hover:text-textPrimary'}`}
-                      >
-                        Mass Clips
-                      </button>
-                    </div>
+                    )}
+                  </div>
 
-                    <div className="flex-1 overflow-y-auto pr-2 space-y-3 custom-scrollbar flex flex-col">
-                      {(() => {
-                        const filteredHistory = history.filter(h => {
-                          if (historyTab === 'single') return h.type === 'mp3' || h.type === 'mp4';
-                          if (historyTab === 'selective') return h.type === 'clip';
-                          if (historyTab === 'stitch') return h.type === 'stitch';
-                          return false;
-                        });
-                        const itemsPerPage = 5;
-                        const totalPages = Math.max(1, Math.ceil(filteredHistory.length / itemsPerPage));
-                        const paginatedHistory = filteredHistory.slice((historyPage - 1) * itemsPerPage, historyPage * itemsPerPage);
+                  <div className="flex gap-4 border-b border-border mb-4">
+                    <button
+                      onClick={() => { setHistoryTab('single'); setHistoryPage(1); }}
+                      className={`pb-2 text-sm font-medium transition-colors border-b-2 ${historyTab === 'single' ? 'border-primary text-primary' : 'border-transparent text-textSecondary hover:text-textPrimary'}`}
+                    >
+                      Single Downloads
+                    </button>
+                    <button
+                      onClick={() => { setHistoryTab('selective'); setHistoryPage(1); }}
+                      className={`pb-2 text-sm font-medium transition-colors border-b-2 ${historyTab === 'selective' ? 'border-primary text-primary' : 'border-transparent text-textSecondary hover:text-textPrimary'}`}
+                    >
+                      Selective Duration
+                    </button>
+                    <button
+                      onClick={() => { setHistoryTab('stitch'); setHistoryPage(1); }}
+                      className={`pb-2 text-sm font-medium transition-colors border-b-2 ${historyTab === 'stitch' ? 'border-primary text-primary' : 'border-transparent text-textSecondary hover:text-textPrimary'}`}
+                    >
+                      Mass Clips
+                    </button>
+                  </div>
 
-                        if (filteredHistory.length === 0) {
-                          return (
-                            <div className="h-full flex flex-col items-center justify-center text-textSecondary flex-1">
-                              <FolderOpen className="w-12 h-12 mb-4 opacity-50" />
-                              <p>No {historyTab === 'stitch' ? 'mass clip' : historyTab === 'selective' ? 'selective duration' : 'download'} history yet.</p>
-                            </div>
-                          );
-                        }
+                  <div className="flex-1 overflow-y-auto pr-2 space-y-3 custom-scrollbar flex flex-col">
+                    {(() => {
+                      const filteredHistory = history.filter(h => {
+                        if (historyTab === 'single') return h.type === 'mp3' || h.type === 'mp4';
+                        if (historyTab === 'selective') return h.type === 'clip';
+                        if (historyTab === 'stitch') return h.type === 'stitch';
+                        return false;
+                      });
+                      const itemsPerPage = 5;
+                      const totalPages = Math.max(1, Math.ceil(filteredHistory.length / itemsPerPage));
+                      const paginatedHistory = filteredHistory.slice((historyPage - 1) * itemsPerPage, historyPage * itemsPerPage);
 
+                      if (filteredHistory.length === 0) {
                         return (
-                          <>
-                            <div className="flex-1 space-y-3">
-                              {paginatedHistory.map((item) => (
-                                <motion.div
-                                  key={item.id}
-                                  initial={{ opacity: 0, scale: 0.95 }}
-                                  animate={{ opacity: 1, scale: 1 }}
-                                  className="bg-background/40 border border-border rounded-lg p-4 flex items-center justify-between group hover:bg-surface transition-colors"
-                                >
-                                  <div className="flex items-center overflow-hidden mr-4">
-                                    <div className={`p-3 rounded-lg mr-4 flex-shrink-0 ${item.type === 'mp4' || item.type === 'clip' ? 'bg-blue-500/10 text-blue-400' : item.type === 'stitch' ? 'bg-green-500/10 text-green-400' : 'bg-purple-500/10 text-purple-400'}`}>
-                                      {item.type === 'mp4' || item.type === 'clip' ? <Video className="w-5 h-5" /> : item.type === 'stitch' ? <Scissors className="w-5 h-5" /> : <Music className="w-5 h-5" />}
-                                    </div>
-                                    <div className="overflow-hidden">
-                                      <h3 className="font-medium text-textPrimary truncate max-w-[200px] sm:max-w-[300px]" title={item.filename}>{item.filename}</h3>
-                                      {item.type === 'clip' && item.durationTimestamp && (
-                                        <div className="text-xs text-textPrimary font-semibold truncate max-w-[200px] sm:max-w-[300px] my-1">
-                                          Selected Duration Timestamp: {item.durationTimestamp}
-                                        </div>
-                                      )}
-                                      <div className="text-xs text-primary truncate max-w-[200px] sm:max-w-[300px] my-1" title={item.url}>{item.url}</div>
-                                      <div className="flex items-center text-xs text-textSecondary mt-1">
-                                        <span className="uppercase font-semibold tracking-wider mr-3">{item.type}</span>
-                                        <span>{item.date}</span>
+                          <div className="h-full flex flex-col items-center justify-center text-textSecondary flex-1">
+                            <FolderOpen className="w-12 h-12 mb-4 opacity-50" />
+                            <p>No {historyTab === 'stitch' ? 'mass clip' : historyTab === 'selective' ? 'selective duration' : 'download'} history yet.</p>
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <>
+                          <div className="flex-1 space-y-3">
+                            {paginatedHistory.map((item) => (
+                              <motion.div
+                                key={item.id}
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                className="bg-background/40 border border-border rounded-lg p-4 flex items-center justify-between group hover:bg-surface transition-colors"
+                              >
+                                <div className="flex items-center overflow-hidden mr-4">
+                                  <div className={`p-3 rounded-lg mr-4 flex-shrink-0 ${item.type === 'mp4' || item.type === 'clip' ? 'bg-blue-500/10 text-blue-400' : item.type === 'stitch' ? 'bg-green-500/10 text-green-400' : 'bg-purple-500/10 text-purple-400'}`}>
+                                    {item.type === 'mp4' || item.type === 'clip' ? <Video className="w-5 h-5" /> : item.type === 'stitch' ? <Scissors className="w-5 h-5" /> : <Music className="w-5 h-5" />}
+                                  </div>
+                                  <div className="overflow-hidden">
+                                    <h3 className="font-medium text-textPrimary truncate max-w-[200px] sm:max-w-[300px]" title={item.filename}>{item.filename}</h3>
+                                    {item.type === 'clip' && item.durationTimestamp && (
+                                      <div className="text-xs text-textPrimary font-semibold truncate max-w-[200px] sm:max-w-[300px] my-1">
+                                        Selected Duration Timestamp: {item.durationTimestamp}
                                       </div>
+                                    )}
+                                    <div className="text-xs text-primary truncate max-w-[200px] sm:max-w-[300px] my-1" title={item.url}>{item.url}</div>
+                                    <div className="flex items-center text-xs text-textSecondary mt-1">
+                                      <span className="uppercase font-semibold tracking-wider mr-3">{item.type}</span>
+                                      <span>{item.date}</span>
                                     </div>
                                   </div>
+                                </div>
 
-                                  <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button
-                                      onClick={() => { navigator.clipboard.writeText(item.url); toast.success('URL copied!'); }}
-                                      className="p-2 bg-surface hover:bg-primary/20 hover:text-primary rounded-md transition-colors"
-                                      title="Copy URL"
-                                    >
-                                      <Copy className="w-4 h-4" />
-                                    </button>
-                                    <button
-                                      onClick={() => openLocation(item.filepath)}
-                                      className="p-2 bg-surface hover:bg-primary/20 hover:text-primary rounded-md transition-colors"
-                                      title="Open File Location"
-                                    >
-                                      <FolderOpen className="w-4 h-4" />
-                                    </button>
-                                    <button
-                                      onClick={() => deleteHistoryItem(item.id)}
-                                      className="p-2 bg-surface hover:bg-red-500/20 hover:text-red-400 rounded-md transition-colors"
-                                      title="Remove from history"
-                                    >
-                                      <Trash2 className="w-4 h-4" />
-                                    </button>
-                                  </div>
-                                </motion.div>
-                              ))}
-                            </div>
-
-                            {/* Pagination Controls */}
-                            {totalPages > 1 && (
-                              <div className="flex items-center justify-between mt-4 pt-4 border-t border-border/50 flex-shrink-0">
-                                <span className="text-xs text-textSecondary">
-                                  Showing {(historyPage - 1) * itemsPerPage + 1}-{Math.min(historyPage * itemsPerPage, filteredHistory.length)} of {filteredHistory.length}
-                                </span>
-                                <div className="flex items-center gap-2">
+                                <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                   <button
-                                    onClick={() => setHistoryPage(p => Math.max(1, p - 1))}
-                                    disabled={historyPage === 1}
-                                    className="p-1.5 rounded-md bg-surface border border-border text-textSecondary hover:text-white hover:bg-surfaceHover disabled:opacity-50 disabled:pointer-events-none transition-colors"
+                                    onClick={() => { navigator.clipboard.writeText(item.url); toast.success('URL copied!'); }}
+                                    className="p-2 bg-surface hover:bg-primary/20 hover:text-primary rounded-md transition-colors"
+                                    title="Copy URL"
                                   >
-                                    <ChevronLeft className="w-4 h-4" />
+                                    <Copy className="w-4 h-4" />
                                   </button>
-                                  <span className="text-sm font-medium px-2">{historyPage} / {totalPages}</span>
                                   <button
-                                    onClick={() => setHistoryPage(p => Math.min(totalPages, p + 1))}
-                                    disabled={historyPage === totalPages}
-                                    className="p-1.5 rounded-md bg-surface border border-border text-textSecondary hover:text-white hover:bg-surfaceHover disabled:opacity-50 disabled:pointer-events-none transition-colors"
+                                    onClick={() => openLocation(item.filepath)}
+                                    className="p-2 bg-surface hover:bg-primary/20 hover:text-primary rounded-md transition-colors"
+                                    title="Open File Location"
                                   >
-                                    <ChevronRight className="w-4 h-4" />
+                                    <FolderOpen className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => deleteHistoryItem(item.id)}
+                                    className="p-2 bg-surface hover:bg-red-500/20 hover:text-red-400 rounded-md transition-colors"
+                                    title="Remove from history"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
                                   </button>
                                 </div>
+                              </motion.div>
+                            ))}
+                          </div>
+
+                          {/* Pagination Controls */}
+                          {totalPages > 1 && (
+                            <div className="flex items-center justify-between mt-4 pt-4 border-t border-border/50 flex-shrink-0">
+                              <span className="text-xs text-textSecondary">
+                                Showing {(historyPage - 1) * itemsPerPage + 1}-{Math.min(historyPage * itemsPerPage, filteredHistory.length)} of {filteredHistory.length}
+                              </span>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() => setHistoryPage(p => Math.max(1, p - 1))}
+                                  disabled={historyPage === 1}
+                                  className="p-1.5 rounded-md bg-surface border border-border text-textSecondary hover:text-white hover:bg-surfaceHover disabled:opacity-50 disabled:pointer-events-none transition-colors"
+                                >
+                                  <ChevronLeft className="w-4 h-4" />
+                                </button>
+                                <span className="text-sm font-medium px-2">{historyPage} / {totalPages}</span>
+                                <button
+                                  onClick={() => setHistoryPage(p => Math.min(totalPages, p + 1))}
+                                  disabled={historyPage === totalPages}
+                                  className="p-1.5 rounded-md bg-surface border border-border text-textSecondary hover:text-white hover:bg-surfaceHover disabled:opacity-50 disabled:pointer-events-none transition-colors"
+                                >
+                                  <ChevronRight className="w-4 h-4" />
+                                </button>
                               </div>
-                            )}
-                          </>
-                        );
-                      })()}
-                    </div>
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()}
                   </div>
-                </motion.div>
+                </div>
+              </motion.div>
             </div>
           </div>
         </main>

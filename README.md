@@ -15,13 +15,14 @@ A sleek, modern video and audio downloader built with Electron + React. Download
 
 ## ✨ Features
 
-- 📥 **Download videos** as MP4 (with quality selection: 360p, 720p, 1080p, 4K)
+- 📥 **Download videos** as MP4 (with quality selection up to 1440p and 4K)
 - 🎵 **Download audio** as MP3
 - 🔄 **Convert local MP4 files** to MP3
-- ✂️ **Mass Clip Downloader**: Download multiple clips and automatically stitch them into a single video (or download them by batch).
+- ✂️ **Mass Clip Downloader**: Download multiple clips and automatically stitch them into a single video.
+- ⏱️ **Selective Duration**: Download specific timeframes of a video with support for multiple clips, batch queueing, and precise cutting.
 - 💻 **Developer Logs Window**: View real-time background logs directly within the app.
 - 🌐 **Supports thousands of websites** (not just YouTube!). See the full list of [supported sites here](https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md).
-- 📁 **Download history** with file type tags (MP3/MP4/Mass Clip)
+- 📁 **Download history** with file type tags (MP3/MP4/Mass Clip/Selective Duration)
 - 📂 **Open in File Location** button for every history entry
 
 ---

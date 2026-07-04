@@ -370,10 +370,11 @@ ipcMain.handle('get-video-metadata', async (event, url) => {
     return runBackendCommand('get_metadata', ['--url', url], event);
 });
 
-ipcMain.handle('download-clip', async (event, url, outdir, start, end, quality, precise) => {
+ipcMain.handle('download-clip', async (event, url, outdir, start, end, quality, precise, titleOverride) => {
     let args = ['--url', url, '--outdir', outdir, '--start', start.toString(), '--end', end.toString()];
     if (quality) args.push('--quality', quality.toString());
     if (precise) args.push('--precise');
+    if (titleOverride) args.push('--title-override', titleOverride);
     return runBackendCommand('download_clip', args, event);
 });
 
@@ -394,6 +395,16 @@ ipcMain.handle('open-location', async (event, filePath) => {
         console.error(e);
         return false;
     }
+});
+
+ipcMain.handle('get-unique-folder', async (event, baseDir, folderName) => {
+    let targetDir = path.join(baseDir, folderName);
+    let counter = 1;
+    while (fs.existsSync(targetDir)) {
+        targetDir = path.join(baseDir, `${folderName} ${counter}`);
+        counter++;
+    }
+    return targetDir;
 });
 
 ipcMain.handle('choose-directory', async () => {

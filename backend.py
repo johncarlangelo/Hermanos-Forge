@@ -88,22 +88,22 @@ def get_available_formats(youtube_url):
             info = ydl.extract_info(youtube_url, download=False)
             formats = info.get('formats', [])
             
-            video_formats = []
-            seen_heights = set()
+            video_formats_dict = {}
             
             for f in formats:
                 height = f.get('height')
-                ext = f.get('ext')
                 vcodec = f.get('vcodec')
                 
-                if height and ext == 'mp4' and vcodec != 'none':
-                    if height not in seen_heights:
-                        seen_heights.add(height)
-                        video_formats.append({
-                            'format_id': f['format_id'],
-                            'height': height,
-                            'resolution': f"{height}p"
-                        })
+                # Allow any video codec (e.g., webm/vp9 for >1080p), yt-dlp merges to mp4 automatically
+                if height and vcodec != 'none' and vcodec is not None:
+                    # By overwriting, we keep the last (usually highest quality) format for a given height
+                    video_formats_dict[height] = {
+                        'format_id': f['format_id'],
+                        'height': height,
+                        'resolution': f"{height}p"
+                    }
+            
+            video_formats = list(video_formats_dict.values())
             
             video_formats.sort(key=lambda x: x['height'])
             print(f"FORMATS:{json.dumps(video_formats)}", flush=True)
@@ -121,22 +121,20 @@ def get_metadata(youtube_url):
             info = ydl.extract_info(youtube_url, download=False)
             
             formats = info.get('formats', [])
-            video_formats = []
-            seen_heights = set()
+            video_formats_dict = {}
             
             for f in formats:
                 height = f.get('height')
-                ext = f.get('ext')
                 vcodec = f.get('vcodec')
                 
-                if height and ext == 'mp4' and vcodec != 'none':
-                    if height not in seen_heights:
-                        seen_heights.add(height)
-                        video_formats.append({
-                            'format_id': f['format_id'],
-                            'height': height,
-                            'resolution': f"{height}p"
-                        })
+                if height and vcodec != 'none' and vcodec is not None:
+                    video_formats_dict[height] = {
+                        'format_id': f['format_id'],
+                        'height': height,
+                        'resolution': f"{height}p"
+                    }
+            
+            video_formats = list(video_formats_dict.values())
             
             video_formats.sort(key=lambda x: x['height'])
             
@@ -510,7 +508,7 @@ def stitch_clips_from_urls(urls, output_dir, ffmpeg_path=None, no_stitch=False):
     except Exception as e:
         print(f"ERROR:{e}", flush=True)
 
-def download_clip(youtube_url, output_dir, start_time, end_time, quality=None, precise_cut=False, ffmpeg_path=None):
+def download_clip(youtube_url, output_dir, start_time, end_time, quality=None, precise_cut=False, ffmpeg_path=None, title_override=None):
     try:
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
@@ -523,8 +521,14 @@ def download_clip(youtube_url, output_dir, start_time, end_time, quality=None, p
         start_time = float(start_time)
         end_time = float(end_time)
 
+        if title_override:
+            # title_override handles exact custom names for multi-clips
+            outtmpl = os.path.join(output_dir, f"{title_override} [{int(start_time)}s-{int(end_time)}s] ({int(time.time())}).%(ext)s")
+        else:
+            outtmpl = os.path.join(output_dir, f"%(title)s (%(id)s) [CLIP {int(start_time)}s-{int(end_time)}s] ({int(time.time())}).%(ext)s")
+
         ydl_opts = {
-            'outtmpl': os.path.join(output_dir, f"%(title)s (%(id)s) [CLIP {int(start_time)}s-{int(end_time)}s] ({int(time.time())}).%(ext)s"),
+            'outtmpl': outtmpl,
             'progress_hooks': [progress_hook],
             'ffmpeg_location': ffmpeg_bin,
             'quiet': True,
@@ -570,6 +574,7 @@ if __name__ == "__main__":
     parser.add_argument('--start', type=float, help="Start time in seconds")
     parser.add_argument('--end', type=float, help="End time in seconds")
     parser.add_argument('--precise', action='store_true', help="Use precise cutting (re-encodes cuts)")
+    parser.add_argument('--title-override', help="Override the output filename base")
     parser.add_argument('--ffmpeg-path', help='Absolute path to ffmpeg executable (overrides detection)')
     parser.add_argument('--no-stitch', action='store_true', help="Download clips without stitching")
     parser.add_argument('--no-playlist', action='store_true', help="Download only single video from a playlist link")
@@ -589,7 +594,7 @@ if __name__ == "__main__":
     elif args.action == 'convert_mp4':
         convert_local_mp4_to_mp3(args.file, args.outdir, ffmpeg_path=args.ffmpeg_path)
     elif args.action == 'download_clip':
-        download_clip(args.url, args.outdir, args.start, args.end, quality=args.quality, precise_cut=args.precise, ffmpeg_path=args.ffmpeg_path)
+        download_clip(args.url, args.outdir, args.start, args.end, quality=args.quality, precise_cut=args.precise, ffmpeg_path=args.ffmpeg_path, title_override=args.title_override)
     elif args.action == 'stitch_clips':
         try:
             urls = json.loads(args.urls)
