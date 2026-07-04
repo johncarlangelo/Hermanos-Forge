@@ -552,7 +552,7 @@ export default function App() {
                       className="peer sr-only"
                     />
                     <div className="w-5 h-5 border-[1.5px] border-white/20 bg-white/5 rounded flex items-center justify-center peer-checked:bg-primary peer-checked:border-primary group-hover:border-primary/70 transition-all duration-200 shadow-sm">
-                      <Check className="w-3.5 h-3.5 text-white opacity-0 peer-checked:opacity-100 transition-opacity duration-200" strokeWidth={3} />
+                      <Check className={`w-3.5 h-3.5 text-white transition-all duration-200 ${(selectedPlaylistVideos.length === playlistEntries.filter(v => v.title && v.title !== '[Private video]' && v.title !== '[Deleted video]').length && playlistEntries.length > 0) ? 'opacity-100 scale-100' : 'opacity-0 scale-50'}`} strokeWidth={3} />
                     </div>
                   </div>
                   Select All ({playlistEntries.length})
@@ -583,7 +583,7 @@ export default function App() {
                           className="peer sr-only"
                         />
                         <div className={`w-5 h-5 border-[1.5px] rounded flex items-center justify-center transition-all duration-200 shadow-sm ${isUnavailable ? 'border-white/10 bg-white/5' : 'border-white/20 bg-white/5 peer-checked:bg-primary peer-checked:border-primary group-hover:border-primary/70'}`}>
-                          <Check className="w-3.5 h-3.5 text-white opacity-0 peer-checked:opacity-100 transition-opacity duration-200" strokeWidth={3} />
+                          <Check className={`w-3.5 h-3.5 text-white transition-all duration-200 ${selectedPlaylistVideos.includes(video.id) ? 'opacity-100 scale-100' : 'opacity-0 scale-50'}`} strokeWidth={3} />
                         </div>
                       </div>
                       <div className="flex-1 min-w-0 flex items-center gap-2">
