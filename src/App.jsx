@@ -966,7 +966,10 @@ export default function App() {
         <main className="flex-1 overflow-y-auto custom-scrollbar relative">
           <div className="max-w-5xl mx-auto w-full h-full p-6">
             <div className="w-full h-full relative">
-                <div
+                <motion.div
+                  initial={false}
+                  animate={{ opacity: activeTab === 'mass-stitch' ? 1 : 0, y: activeTab === 'mass-stitch' ? 0 : 10 }}
+                  transition={{ duration: 0.2 }}
                   className={`min-h-full flex flex-col ${activeTab === 'mass-stitch' ? 'block' : 'hidden'}`}
                 >
                   <MassClipDownloader 
@@ -1009,9 +1012,12 @@ export default function App() {
                       setHistory(prev => [newHistoryItem, ...prev]);
                     }
                   }} />
-                </div>
+                </motion.div>
                 
-                <div
+                <motion.div
+                  initial={false}
+                  animate={{ opacity: activeTab === 'selective-duration' ? 1 : 0, y: activeTab === 'selective-duration' ? 0 : 10 }}
+                  transition={{ duration: 0.2 }}
                   className={`min-h-full flex flex-col ${activeTab === 'selective-duration' ? 'block' : 'hidden'}`}
                 >
                   <SelectiveDownloader 
@@ -1030,9 +1036,12 @@ export default function App() {
                       setHistory(prev => [newHistoryItem, ...prev]);
                     }}
                   />
-                </div>
+                </motion.div>
                 
-                <div
+                <motion.div
+                  initial={false}
+                  animate={{ opacity: activeTab === 'download' ? 1 : 0, y: activeTab === 'download' ? 0 : 10 }}
+                  transition={{ duration: 0.2 }}
                   className={`min-h-full flex flex-col gap-6 ${activeTab === 'download' ? 'block' : 'hidden'}`}
                 >
                   {/* URL Input Card */}
@@ -1140,9 +1149,12 @@ export default function App() {
                       </button>
                     </div>
                   </div>
-                </div>
+                </motion.div>
                 
-                <div
+                <motion.div
+                  initial={false}
+                  animate={{ opacity: activeTab === 'history' ? 1 : 0, y: activeTab === 'history' ? 0 : 10 }}
+                  transition={{ duration: 0.2 }}
                   className={`h-full flex flex-col ${activeTab === 'history' ? 'block' : 'hidden'}`}
                 >
                   <div className="glass-panel p-6 flex-1 flex flex-col overflow-hidden">
@@ -1290,7 +1302,7 @@ export default function App() {
                       })()}
                     </div>
                   </div>
-                </div>
+                </motion.div>
             </div>
           </div>
         </main>
