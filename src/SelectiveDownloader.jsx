@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Download, Video, Loader2, Lock, Unlock, Trash2, Plus, Check } from 'lucide-react';
+import { useState, useEffect, useRef, useMemo } from 'react';
+import { Download, Loader2, Lock, Unlock, Trash2, Plus, Check } from 'lucide-react';
 import toast from 'react-hot-toast';
 import CustomSelect from './CustomSelect';
 
@@ -45,6 +45,7 @@ const ClipTimeline = ({ clip, metadata, updateClip, removeClip, index, totalClip
   const containerRef = useRef(null);
 
   useEffect(() => {
+    // eslint-disable-next-line
     setStartInput(formatTime(clip.startTime));
     setEndInput(formatTime(clip.endTime));
   }, [clip.startTime, clip.endTime]);
@@ -138,7 +139,6 @@ const ClipTimeline = ({ clip, metadata, updateClip, removeClip, index, totalClip
     const startX = e.clientX;
     const initialStart = clip.startTime;
     const initialEnd = clip.endTime;
-    const rangeDuration = initialEnd - initialStart;
 
     const handlePointerMove = (moveEvent) => {
       if (!trackRef.current || !metadata) return;
@@ -401,6 +401,7 @@ export default function SelectiveDownloader({ globalOutputDir, onRequestGlobalOu
   useEffect(() => {
     if (metadata && metadata.duration) {
       const initialEnd = Math.min(metadata.duration, 60);
+      // eslint-disable-next-line
       setClips([{
         id: Date.now(),
         startTime: 0,

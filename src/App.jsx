@@ -57,7 +57,6 @@ export default function App() {
   // Auto-refresh when the modal is opened
   useEffect(() => {
     if (isStatusOpen) {
-      // eslint-disable-next-line
       refreshStatus();
     }
   }, [isStatusOpen]);
