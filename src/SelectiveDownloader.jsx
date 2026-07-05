@@ -229,26 +229,36 @@ const ClipTimeline = ({ clip, metadata, updateClip, removeClip, index, totalClip
 
       {/* Status Indicator (Inline) */}
       {(clip.status !== 'idle' || clip.message) && (
-        <div className={`mb-6 p-4 rounded-xl flex items-center justify-between font-medium shadow-sm border ${clip.status === 'downloading' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' :
+        <div className={`mb-6 rounded-xl font-medium shadow-sm border relative overflow-hidden ${clip.status === 'downloading' ? 'bg-blue-500/5 text-blue-400 border-blue-500/20' :
             clip.status === 'done' ? 'bg-green-500/10 text-green-400 border-green-500/20' :
               clip.status === 'error' ? 'bg-red-500/10 text-red-400 border-red-500/20' :
                 'bg-surface text-textSecondary border-border'
           }`}>
-          <div className="flex items-center gap-3">
-            {clip.status === 'downloading' && <Loader2 className="w-5 h-5 animate-spin" />}
-            <span>{clip.message || 'Queued...'}</span>
+          {/* Progress Bar Fill */}
+          {clip.status === 'downloading' && (
+            <div 
+              className="absolute left-0 top-0 bottom-0 bg-blue-500/20 transition-all duration-500 ease-linear"
+              style={{ width: `${Math.max(0, Math.min(100, clip.progress || 0))}%` }}
+            />
+          )}
+          
+          <div className="p-4 flex items-center justify-between relative z-10">
+            <div className="flex items-center gap-3">
+              {clip.status === 'downloading' && <Loader2 className="w-5 h-5 animate-spin" />}
+              <span>{clip.message || 'Queued...'}</span>
+            </div>
+            {clip.status === 'error' && handleRetryClip && (
+              <button 
+                onClick={() => handleRetryClip(clip)} 
+                className="px-4 py-1.5 bg-red-500/20 hover:bg-red-500/30 text-red-400 font-bold rounded-lg text-sm border border-red-500/30 transition-colors shadow-sm ml-auto pointer-events-auto"
+              >
+                Retry Clip
+              </button>
+            )}
+            {clip.status === 'downloading' && (
+              <span className="font-mono text-lg ml-auto">{(clip.progress || 0).toFixed(1)}%</span>
+            )}
           </div>
-          {clip.status === 'error' && handleRetryClip && (
-            <button 
-              onClick={() => handleRetryClip(clip)} 
-              className="px-4 py-1.5 bg-red-500/20 hover:bg-red-500/30 text-red-400 font-bold rounded-lg text-sm border border-red-500/30 transition-colors shadow-sm ml-auto"
-            >
-              Retry Clip
-            </button>
-          )}
-          {clip.status === 'downloading' && clip.progress > 0 && (
-            <span className="font-mono text-lg ml-auto">{clip.progress.toFixed(1)}%</span>
-          )}
         </div>
       )}
 

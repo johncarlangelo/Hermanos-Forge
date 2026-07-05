@@ -531,7 +531,6 @@ def download_clip(youtube_url, output_dir, start_time, end_time, quality=None, p
             'outtmpl': outtmpl,
             'progress_hooks': [progress_hook],
             'ffmpeg_location': ffmpeg_bin,
-            'quiet': True,
             'no_warnings': True,
             'download_ranges': yt_dlp.utils.download_range_func(None, [(start_time, end_time)]),
             'merge_output_format': 'mp4',
