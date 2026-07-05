@@ -612,7 +612,7 @@ export default function App() {
                 </button>
                 <button
                   onClick={handlePlaylistDownload}
-                  disabled={selectedPlaylistVideos.length === 0}
+                  disabled={!globalOutputDir || selectedPlaylistVideos.length === 0}
                   className="px-5 py-2.5 rounded-xl font-medium btn-primary disabled:opacity-50 disabled:pointer-events-none flex items-center gap-2"
                 >
                   <Download className="w-4 h-4" />
@@ -1126,15 +1126,15 @@ export default function App() {
                   <div className="mt-auto pt-6 flex gap-4">
                     <button
                       onClick={handleConvertLocal}
-                      disabled={isDownloading}
+                      disabled={!globalOutputDir || isDownloading}
                       className="flex-1 bg-surface hover:bg-surfaceHover border border-border text-textPrimary h-14 rounded-lg font-medium transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center"
                     >
                       Convert Local MP4
                     </button>
                     <button
                       onClick={handleDownload}
-                      disabled={!url || isDownloading || isFetchingFormats || isInspecting || urlError || playlistEntries.length > 0}
-                      className="flex-[2] btn-primary h-14 text-lg flex items-center justify-center"
+                      disabled={!globalOutputDir || !url || isDownloading || isFetchingFormats || isInspecting || urlError || playlistEntries.length > 0}
+                      className="flex-[2] btn-primary h-14 text-lg flex items-center justify-center disabled:opacity-50 disabled:pointer-events-none"
                     >
                       {isDownloading ? (
                         <span className="flex items-center">

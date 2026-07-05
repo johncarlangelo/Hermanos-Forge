@@ -273,8 +273,8 @@ export default function MassClipDownloader({ onStitchSuccess, globalOutputDir, o
           <div className="flex gap-4">
             <button
               onClick={() => startStitching(false)}
-            disabled={isProcessing || isCoolingDown}
-            className="flex-[2] btn-primary h-14 text-lg flex items-center justify-center disabled:opacity-50"
+            disabled={!globalOutputDir || isProcessing || isCoolingDown}
+            className="flex-[2] btn-primary h-14 text-lg flex items-center justify-center disabled:opacity-50 disabled:pointer-events-none"
           >
             {isProcessing ? (
               <span className="flex items-center">
@@ -294,8 +294,8 @@ export default function MassClipDownloader({ onStitchSuccess, globalOutputDir, o
           {!isProcessing && (
             <button
               onClick={() => startStitching(true)}
-              disabled={isCoolingDown}
-              className="flex-[1] bg-surface hover:bg-surfaceHover border border-border text-textPrimary h-14 rounded-lg font-medium transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center"
+              disabled={!globalOutputDir || isCoolingDown}
+              className="flex-[1] bg-surface hover:bg-surfaceHover border border-border text-textPrimary h-14 rounded-lg font-medium transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center"
             >
               Mass Download (No Stitch)
             </button>

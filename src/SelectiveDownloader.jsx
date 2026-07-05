@@ -765,8 +765,8 @@ export default function SelectiveDownloader({ globalOutputDir, onRequestGlobalOu
               ) : (
                 <button
                   onClick={handleDownloadAll}
-                  disabled={clips.every(c => c.isExcluded)}
-                  className="btn-primary h-16 px-10 text-xl flex items-center gap-3 w-full sm:min-w-[250px] justify-center shadow-lg"
+                  disabled={!globalOutputDir || clips.every(c => c.isExcluded)}
+                  className="btn-primary h-16 px-10 text-xl flex items-center gap-3 w-full sm:min-w-[250px] justify-center shadow-lg disabled:opacity-50 disabled:pointer-events-none"
                 >
                   <Download className="w-6 h-6" />
                   Download {clips.filter(c => !c.isExcluded).length > 1 ? 'All Clips' : 'Clip'}
