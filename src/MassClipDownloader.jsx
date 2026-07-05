@@ -178,14 +178,17 @@ export default function MassClipDownloader({ onStitchSuccess, globalOutputDir, o
     } catch (err) {
       setIsProcessing(false);
       setGlobalStatus('');
-      toast.error(`Unexpected error: ${err.message}`, { style: { borderRadius: '10px', background: '#1E293B', color: '#fff' } });
+      const friendlyError = err.message?.includes('3436169992') ? 'Hey! Too fast, please wait a moment.' : err.message;
+      toast.error(`Unexpected error: ${friendlyError}`, { style: { borderRadius: '10px', background: '#1E293B', color: '#fff' } });
     }
   };
 
   const confirmCancel = async () => {
     setShowCancelModal(false);
     if (window.stitchAPI) {
-      await window.stitchAPI.cancelStitch(globalOutputDir);
+      try {
+        await window.stitchAPI.cancelStitch(globalOutputDir);
+      } catch (e) {}
     }
     setIsProcessing(false);
     setGlobalStatus('');

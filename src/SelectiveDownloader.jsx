@@ -31,7 +31,7 @@ const parseTime = (timeStr) => {
   return 0;
 };
 
-const ClipTimeline = ({ clip, metadata, updateClip, removeClip, index, totalClips, isDownloadingQueue }) => {
+const ClipTimeline = ({ clip, metadata, updateClip, removeClip, index, totalClips, isDownloadingQueue, handleRetryClip }) => {
   const [zoomLevel, setZoomLevel] = useState(1);
   const [startInput, setStartInput] = useState('00:00:00');
   const [endInput, setEndInput] = useState('00:00:00');
@@ -238,8 +238,16 @@ const ClipTimeline = ({ clip, metadata, updateClip, removeClip, index, totalClip
             {clip.status === 'downloading' && <Loader2 className="w-5 h-5 animate-spin" />}
             <span>{clip.message || 'Queued...'}</span>
           </div>
+          {clip.status === 'error' && handleRetryClip && (
+            <button 
+              onClick={() => handleRetryClip(clip)} 
+              className="px-4 py-1.5 bg-red-500/20 hover:bg-red-500/30 text-red-400 font-bold rounded-lg text-sm border border-red-500/30 transition-colors shadow-sm ml-auto"
+            >
+              Retry Clip
+            </button>
+          )}
           {clip.status === 'downloading' && clip.progress > 0 && (
-            <span className="font-mono text-lg">{clip.progress.toFixed(1)}%</span>
+            <span className="font-mono text-lg ml-auto">{clip.progress.toFixed(1)}%</span>
           )}
         </div>
       )}
@@ -398,16 +406,66 @@ export default function SelectiveDownloader({ globalOutputDir, onRequestGlobalOu
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadStatus, setDownloadStatus] = useState(''); // Overall queue status
   const [showCancelModal, setShowCancelModal] = useState(false);
+  const [lastTargetDir, setLastTargetDir] = useState(null);
   const downloadCancelRef = useRef(false);
+
+  const handleRetryClip = async (clip) => {
+    if (!lastTargetDir) {
+       toast.error("Original download folder not found. Please click 'Download All' to restart.");
+       return;
+    }
+    
+    updateClip(clip.id, { status: 'downloading', message: 'Retrying...', progress: 0 });
+    const clipIndex = clips.findIndex(c => c.id === clip.id);
+    const customTitle = clip.title.trim() || `CLIP ${clipIndex + 1}`;
+    
+    try {
+      if (window.electronAPI && window.electronAPI.downloadClip) {
+        const result = await window.electronAPI.downloadClip(
+          url,
+          lastTargetDir,
+          clip.startTime,
+          clip.endTime,
+          selectedFormat,
+          preciseCut,
+          customTitle
+        );
+
+        if (result && result.success) {
+          updateClip(clip.id, { status: 'done', message: 'Download complete!' });
+          if (onDownloadSuccess) {
+            const startFmt = formatTime(clip.startTime);
+            const endFmt = formatTime(clip.endTime);
+            onDownloadSuccess(result.filepath, startFmt, endFmt, url, customTitle);
+          }
+          toast.success(`Clip retry successful!`, { style: { borderRadius: '10px', background: '#1E293B', color: '#fff' } });
+        } else {
+          throw new Error("Download failed without a specific error message.");
+        }
+      }
+    } catch (err) {
+      console.error(`Clip retry failed:`, err);
+      const friendlyError = err.message?.includes('3436169992') ? 'Hey! Too fast, please wait a moment.' : err.message;
+      updateClip(clip.id, { status: 'error', message: friendlyError });
+      toast.error(`Retry failed. Please check the logs.`, { style: { borderRadius: '10px', background: '#1E293B', color: '#fff' } });
+    }
+  };
 
   const confirmCancel = async () => {
     setShowCancelModal(false);
     downloadCancelRef.current = true;
     if (window.electronAPI && window.electronAPI.cancelDownload) {
-      await window.electronAPI.cancelDownload();
+      try {
+        await window.electronAPI.cancelDownload();
+      } catch (e) {
+        // ignore errors from cancelling
+      }
     }
     setIsDownloading(false);
     setDownloadStatus('Canceled');
+    setTimeout(() => {
+      setDownloadStatus((prev) => (prev === 'Canceled' ? '' : prev));
+    }, 3000);
     toast.error('Download canceled.', { style: { borderRadius: '10px', background: '#1E293B', color: '#fff' }, icon: '🛑' });
     setClips(prev => prev.map(c => 
       c.status === 'downloading' ? { ...c, status: 'canceled', message: 'Canceled' } : c
@@ -537,6 +595,8 @@ export default function SelectiveDownloader({ globalOutputDir, onRequestGlobalOu
       targetDir = `${targetDir}/Selective Duration`;
     }
 
+    setLastTargetDir(targetDir);
+
     setIsDownloading(true);
     setDownloadStatus('Initializing queue...');
 
@@ -560,49 +620,37 @@ export default function SelectiveDownloader({ globalOutputDir, onRequestGlobalOu
 
       const customTitle = clip.title.trim() || `CLIP ${i + 1}`;
 
-      let attempts = 0;
-      let success = false;
-      
-      while (attempts < 2 && !success) {
-        if (downloadCancelRef.current) break;
-        try {
-          if (window.electronAPI && window.electronAPI.downloadClip) {
-            const result = await window.electronAPI.downloadClip(
-              url,
-              targetDir,
-              clip.startTime,
-              clip.endTime,
-              selectedFormat,
-              preciseCut,
-              customTitle
-            );
+      try {
+        if (window.electronAPI && window.electronAPI.downloadClip) {
+          const result = await window.electronAPI.downloadClip(
+            url,
+            targetDir,
+            clip.startTime,
+            clip.endTime,
+            selectedFormat,
+            preciseCut,
+            customTitle
+          );
 
-            if (result && result.success) {
-              updateClip(clip.id, { status: 'done', message: 'Download complete!' });
-              completedCount++;
-              success = true;
+          if (result && result.success) {
+            updateClip(clip.id, { status: 'done', message: 'Download complete!' });
+            completedCount++;
 
-              if (onDownloadSuccess) {
-                const startFmt = formatTime(clip.startTime);
-                const endFmt = formatTime(clip.endTime);
-                // Pass the custom title so it appears in history!
-                onDownloadSuccess(result.filepath, startFmt, endFmt, url, customTitle);
-              }
+            if (onDownloadSuccess) {
+              const startFmt = formatTime(clip.startTime);
+              const endFmt = formatTime(clip.endTime);
+              onDownloadSuccess(result.filepath, startFmt, endFmt, url, customTitle);
             }
           } else {
-            break;
-          }
-        } catch (err) {
-          attempts++;
-          console.error(`Clip ${i+1} attempt ${attempts} failed:`, err);
-          if (attempts >= 2) {
-            updateClip(clip.id, { status: 'error', message: err.message });
-            errorCount++;
-          } else {
-            updateClip(clip.id, { status: 'downloading', message: 'Retrying...', progress: 0 });
-            await new Promise(resolve => setTimeout(resolve, 3000)); // wait 3s before retry
+            throw new Error(result?.error || "Download failed without a specific error message.");
           }
         }
+      } catch (err) {
+        if (downloadCancelRef.current) break;
+        console.error(`Clip ${i+1} failed:`, err);
+        const friendlyError = err.message?.includes('3436169992') ? 'Hey! Too fast, please wait a moment.' : err.message;
+        updateClip(clip.id, { status: 'error', message: friendlyError });
+        errorCount++;
       }
       
       // Delay before starting the next clip to avoid hitting YouTube rate limits or ffmpeg overlapping issues
@@ -622,6 +670,9 @@ export default function SelectiveDownloader({ globalOutputDir, onRequestGlobalOu
     } else {
       setDownloadStatus(`Finished with ${errorCount} error(s).`);
       toast.error(`Queue finished, but ${errorCount} clip(s) failed.`, { style: { borderRadius: '10px', background: '#1E293B', color: '#fff' } });
+      setTimeout(() => {
+        setDownloadStatus(prev => prev.startsWith('Finished with') ? '' : prev);
+      }, 4000);
     }
   };
 
@@ -705,6 +756,7 @@ export default function SelectiveDownloader({ globalOutputDir, onRequestGlobalOu
                 index={idx}
                 totalClips={clips.length}
                 isDownloadingQueue={isDownloading}
+                handleRetryClip={handleRetryClip}
               />
             ))}
           </div>

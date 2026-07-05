@@ -233,6 +233,10 @@ export default function App() {
           result = await window.electronAPI.downloadYoutubeAsMp3(video.url, outdir, true); // noPlaylist=true
         }
 
+        if (result && result.success === false) {
+          throw new Error(result.error || "Download failed");
+        }
+
         setPlaylistDownloadQueue(prev => prev.map(item => item.id === video.id ? { ...item, status: 'Done', progress: 100 } : item));
 
         const newHistoryItem = {
@@ -247,7 +251,8 @@ export default function App() {
 
       } catch (err) {
         if (downloadCancelRef.current) break;
-        setPlaylistDownloadQueue(prev => prev.map(item => item.id === video.id ? { ...item, status: `Error: ${err.message}`, error: true } : item));
+        const friendlyError = err.message?.includes('3436169992') ? 'Hey! Too fast, please wait a moment.' : err.message;
+        setPlaylistDownloadQueue(prev => prev.map(item => item.id === video.id ? { ...item, status: `Error: ${friendlyError}`, error: true } : item));
       }
     }
 
@@ -289,6 +294,10 @@ export default function App() {
         result = await window.electronAPI.downloadYoutubeAsMp3(url, outdir, true);
       }
 
+      if (result && result.success === false) {
+        throw new Error(result.error || "Download failed");
+      }
+
       setStatus('Completed!');
       setProgress(100);
       toast.success(`Downloaded successfully!`, {
@@ -321,9 +330,10 @@ export default function App() {
       if (downloadCancelRef.current) {
         return; // Handled by confirmSingleCancel
       }
-      setStatus(`Error: ${err.message}`);
+      const friendlyError = err.message?.includes('3436169992') ? 'Hey! Too fast, please wait a moment.' : err.message;
+      setStatus(`Error: ${friendlyError}`);
       setIsDownloading(false);
-      toast.error(`Download failed: ${err.message}`, {
+      toast.error(`Download failed: ${friendlyError}`, {
         style: {
           borderRadius: '10px',
           background: '#1E293B',

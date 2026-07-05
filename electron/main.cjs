@@ -220,6 +220,8 @@ function runBackendCommand(action, extraArgs = [], event) {
                 // This can happen if the charmap error happened AFTER the file was written
                 // Resolve gracefully — the file is on disk
                 doResolve(lastSuccess || { success: true, filepath: null });
+            } else if (child.killed || code === null) {
+                doResolve({ success: false, error: 'Process was cancelled' });
             } else {
                 doReject(lastError || new Error(`Process exited with code ${code}`));
             }
