@@ -397,6 +397,22 @@ export default function SelectiveDownloader({ globalOutputDir, onRequestGlobalOu
   // Execution states
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadStatus, setDownloadStatus] = useState(''); // Overall queue status
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const downloadCancelRef = useRef(false);
+
+  const confirmCancel = async () => {
+    setShowCancelModal(false);
+    downloadCancelRef.current = true;
+    if (window.electronAPI && window.electronAPI.cancelDownload) {
+      await window.electronAPI.cancelDownload();
+    }
+    setIsDownloading(false);
+    setDownloadStatus('Canceled');
+    toast.error('Download canceled.', { style: { borderRadius: '10px', background: '#1E293B', color: '#fff' }, icon: '🛑' });
+    setClips(prev => prev.map(c => 
+      c.status === 'downloading' ? { ...c, status: 'canceled', message: 'Canceled' } : c
+    ));
+  };
 
   useEffect(() => {
     if (metadata && metadata.duration) {
@@ -496,6 +512,7 @@ export default function SelectiveDownloader({ globalOutputDir, onRequestGlobalOu
   };
 
   const handleDownloadAll = async () => {
+    downloadCancelRef.current = false;
     let targetDir = globalOutputDir;
     if (!targetDir) {
       if (onRequestGlobalOutput) {
@@ -532,6 +549,8 @@ export default function SelectiveDownloader({ globalOutputDir, onRequestGlobalOu
     const clipsToDownload = clips.filter(c => !c.isExcluded);
 
     for (let i = 0; i < clips.length; i++) {
+      if (downloadCancelRef.current) break;
+      
       const clip = clips[i];
       if (clip.isExcluded) continue;
 
@@ -545,6 +564,7 @@ export default function SelectiveDownloader({ globalOutputDir, onRequestGlobalOu
       let success = false;
       
       while (attempts < 2 && !success) {
+        if (downloadCancelRef.current) break;
         try {
           if (window.electronAPI && window.electronAPI.downloadClip) {
             const result = await window.electronAPI.downloadClip(
@@ -586,9 +606,13 @@ export default function SelectiveDownloader({ globalOutputDir, onRequestGlobalOu
       }
       
       // Delay before starting the next clip to avoid hitting YouTube rate limits or ffmpeg overlapping issues
-      if (i < clips.length - 1) {
+      if (i < clips.length - 1 && !downloadCancelRef.current) {
         await new Promise(resolve => setTimeout(resolve, 2000));
       }
+    }
+
+    if (downloadCancelRef.current) {
+      return; // Handled by confirmCancel
     }
 
     setIsDownloading(false);
@@ -730,27 +754,54 @@ export default function SelectiveDownloader({ globalOutputDir, onRequestGlobalOu
             </div>
 
             <div className="flex flex-col items-end gap-2 w-full sm:w-auto">
-              <button
-                onClick={handleDownloadAll}
-                disabled={isDownloading || clips.every(c => c.isExcluded)}
-                className="btn-primary h-16 px-10 text-xl flex items-center gap-3 w-full sm:min-w-[250px] justify-center shadow-lg"
-              >
-                {isDownloading ? (
-                  <>
-                    <Loader2 className="w-6 h-6 animate-spin" />
-                    Processing Queue...
-                  </>
-                ) : (
-                  <>
-                    <Download className="w-6 h-6" />
-                    Download {clips.filter(c => !c.isExcluded).length > 1 ? 'All Clips' : 'Clip'}
-                  </>
-                )}
-              </button>
+              {isDownloading ? (
+                <button
+                  onClick={() => setShowCancelModal(true)}
+                  className="flex items-center justify-center gap-2 px-6 py-4 rounded-xl text-lg font-semibold bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30 transition-colors w-full sm:min-w-[250px] shadow-lg"
+                >
+                  <Loader2 className="w-6 h-6 animate-spin" />
+                  Cancel Queue
+                </button>
+              ) : (
+                <button
+                  onClick={handleDownloadAll}
+                  disabled={clips.every(c => c.isExcluded)}
+                  className="btn-primary h-16 px-10 text-xl flex items-center gap-3 w-full sm:min-w-[250px] justify-center shadow-lg"
+                >
+                  <Download className="w-6 h-6" />
+                  Download {clips.filter(c => !c.isExcluded).length > 1 ? 'All Clips' : 'Clip'}
+                </button>
+              )}
               {downloadStatus && <span className="text-sm font-medium text-textSecondary bg-surface/50 px-3 py-1 rounded-full">{downloadStatus}</span>}
             </div>
           </div>
         </>
+      )}
+
+      {/* Cancel Modal */}
+      {showCancelModal && (
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+          <div className="bg-surface border border-border p-6 rounded-2xl max-w-sm w-full shadow-2xl flex flex-col items-center text-center">
+            <h3 className="text-lg font-bold text-textPrimary mb-2">Cancel Process?</h3>
+            <p className="text-sm text-textSecondary mb-6">
+              Are you sure you want to cancel the current download queue? Clips already finished will be kept.
+            </p>
+            <div className="flex gap-3 w-full">
+              <button
+                onClick={() => setShowCancelModal(false)}
+                className="flex-1 py-3 bg-surface hover:bg-surfaceHover border border-border rounded-xl font-medium transition-colors text-textPrimary"
+              >
+                No, Resume
+              </button>
+              <button
+                onClick={confirmCancel}
+                className="flex-1 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-medium transition-colors shadow-lg shadow-red-500/20"
+              >
+                Yes, Cancel
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
