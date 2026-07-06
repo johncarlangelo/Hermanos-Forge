@@ -88,27 +88,66 @@ def get_available_formats(youtube_url):
             info = ydl.extract_info(youtube_url, download=False)
             formats = info.get('formats', [])
             
-            video_formats = []
-            seen_heights = set()
+            video_formats_dict = {}
             
             for f in formats:
                 height = f.get('height')
-                ext = f.get('ext')
                 vcodec = f.get('vcodec')
                 
-                if height and ext == 'mp4' and vcodec != 'none':
-                    if height not in seen_heights:
-                        seen_heights.add(height)
-                        video_formats.append({
-                            'format_id': f['format_id'],
-                            'height': height,
-                            'resolution': f"{height}p"
-                        })
+                # Allow any video codec (e.g., webm/vp9 for >1080p), yt-dlp merges to mp4 automatically
+                if height and vcodec != 'none' and vcodec is not None:
+                    # By overwriting, we keep the last (usually highest quality) format for a given height
+                    video_formats_dict[height] = {
+                        'format_id': f['format_id'],
+                        'height': height,
+                        'resolution': f"{height}p"
+                    }
+            
+            video_formats = list(video_formats_dict.values())
             
             video_formats.sort(key=lambda x: x['height'])
             print(f"FORMATS:{json.dumps(video_formats)}", flush=True)
     except Exception as e:
         print(f"ERROR:Failed to fetch formats: {e}", flush=True)
+
+def get_metadata(youtube_url):
+    ydl_opts = {
+        'quiet': True,
+        'no_warnings': True,
+        'noplaylist': True,
+    }
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(youtube_url, download=False)
+            
+            formats = info.get('formats', [])
+            video_formats_dict = {}
+            
+            for f in formats:
+                height = f.get('height')
+                vcodec = f.get('vcodec')
+                
+                if height and vcodec != 'none' and vcodec is not None:
+                    video_formats_dict[height] = {
+                        'format_id': f['format_id'],
+                        'height': height,
+                        'resolution': f"{height}p"
+                    }
+            
+            video_formats = list(video_formats_dict.values())
+            
+            video_formats.sort(key=lambda x: x['height'])
+            
+            metadata = {
+                'duration': info.get('duration', 0),
+                'formats': video_formats,
+                'title': info.get('title'),
+                'extractor_key': info.get('extractor_key', info.get('extractor', 'Unknown'))
+            }
+            
+            print(f"METADATA:{json.dumps(metadata)}", flush=True)
+    except Exception as e:
+        print(f"ERROR:Failed to fetch metadata: {e}", flush=True)
 
 def inspect_url(youtube_url):
     ydl_opts = {
@@ -469,15 +508,72 @@ def stitch_clips_from_urls(urls, output_dir, ffmpeg_path=None, no_stitch=False):
     except Exception as e:
         print(f"ERROR:{e}", flush=True)
 
+def download_clip(youtube_url, output_dir, start_time, end_time, quality=None, precise_cut=False, ffmpeg_path=None, title_override=None):
+    try:
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+
+        ffmpeg_bin = get_ffmpeg_path(ffmpeg_path)
+        if os.path.isabs(ffmpeg_bin):
+            os.environ['PATH'] = os.path.dirname(ffmpeg_bin) + os.pathsep + os.environ.get('PATH', '')
+
+        # Define the clip bounds
+        start_time = float(start_time)
+        end_time = float(end_time)
+
+        if title_override:
+            # title_override handles exact custom names for multi-clips
+            outtmpl = os.path.join(output_dir, f"{title_override} [{int(start_time)}s-{int(end_time)}s] ({int(time.time())}).%(ext)s")
+        else:
+            outtmpl = os.path.join(output_dir, f"%(title)s (%(id)s) [CLIP {int(start_time)}s-{int(end_time)}s] ({int(time.time())}).%(ext)s")
+
+        ydl_opts = {
+            'outtmpl': outtmpl,
+            'progress_hooks': [progress_hook],
+            'ffmpeg_location': ffmpeg_bin,
+            'no_warnings': True,
+            'download_ranges': yt_dlp.utils.download_range_func(None, [(start_time, end_time)]),
+            'merge_output_format': 'mp4',
+        }
+
+        if precise_cut:
+            # Instead of relying on force_keyframes_at_cuts which can crash certain bundled ffmpeg builds on Windows,
+            # we manually force re-encoding of the video during the download phase.
+            ydl_opts['external_downloader_args'] = {
+                'ffmpeg_o': ['-c:v', 'libx264', '-preset', 'fast', '-c:a', 'aac']
+            }
+
+        # Build format string
+        # format_id from frontend is an exact format_id from get_metadata
+        if quality:
+            ydl_opts['format'] = f"{quality}+bestaudio[ext=m4a]/best"
+        else:
+            ydl_opts['format'] = 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best'
+
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            print("STATUS:Starting clip download...", flush=True)
+            info_dict = ydl.extract_info(youtube_url, download=True)
+            filename = ydl.prepare_filename(info_dict)
+            if not filename.endswith('.mp4'):
+                filename = os.path.splitext(filename)[0] + '.mp4'
+            print(f"SUCCESS:{filename}", flush=True)
+
+    except Exception as e:
+        print(f"ERROR:Failed to download clip: {e}", flush=True)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Hermanos Forge Backend")
-    parser.add_argument('--action', choices=['get_formats', 'download_mp3', 'download_mp4', 'convert_mp4', 'stitch_clips', 'inspect_url'], required=True)
+    parser.add_argument('--action', choices=['get_formats', 'download_mp3', 'download_mp4', 'convert_mp4', 'stitch_clips', 'inspect_url', 'get_metadata', 'download_clip'], required=True)
     parser.add_argument('--url', help="YouTube URL")
     parser.add_argument('--urls', help="JSON list of clip URLs, in order")
     parser.add_argument('--file', help="Local MP4 file path for conversion")
     parser.add_argument('--outdir', default=os.path.join(os.path.expanduser("~"), "Downloads"), help="Output directory")
-    parser.add_argument('--quality', type=int, help="Maximum video height")
+    parser.add_argument('--quality', help="Maximum video height or specific format ID")
+    parser.add_argument('--start', type=float, help="Start time in seconds")
+    parser.add_argument('--end', type=float, help="End time in seconds")
+    parser.add_argument('--precise', action='store_true', help="Use precise cutting (re-encodes cuts)")
+    parser.add_argument('--title-override', help="Override the output filename base")
     parser.add_argument('--ffmpeg-path', help='Absolute path to ffmpeg executable (overrides detection)')
     parser.add_argument('--no-stitch', action='store_true', help="Download clips without stitching")
     parser.add_argument('--no-playlist', action='store_true', help="Download only single video from a playlist link")
@@ -486,6 +582,8 @@ if __name__ == "__main__":
 
     if args.action == 'get_formats':
         get_available_formats(args.url)
+    elif args.action == 'get_metadata':
+        get_metadata(args.url)
     elif args.action == 'inspect_url':
         inspect_url(args.url)
     elif args.action == 'download_mp3':
@@ -494,6 +592,8 @@ if __name__ == "__main__":
         download_youtube_as_mp4(args.url, args.outdir, args.quality, ffmpeg_path=args.ffmpeg_path, no_playlist=args.no_playlist)
     elif args.action == 'convert_mp4':
         convert_local_mp4_to_mp3(args.file, args.outdir, ffmpeg_path=args.ffmpeg_path)
+    elif args.action == 'download_clip':
+        download_clip(args.url, args.outdir, args.start, args.end, quality=args.quality, precise_cut=args.precise, ffmpeg_path=args.ffmpeg_path, title_override=args.title_override)
     elif args.action == 'stitch_clips':
         try:
             urls = json.loads(args.urls)

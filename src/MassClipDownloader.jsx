@@ -178,14 +178,17 @@ export default function MassClipDownloader({ onStitchSuccess, globalOutputDir, o
     } catch (err) {
       setIsProcessing(false);
       setGlobalStatus('');
-      toast.error(`Unexpected error: ${err.message}`, { style: { borderRadius: '10px', background: '#1E293B', color: '#fff' } });
+      const friendlyError = err.message?.includes('3436169992') ? 'Hey! Too fast, please wait a moment.' : err.message;
+      toast.error(`Unexpected error: ${friendlyError}`, { style: { borderRadius: '10px', background: '#1E293B', color: '#fff' } });
     }
   };
 
   const confirmCancel = async () => {
     setShowCancelModal(false);
     if (window.stitchAPI) {
-      await window.stitchAPI.cancelStitch(globalOutputDir);
+      try {
+        await window.stitchAPI.cancelStitch(globalOutputDir);
+      } catch (e) {}
     }
     setIsProcessing(false);
     setGlobalStatus('');
@@ -273,8 +276,8 @@ export default function MassClipDownloader({ onStitchSuccess, globalOutputDir, o
           <div className="flex gap-4">
             <button
               onClick={() => startStitching(false)}
-            disabled={isProcessing || isCoolingDown}
-            className="flex-[2] btn-primary h-14 text-lg flex items-center justify-center disabled:opacity-50"
+            disabled={!globalOutputDir || isProcessing || isCoolingDown}
+            className="flex-[2] btn-primary h-14 text-lg flex items-center justify-center disabled:opacity-50 disabled:pointer-events-none"
           >
             {isProcessing ? (
               <span className="flex items-center">
@@ -294,8 +297,8 @@ export default function MassClipDownloader({ onStitchSuccess, globalOutputDir, o
           {!isProcessing && (
             <button
               onClick={() => startStitching(true)}
-              disabled={isCoolingDown}
-              className="flex-[1] bg-surface hover:bg-surfaceHover border border-border text-textPrimary h-14 rounded-lg font-medium transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center"
+              disabled={!globalOutputDir || isCoolingDown}
+              className="flex-[1] bg-surface hover:bg-surfaceHover border border-border text-textPrimary h-14 rounded-lg font-medium transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center"
             >
               Mass Download (No Stitch)
             </button>
