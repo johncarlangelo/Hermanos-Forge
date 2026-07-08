@@ -1,14 +1,28 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('electronAPI', {
-    downloadYoutubeAsMp3: (url, outdir) => ipcRenderer.invoke('download-mp3', url, outdir),
-    downloadYoutubeAsMp4: (url, outdir, quality) => ipcRenderer.invoke('download-mp4', url, outdir, quality),
+    downloadYoutubeAsMp3: (url, outdir, noPlaylist) => ipcRenderer.invoke('download-mp3', url, outdir, noPlaylist),
+    downloadYoutubeAsMp4: (url, outdir, quality, noPlaylist) => ipcRenderer.invoke('download-mp4', url, outdir, quality, noPlaylist),
+    downloadClip: (url, outdir, start, end, quality, precise, titleOverride) => ipcRenderer.invoke('download-clip', url, outdir, start, end, quality, precise, titleOverride),
+    inspectUrl: (url) => ipcRenderer.invoke('inspect-url', url),
     cancelDownload: () => ipcRenderer.invoke('cancel-single-download'),
     convertLocalMp4: (file, outdir) => ipcRenderer.invoke('convert-mp4', file, outdir),
     getAvailableFormats: (url) => ipcRenderer.invoke('get-formats', url),
-    onProgressUpdate: (callback) => ipcRenderer.on('progress-update', callback),
-    onStatusUpdate: (callback) => ipcRenderer.on('status-update', callback),
+    getVideoMetadata: (url) => ipcRenderer.invoke('get-video-metadata', url),
+    onProgressUpdate: (callback) => {
+        const handler = (_event, p) => callback(_event, p);
+        ipcRenderer.on('progress-update', handler);
+        return () => ipcRenderer.removeListener('progress-update', handler);
+    },
+    onStatusUpdate: (callback) => {
+        const handler = (_event, s) => callback(_event, s);
+        ipcRenderer.on('status-update', handler);
+        return () => ipcRenderer.removeListener('status-update', handler);
+    },
+    offProgressUpdate: (callback) => ipcRenderer.removeListener('progress-update', callback),
+    offStatusUpdate: (callback) => ipcRenderer.removeListener('status-update', callback),
     openFileLocation: (filePath) => ipcRenderer.invoke('open-location', filePath),
+    getUniqueFolder: (baseDir, folderName) => ipcRenderer.invoke('get-unique-folder', baseDir, folderName),
     chooseDirectory: () => ipcRenderer.invoke('choose-directory'),
     chooseFile: () => ipcRenderer.invoke('choose-file'),
     getDefaultDownloadPath: () => ipcRenderer.invoke('get-default-download-path'),

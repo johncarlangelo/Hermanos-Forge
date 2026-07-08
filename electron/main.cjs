@@ -138,6 +138,19 @@ function runBackendCommand(action, extraArgs = [], event) {
             }
         } catch (e) {}
 
+        let expectedDuration = null;
+        try {
+            const startIndex = extraArgs.indexOf('--start');
+            const endIndex = extraArgs.indexOf('--end');
+            if (startIndex !== -1 && endIndex !== -1) {
+                const s = parseFloat(extraArgs[startIndex + 1]);
+                const e = parseFloat(extraArgs[endIndex + 1]);
+                if (!isNaN(s) && !isNaN(e)) {
+                    expectedDuration = e - s;
+                }
+            }
+        } catch (e) {}
+
         const child = spawn(backend.cmd, args, {
             windowsHide: true,
             env: { ...process.env, PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1', ELECTRON_RESOURCES_PATH: process.resourcesPath, ...(ffPath ? { FFMPEG_PATH: ffPath } : {}) },
@@ -180,6 +193,18 @@ function runBackendCommand(action, extraArgs = [], event) {
                         lastSuccess = formats;
                         doResolve(formats);
                     } catch (e) {}
+                } else if (line.startsWith('METADATA:')) {
+                    try {
+                        const metadata = JSON.parse(line.substring(9));
+                        lastSuccess = metadata;
+                        doResolve(metadata);
+                    } catch (e) {}
+                } else if (line.startsWith('INSPECT:')) {
+                    try {
+                        const result = JSON.parse(line.substring(8));
+                        lastSuccess = result;
+                        doResolve(result);
+                    } catch (e) {}
                 } else if (line.startsWith('SUCCESS:')) {
                     const filepath = line.substring(8).trim();
                     lastSuccess = { success: true, filepath };
@@ -193,10 +218,41 @@ function runBackendCommand(action, extraArgs = [], event) {
             });
         });
 
+        let stderrBuffer = '';
+
         child.stderr.on('data', (data) => {
-            const errText = data.toString('utf8');
-            console.error(`Backend error: ${errText}`);
-            sendLog(`[STDERR] ${errText.trim()}`);
+            stderrBuffer += data.toString('utf8');
+            
+            // split by \r or \n
+            const lines = stderrBuffer.split(/[\r\n]+/);
+            // keep the last segment in the buffer (might be incomplete)
+            stderrBuffer = lines.pop();
+
+            lines.forEach(line => {
+                line = line.trim();
+                if (!line) return;
+
+                if (expectedDuration && expectedDuration > 0) {
+                    const timeMatch = line.match(/time=(\d{2}):(\d{2}):(\d{2}\.\d{2})/);
+                    if (timeMatch) {
+                        const hours = parseInt(timeMatch[1], 10);
+                        const minutes = parseInt(timeMatch[2], 10);
+                        const seconds = parseFloat(timeMatch[3]);
+                        const currentSeconds = (hours * 3600) + (minutes * 60) + seconds;
+                        
+                        let percent = (currentSeconds / expectedDuration) * 100;
+                        if (percent > 100) percent = 100;
+                        if (event && !isNaN(percent)) event.sender.send('progress-update', percent);
+                    }
+                }
+
+                if (line.includes('time=') && line.includes('bitrate=')) {
+                    // Suppress ffmpeg progress line from flooding terminal and UI logs
+                } else {
+                    console.error(`Backend error: ${line}`);
+                    sendLog(`[STDERR] ${line}`);
+                }
+            });
         });
 
         child.on('close', (code) => {
@@ -208,6 +264,8 @@ function runBackendCommand(action, extraArgs = [], event) {
                 // This can happen if the charmap error happened AFTER the file was written
                 // Resolve gracefully — the file is on disk
                 doResolve(lastSuccess || { success: true, filepath: null });
+            } else if (child.killed || code === null) {
+                doResolve({ success: false, error: 'Process was cancelled' });
             } else {
                 doReject(lastError || new Error(`Process exited with code ${code}`));
             }
@@ -333,13 +391,16 @@ ipcMain.handle('select-output-folder', async () => {
     return result.filePaths[0];
 });
 
-ipcMain.handle('download-mp3', async (event, url, outdir) => {
-    return runBackendCommand('download_mp3', ['--url', url, '--outdir', outdir], event);
+ipcMain.handle('download-mp3', async (event, url, outdir, noPlaylist) => {
+    let args = ['--url', url, '--outdir', outdir];
+    if (noPlaylist) args.push('--no-playlist');
+    return runBackendCommand('download_mp3', args, event);
 });
 
-ipcMain.handle('download-mp4', async (event, url, outdir, quality) => {
+ipcMain.handle('download-mp4', async (event, url, outdir, quality, noPlaylist) => {
     let args = ['--url', url, '--outdir', outdir];
     if (quality) args.push('--quality', quality.toString());
+    if (noPlaylist) args.push('--no-playlist');
     return runBackendCommand('download_mp4', args, event);
 });
 
@@ -349,6 +410,22 @@ ipcMain.handle('convert-mp4', async (event, file, outdir) => {
 
 ipcMain.handle('get-formats', async (event, url) => {
     return runBackendCommand('get_formats', ['--url', url], event);
+});
+
+ipcMain.handle('get-video-metadata', async (event, url) => {
+    return runBackendCommand('get_metadata', ['--url', url], event);
+});
+
+ipcMain.handle('download-clip', async (event, url, outdir, start, end, quality, precise, titleOverride) => {
+    let args = ['--url', url, '--outdir', outdir, '--start', start.toString(), '--end', end.toString()];
+    if (quality) args.push('--quality', quality.toString());
+    if (precise) args.push('--precise');
+    if (titleOverride) args.push('--title-override', titleOverride);
+    return runBackendCommand('download_clip', args, event);
+});
+
+ipcMain.handle('inspect-url', async (event, url) => {
+    return runBackendCommand('inspect_url', ['--url', url], event);
 });
 
 ipcMain.handle('open-location', async (event, filePath) => {
@@ -364,6 +441,16 @@ ipcMain.handle('open-location', async (event, filePath) => {
         console.error(e);
         return false;
     }
+});
+
+ipcMain.handle('get-unique-folder', async (event, baseDir, folderName) => {
+    let targetDir = path.join(baseDir, folderName);
+    let counter = 1;
+    while (fs.existsSync(targetDir)) {
+        targetDir = path.join(baseDir, `${folderName} ${counter}`);
+        counter++;
+    }
+    return targetDir;
 });
 
 ipcMain.handle('choose-directory', async () => {
