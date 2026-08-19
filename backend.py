@@ -23,7 +23,7 @@ def apply_cookie_opts(ydl_opts, app_data_path):
     ydl_opts['js_runtimes'] = {'node': {}}
     
     # Spoof client to bypass 403 Forbidden errors on video data download
-    ydl_opts['extractor_args'] = {'youtube': {'player_client': ['android', 'web']}}
+    ydl_opts['extractor_args'] = {'youtube': {'player_client': ['web_embedded', 'web']}}
     
     if app_data_path:
         cookie_file = os.path.join(app_data_path, 'cookies.txt')
