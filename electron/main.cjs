@@ -212,6 +212,11 @@ function runBackendCommand(action, extraArgs = [], event) {
                 } else if (line.startsWith('ERROR:')) {
                     lastError = new Error(line.substring(6).trim());
                     doReject(lastError);
+                } else if (line.startsWith('AUTH_ERROR:')) {
+                    const msg = line.substring(11).trim();
+                    if (event) event.sender.send('auth-error', msg);
+                    lastError = new Error(`AUTH_ERROR: ${msg}`);
+                    doReject(lastError);
                 } else {
                     console.log(`Backend output: ${line}`);
                 }
@@ -288,7 +293,7 @@ ipcMain.handle('stitch-clips', async (event, { urls, outputDir, noStitch }) => {
             return reject(new Error(msg));
         }
 
-        const args = [...backend.args, '--action', 'stitch_clips', '--urls', JSON.stringify(urls), '--outdir', outputDir];
+        const args = [...backend.args, '--action', 'stitch_clips', '--urls', JSON.stringify(urls), '--outdir', outputDir, '--app-data-path', app.getPath('userData')];
         if (noStitch) args.push('--no-stitch');
 
         let ffPath = null;
@@ -332,6 +337,9 @@ ipcMain.handle('stitch-clips', async (event, { urls, outputDir, noStitch }) => {
                     event.sender.send('stitch-success', line.slice('SUCCESS:'.length));
                 } else if (line.startsWith('ERROR:')) {
                     event.sender.send('stitch-error', line.slice('ERROR:'.length));
+                } else if (line.startsWith('AUTH_ERROR:')) {
+                    event.sender.send('auth-error', line.slice('AUTH_ERROR:'.length));
+                    event.sender.send('stitch-error', 'Authentication failed: ' + line.slice('AUTH_ERROR:'.length));
                 } else {
                     console.log(`Backend output: ${line}`);
                 }
@@ -392,13 +400,13 @@ ipcMain.handle('select-output-folder', async () => {
 });
 
 ipcMain.handle('download-mp3', async (event, url, outdir, noPlaylist) => {
-    let args = ['--url', url, '--outdir', outdir];
+    let args = ['--url', url, '--outdir', outdir, '--app-data-path', app.getPath('userData')];
     if (noPlaylist) args.push('--no-playlist');
     return runBackendCommand('download_mp3', args, event);
 });
 
 ipcMain.handle('download-mp4', async (event, url, outdir, quality, noPlaylist) => {
-    let args = ['--url', url, '--outdir', outdir];
+    let args = ['--url', url, '--outdir', outdir, '--app-data-path', app.getPath('userData')];
     if (quality) args.push('--quality', quality.toString());
     if (noPlaylist) args.push('--no-playlist');
     return runBackendCommand('download_mp4', args, event);
@@ -409,15 +417,15 @@ ipcMain.handle('convert-mp4', async (event, file, outdir) => {
 });
 
 ipcMain.handle('get-formats', async (event, url) => {
-    return runBackendCommand('get_formats', ['--url', url], event);
+    return runBackendCommand('get_formats', ['--url', url, '--app-data-path', app.getPath('userData')], event);
 });
 
 ipcMain.handle('get-video-metadata', async (event, url) => {
-    return runBackendCommand('get_metadata', ['--url', url], event);
+    return runBackendCommand('get_metadata', ['--url', url, '--app-data-path', app.getPath('userData')], event);
 });
 
 ipcMain.handle('download-clip', async (event, url, outdir, start, end, quality, precise, titleOverride) => {
-    let args = ['--url', url, '--outdir', outdir, '--start', start.toString(), '--end', end.toString()];
+    let args = ['--url', url, '--outdir', outdir, '--start', start.toString(), '--end', end.toString(), '--app-data-path', app.getPath('userData')];
     if (quality) args.push('--quality', quality.toString());
     if (precise) args.push('--precise');
     if (titleOverride) args.push('--title-override', titleOverride);
@@ -425,7 +433,52 @@ ipcMain.handle('download-clip', async (event, url, outdir, start, end, quality, 
 });
 
 ipcMain.handle('inspect-url', async (event, url) => {
-    return runBackendCommand('inspect_url', ['--url', url], event);
+    return runBackendCommand('inspect_url', ['--url', url, '--app-data-path', app.getPath('userData')], event);
+});
+
+ipcMain.handle('extract-cookies', async (event, browser) => {
+    let args = ['--browser', browser, '--app-data-path', app.getPath('userData')];
+    return runBackendCommand('extract_cookies', args, event);
+});
+
+ipcMain.handle('import-cookies-file', async (event, filePath, browserName) => {
+    try {
+        let finalPath = filePath;
+        if (!finalPath) {
+            const result = await dialog.showOpenDialog(mainWindow, {
+                title: 'Select cookies.txt',
+                properties: ['openFile'],
+                filters: [{ name: 'Text Files', extensions: ['txt'] }]
+            });
+            if (result.canceled || result.filePaths.length === 0) return { success: false };
+            finalPath = result.filePaths[0];
+        }
+
+        const content = fs.readFileSync(finalPath, 'utf8');
+        const lines = content.split(/\r?\n/);
+
+        if (!lines[0] || (!lines[0].includes('# HTTP Cookie File') && !lines[0].includes('# Netscape HTTP Cookie File'))) {
+            throw new Error('Invalid format: File does not appear to be a valid Netscape cookies.txt file.');
+        }
+
+        const filteredLines = lines.filter(line => {
+            if (line.trim() === '') return false;
+            if (line.startsWith('#') && !line.startsWith('#HttpOnly_')) return true; // keep comments/headers
+            return line.includes('.youtube.com') || line.includes('.google.com') || line.includes('#HttpOnly_.youtube.com') || line.includes('#HttpOnly_.google.com');
+        });
+
+        const userDataPath = app.getPath('userData');
+        const cookiesPath = path.join(userDataPath, 'cookies.txt');
+        fs.writeFileSync(cookiesPath, filteredLines.join('\n'), 'utf8');
+
+        const metaPath = path.join(userDataPath, 'cookies_meta.json');
+        fs.writeFileSync(metaPath, JSON.stringify({ browserName, syncedAt: Date.now() }), 'utf8');
+
+        return { success: true };
+    } catch (err) {
+        console.error('importCookiesFile error:', err);
+        throw err;
+    }
 });
 
 ipcMain.handle('open-location', async (event, filePath) => {
@@ -469,6 +522,10 @@ ipcMain.handle('get-default-download-path', async () => {
     } catch (e) {
         return app.getPath('home');
     }
+});
+
+ipcMain.handle('open-external', async (event, url) => {
+    return shell.openExternal(url);
 });
 
 ipcMain.handle('choose-file', async () => {

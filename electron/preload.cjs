@@ -1,4 +1,4 @@
-const { contextBridge, ipcRenderer } = require('electron');
+const { contextBridge, ipcRenderer, webUtils } = require('electron');
 
 contextBridge.exposeInMainWorld('electronAPI', {
     downloadYoutubeAsMp3: (url, outdir, noPlaylist) => ipcRenderer.invoke('download-mp3', url, outdir, noPlaylist),
@@ -9,6 +9,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     convertLocalMp4: (file, outdir) => ipcRenderer.invoke('convert-mp4', file, outdir),
     getAvailableFormats: (url) => ipcRenderer.invoke('get-formats', url),
     getVideoMetadata: (url) => ipcRenderer.invoke('get-video-metadata', url),
+    extractCookies: (browser) => ipcRenderer.invoke('extract-cookies', browser),
     onProgressUpdate: (callback) => {
         const handler = (_event, p) => callback(_event, p);
         ipcRenderer.on('progress-update', handler);
@@ -21,6 +22,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
     },
     offProgressUpdate: (callback) => ipcRenderer.removeListener('progress-update', callback),
     offStatusUpdate: (callback) => ipcRenderer.removeListener('status-update', callback),
+    onAuthError: (callback) => {
+        const handler = (_event, msg) => callback(msg);
+        ipcRenderer.on('auth-error', handler);
+        return () => ipcRenderer.removeListener('auth-error', handler);
+    },
+    importCookiesFile: (filePath, browserName) => ipcRenderer.invoke('import-cookies-file', filePath, browserName),
+    getPathForFile: (file) => webUtils ? webUtils.getPathForFile(file) : (file.path || ''),
     openFileLocation: (filePath) => ipcRenderer.invoke('open-location', filePath),
     getUniqueFolder: (baseDir, folderName) => ipcRenderer.invoke('get-unique-folder', baseDir, folderName),
     chooseDirectory: () => ipcRenderer.invoke('choose-directory'),
@@ -32,7 +40,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
         ipcRenderer.on('log-update', handler);
         return () => ipcRenderer.removeListener('log-update', handler);
     },
-    checkSystemStatus: () => ipcRenderer.invoke('check-system-status')
+    checkSystemStatus: () => ipcRenderer.invoke('check-system-status'),
+    openExternal: (url) => ipcRenderer.invoke('open-external', url)
 });
 
 contextBridge.exposeInMainWorld('stitchAPI', {

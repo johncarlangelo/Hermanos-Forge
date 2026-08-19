@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import iconUrl from './assets/icon.svg';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Download, Settings, Clock, Trash2, FolderOpen, Video, Music, AlertCircle, Copy, Scissors, Terminal, Activity, Server, RefreshCw, PanelLeftClose, PanelLeftOpen, ChevronLeft, ChevronRight, X, OctagonX, Check, Loader2, Timer } from 'lucide-react';
+import { Download, Settings, Clock, Trash2, FolderOpen, Video, Music, AlertCircle, Copy, Scissors, Terminal, Activity, Server, RefreshCw, PanelLeftClose, PanelLeftOpen, ChevronLeft, ChevronRight, X, OctagonX, Check, Loader2, Timer, Cookie, Upload, AlertTriangle } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import pkg from '../package.json';
 import MassClipDownloader from './MassClipDownloader';
@@ -21,7 +21,65 @@ export default function App() {
   const [status, setStatus] = useState('');
   const [progress, setProgress] = useState(0);
   const [isDownloading, setIsDownloading] = useState(false);
-  const [urlError, setUrlError] = useState(false);
+  const [urlError, setUrlError] = useState(null);
+
+  const [cookieBrowser, setCookieBrowser] = useState(() => localStorage.getItem('cookie-browser') || 'Chrome');
+  const [cookieStatus, setCookieStatus] = useState(() => localStorage.getItem('cookie-status') || 'missing');
+  const [showCookieWizard, setShowCookieWizard] = useState(false);
+  const [wizardStep, setWizardStep] = useState(1);
+  const [cookieSyncDate, setCookieSyncDate] = useState(() => localStorage.getItem('cookie-sync-date') || '');
+  const [isSyncingCookies, setIsSyncingCookies] = useState(false);
+  const [isDraggingCookie, setIsDraggingCookie] = useState(false);
+
+  useEffect(() => {
+    localStorage.setItem('cookie-browser', cookieBrowser);
+  }, [cookieBrowser]);
+  useEffect(() => {
+    localStorage.setItem('cookie-status', cookieStatus);
+  }, [cookieStatus]);
+  useEffect(() => {
+    localStorage.setItem('cookie-sync-date', cookieSyncDate);
+  }, [cookieSyncDate]);
+
+  const handleFirefoxSync = async () => {
+    setIsSyncingCookies(true);
+    try {
+      if (window.electronAPI && window.electronAPI.extractCookies) {
+        await window.electronAPI.extractCookies('Firefox');
+        setCookieStatus('active');
+        setCookieBrowser('Firefox');
+        setCookieSyncDate(new Date().toISOString());
+        setWizardStep(5); // Confirmation page
+      }
+    } catch (err) {
+      const errMsg = err.message.toLowerCase();
+      if (errMsg.includes('could not find firefox cookies database') || errMsg.includes('firefox cookies database in')) {
+        toast.error("You don't have Firefox browser installed!", { style: { borderRadius: '10px', background: '#1E293B', color: '#fff' } });
+      } else {
+        toast.error("Failed to sync Firefox cookies: " + err.message, { style: { borderRadius: '10px', background: '#1E293B', color: '#fff' } });
+      }
+    } finally {
+      setIsSyncingCookies(false);
+    }
+  };
+
+  const handleImportCookies = async (filePath = null) => {
+    setIsSyncingCookies(true);
+    try {
+      if (window.electronAPI && window.electronAPI.importCookiesFile) {
+        const res = await window.electronAPI.importCookiesFile(filePath, cookieBrowser);
+        if (res && res.success) {
+          setCookieStatus('active');
+          setCookieSyncDate(new Date().toISOString());
+          setWizardStep(5); // Confirmation page
+        }
+      }
+    } catch (err) {
+      toast.error(err.message, { style: { borderRadius: '10px', background: '#1E293B', color: '#fff' } });
+    } finally {
+      setIsSyncingCookies(false);
+    }
+  };
 
   // Playlist States
   const [isInspecting, setIsInspecting] = useState(false);
@@ -30,6 +88,7 @@ export default function App() {
   const [playlistDownloadQueue, setPlaylistDownloadQueue] = useState([]);
   const [showPlaylistModal, setShowPlaylistModal] = useState(false);
   const currentDownloadingVideoIdRef = useRef(null);
+  const [singleVideoMetadata, setSingleVideoMetadata] = useState(null);
 
   // Status Modal State
   const [isStatusOpen, setIsStatusOpen] = useState(false);
@@ -54,12 +113,11 @@ export default function App() {
     setIsRefreshingStatus(false);
   };
 
-  // Auto-refresh when the modal is opened
   useEffect(() => {
-    if (isStatusOpen) {
+    if (activeTab === 'settings') {
       refreshStatus();
     }
-  }, [isStatusOpen]);
+  }, [activeTab]);
 
   const [history, setHistory] = useState(() => {
     const saved = localStorage.getItem('download-history');
@@ -106,8 +164,9 @@ export default function App() {
 
   useEffect(() => {
     // Set up IPC listeners
+    const unsubs = [];
     if (window.electronAPI) {
-      window.electronAPI.onProgressUpdate((event, percent) => {
+      const unsubProgress = window.electronAPI.onProgressUpdate((event, percent) => {
         setProgress(percent);
         if (currentDownloadingVideoIdRef.current) {
           setPlaylistDownloadQueue(prev => prev.map(item =>
@@ -117,7 +176,7 @@ export default function App() {
           ));
         }
       });
-      window.electronAPI.onStatusUpdate((event, msg) => {
+      const unsubStatus = window.electronAPI.onStatusUpdate((event, msg) => {
         setStatus(msg);
         if (currentDownloadingVideoIdRef.current) {
           setPlaylistDownloadQueue(prev => prev.map(item =>
@@ -127,7 +186,26 @@ export default function App() {
           ));
         }
       });
+      unsubs.push(unsubProgress, unsubStatus);
+
+      if (window.electronAPI.onBrowserLocked) {
+        const unsubLocked = window.electronAPI.onBrowserLocked((msg) => {
+          setIsSyncingCookies(false);
+          toast.error("Browser is locked! Please completely close it via Task Manager.", { duration: 5000, style: { borderRadius: '10px', background: '#1E293B', color: '#fff' } });
+        });
+        unsubs.push(unsubLocked);
+      }
+      if (window.electronAPI.onAuthError) {
+        const unsubAuth = window.electronAPI.onAuthError((msg) => {
+          setCookieStatus('stale');
+          toast.error("Authentication failed. Your cookies might be expired. Please re-sync in Settings.", { duration: 5000, style: { borderRadius: '10px', background: '#1E293B', color: '#fff' } });
+        });
+        unsubs.push(unsubAuth);
+      }
     }
+    return () => {
+      unsubs.forEach(unsub => unsub && unsub());
+    };
   }, []);
 
   const fetchFormats = async (urlToFetch) => {
@@ -142,11 +220,11 @@ export default function App() {
       }
     } catch (err) {
       console.error("Failed to fetch formats", err);
-      setUrlError(true);
-      toast.error(err.message?.includes('Private video')
-        ? "This video is private and cannot be downloaded."
-        : "Failed to fetch video qualities.",
-        { style: { borderRadius: '10px', background: '#1E293B', color: '#fff' } });
+      const errLower = err.message?.toLowerCase() || '';
+      const isAuthError = errLower.includes('private video') || errLower.includes('confirm your age') || errLower.includes('sign in');
+      setUrlError(isAuthError
+        ? "This video is age-restricted or private. Please sync your browser cookies in Settings to download."
+        : "Failed to fetch video qualities.");
     } finally {
       setIsFetchingFormats(false);
     }
@@ -155,9 +233,10 @@ export default function App() {
   const handleUrlChange = async (e) => {
     const newUrl = e.target.value;
     setUrl(newUrl);
-    setUrlError(false);
+    setUrlError(null);
     setPlaylistEntries([]);
     setSelectedPlaylistVideos([]);
+    setSingleVideoMetadata(null);
 
     if (newUrl && (newUrl.includes('youtube.com') || newUrl.includes('youtu.be'))) {
       setIsInspecting(true);
@@ -170,15 +249,17 @@ export default function App() {
             setShowPlaylistModal(true);
             setIsInspecting(false);
             return;
+          } else if (inspectResult && inspectResult.title) {
+            setSingleVideoMetadata({ title: inspectResult.title, id: inspectResult.id });
           }
         }
       } catch (err) {
         console.error("Failed to inspect url", err);
-        setUrlError(true);
-        toast.error(err.message?.includes('Private video')
-          ? "This video is private and cannot be downloaded."
-          : "Failed to inspect the link.",
-          { style: { borderRadius: '10px', background: '#1E293B', color: '#fff' } });
+        const errLower = err.message?.toLowerCase() || '';
+        const isAuthError = errLower.includes('private video') || errLower.includes('confirm your age') || errLower.includes('sign in');
+        setUrlError(isAuthError
+          ? "This video is age-restricted or private. Please sync your browser cookies in Settings to download."
+          : "Failed to inspect the link.");
       }
       setIsInspecting(false);
 
@@ -263,6 +344,9 @@ export default function App() {
         setIsDownloading(false);
         setPlaylistDownloadQueue([]);
         setUrl('');
+        setSingleVideoMetadata(null);
+        setFormats([]);
+        setSelectedQuality('');
       }, 3000);
     }
   };
@@ -324,6 +408,9 @@ export default function App() {
         setUrl('');
         setProgress(0);
         setStatus('');
+        setSingleVideoMetadata(null);
+        setFormats([]);
+        setSelectedQuality('');
       }, 3000);
 
     } catch (err) {
@@ -408,8 +495,6 @@ export default function App() {
 
   return (
     <div className="flex h-screen w-full bg-background overflow-hidden font-sans text-textPrimary selection:bg-primary/30 selection:text-primary">
-      <Toaster position="bottom-right" />
-
       {/* Download Progress Modal */}
       <AnimatePresence>
         {isDownloading && (
@@ -828,10 +913,10 @@ export default function App() {
 
           <div className="mt-auto pt-4 flex flex-col gap-2">
             <button
-              onClick={() => setActiveTab('history')}
-              className={`group relative flex items-center h-12 rounded-xl transition-all px-4 w-full justify-start ${activeTab === 'history' ? 'text-primary' : 'text-textSecondary'} hover:text-white hover:bg-surfaceHover`}
+              onClick={() => setActiveTab('settings')}
+              className={`group relative flex items-center h-12 rounded-xl transition-all px-4 w-full justify-start ${activeTab === 'settings' ? 'text-primary' : 'text-textSecondary'} hover:text-white hover:bg-surfaceHover`}
             >
-              <Clock className="w-5 h-5 flex-shrink-0" />
+              <Settings className="w-5 h-5 flex-shrink-0" />
               <AnimatePresence initial={false}>
                 {!isSidebarCollapsed && (
                   <motion.span
@@ -841,119 +926,15 @@ export default function App() {
                     transition={{ duration: 0.2 }}
                     className="font-medium whitespace-nowrap ml-3 overflow-hidden"
                   >
-                    History
+                    Settings
                   </motion.span>
                 )}
               </AnimatePresence>
-              {isSidebarCollapsed && <div className="absolute left-full ml-4 opacity-0 group-hover:opacity-100 px-3 py-1.5 bg-surface border border-border rounded-lg text-sm font-medium text-textPrimary whitespace-nowrap transition-all shadow-lg pointer-events-none z-50">History</div>}
+              {isSidebarCollapsed && <div className="absolute left-full ml-4 opacity-0 group-hover:opacity-100 px-3 py-1.5 bg-surface border border-border rounded-lg text-sm font-medium text-textPrimary whitespace-nowrap transition-all shadow-lg pointer-events-none z-50">Settings</div>}
+              {cookieStatus === 'stale' && (
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.8)]" />
+              )}
             </button>
-            <button
-              onClick={() => setIsOutputFolderModalOpen(true)}
-              className={`group relative flex items-center h-12 rounded-xl transition-all px-4 w-full justify-start text-textSecondary hover:text-white hover:bg-surfaceHover`}
-            >
-              <FolderOpen className="w-5 h-5 flex-shrink-0" />
-              <AnimatePresence initial={false}>
-                {!isSidebarCollapsed && (
-                  <motion.span
-                    initial={{ opacity: 0, width: 0 }}
-                    animate={{ opacity: 1, width: 'auto' }}
-                    exit={{ opacity: 0, width: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="font-medium whitespace-nowrap ml-3 overflow-hidden"
-                  >
-                    Set Output Folder
-                  </motion.span>
-                )}
-              </AnimatePresence>
-              {isSidebarCollapsed && <div className="absolute left-full ml-4 opacity-0 group-hover:opacity-100 px-3 py-1.5 bg-surface border border-border rounded-lg text-sm font-medium text-textPrimary whitespace-nowrap transition-all shadow-lg pointer-events-none z-50">Output Folder</div>}
-            </button>
-
-            <button
-              onClick={() => window.electronAPI && window.electronAPI.openLogsWindow()}
-              className={`group relative flex items-center h-12 rounded-xl transition-all px-4 w-full justify-start text-textSecondary hover:text-white hover:bg-surfaceHover`}
-            >
-              <Terminal className="w-5 h-5 flex-shrink-0" />
-              <AnimatePresence initial={false}>
-                {!isSidebarCollapsed && (
-                  <motion.span
-                    initial={{ opacity: 0, width: 0 }}
-                    animate={{ opacity: 1, width: 'auto' }}
-                    exit={{ opacity: 0, width: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="font-medium whitespace-nowrap ml-3 overflow-hidden"
-                  >
-                    Show Logs
-                  </motion.span>
-                )}
-              </AnimatePresence>
-              {isSidebarCollapsed && <div className="absolute left-full ml-4 opacity-0 group-hover:opacity-100 px-3 py-1.5 bg-surface border border-border rounded-lg text-sm font-medium text-textPrimary whitespace-nowrap transition-all shadow-lg pointer-events-none z-50">Developer Logs</div>}
-            </button>
-
-            <div className="relative">
-              <button
-                onClick={() => setIsStatusOpen(!isStatusOpen)}
-                className={`group relative flex items-center h-12 rounded-xl transition-all px-4 w-full justify-start ${isStatusOpen ? 'text-primary' : 'text-textSecondary'} hover:text-white hover:bg-surfaceHover`}
-              >
-                <Activity className="w-5 h-5 flex-shrink-0" />
-                <AnimatePresence initial={false}>
-                  {!isSidebarCollapsed && (
-                    <motion.span
-                      initial={{ opacity: 0, width: 0 }}
-                      animate={{ opacity: 1, width: 'auto' }}
-                      exit={{ opacity: 0, width: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className="font-medium whitespace-nowrap ml-3 overflow-hidden"
-                    >
-                      System Status
-                    </motion.span>
-                  )}
-                </AnimatePresence>
-                {isSidebarCollapsed && <div className="absolute left-full ml-4 opacity-0 group-hover:opacity-100 px-3 py-1.5 bg-surface border border-border rounded-lg text-sm font-medium text-textPrimary whitespace-nowrap transition-all shadow-lg pointer-events-none z-50">System Status</div>}
-              </button>
-
-              <AnimatePresence>
-                {isStatusOpen && (
-                  <motion.div
-                    initial={{ opacity: 0, x: -10, scale: 0.95 }}
-                    animate={{ opacity: 1, x: 0, scale: 1 }}
-                    exit={{ opacity: 0, x: -10, scale: 0.95 }}
-                    transition={{ duration: 0.15 }}
-                    className="absolute left-full bottom-0 ml-4 w-80 bg-surface/95 backdrop-blur-xl border border-border rounded-xl shadow-2xl p-4 z-50 overflow-hidden"
-                  >
-                    <div className="flex justify-between items-center mb-4">
-                      <h3 className="font-semibold text-textPrimary flex items-center gap-2">
-                        <Server className="w-4 h-4 text-primary" /> System Status
-                      </h3>
-                      <button
-                        onClick={refreshStatus}
-                        disabled={isRefreshingStatus}
-                        className={`p-1.5 hover:bg-background rounded-md transition-colors ${isRefreshingStatus ? 'text-primary' : 'text-textSecondary hover:text-textPrimary'}`}
-                        title="Refresh Status"
-                      >
-                        <RefreshCw className={`w-4 h-4 ${isRefreshingStatus ? 'animate-spin' : ''}`} />
-                      </button>
-                    </div>
-
-                    <div className="space-y-2 max-h-72 overflow-y-auto pr-2 custom-scrollbar">
-                      <StatusItem name="Python Backend" status={systemStatus.backend?.state || 'CHECKING'} path={systemStatus.backend?.path} />
-                      <StatusItem name="FFmpeg" status={systemStatus.ffmpeg?.state || 'CHECKING'} path={systemStatus.ffmpeg?.path} />
-                      <StatusItem name="FFprobe" status={systemStatus.ffprobe?.state || 'CHECKING'} path={systemStatus.ffprobe?.path} />
-
-                      {systemStatus.dlls && systemStatus.dlls.length > 0 && (
-                        <>
-                          <div className="text-[10px] font-semibold text-textSecondary uppercase tracking-wider pt-3 pb-1 border-t border-border/40 mt-3">
-                            Shared Libraries (DLLs)
-                          </div>
-                          {systemStatus.dlls.map(dll => (
-                            <StatusItem key={dll.name} name={dll.name} status={dll.state} path={dll.path} />
-                          ))}
-                        </>
-                      )}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
           </div>
         </div>
       </aside>
@@ -966,6 +947,13 @@ export default function App() {
             <h2 className="text-xl font-semibold capitalize text-textPrimary">{activeTab === 'mass-stitch' ? 'Clip and Stitch' : activeTab.replace('-', ' ')}</h2>
           </div>
           <div className="flex items-center gap-4">
+            <button
+              onClick={() => setActiveTab('history')}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors ${activeTab === 'history' ? 'bg-primary/20 text-primary' : 'hover:bg-surfaceHover text-textSecondary hover:text-textPrimary'}`}
+            >
+              <Clock className="w-4 h-4" />
+              <span className="text-sm font-medium">History</span>
+            </button>
             <div className="version-pill">v{pkg.version}</div>
             <ThemeToggle />
           </div>
@@ -1074,13 +1062,45 @@ export default function App() {
                         value={url}
                         onChange={handleUrlChange}
                         placeholder="Paste link here..."
-                        className="input-field h-12 text-lg"
+                        className={`input-field h-12 text-lg ${urlError ? 'border-amber-500/50 focus:border-amber-500' : ''}`}
                         disabled={isDownloading || isInspecting}
                       />
                     </div>
+                    {urlError && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        className="mt-3 flex items-start gap-2 text-sm text-amber-500 bg-amber-500/10 border border-amber-500/20 p-3 rounded-lg"
+                      >
+                        <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                        <p>{urlError}</p>
+                      </motion.div>
+                    )}
                   </div>
                   {/* Quick Download removed to encourage using the main Download control */}
                 </div>
+
+                {/* Single Video Metadata Card */}
+                {singleVideoMetadata && !isInspecting && !urlError && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="glass-panel p-4 flex items-center gap-4 border-primary/20 bg-primary/5"
+                  >
+                    <div className="flex-shrink-0 w-24 h-14 bg-background/50 rounded overflow-hidden flex items-center justify-center relative border border-border">
+                      <img
+                        src={`https://img.youtube.com/vi/${singleVideoMetadata.id}/mqdefault.jpg`}
+                        className="w-full h-full object-cover"
+                        alt="thumbnail"
+                        onError={(e) => e.target.style.display = 'none'}
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-textPrimary truncate" title={singleVideoMetadata.title}>{singleVideoMetadata.title}</p>
+                      <p className="text-xs text-textSecondary truncate mt-0.5">Ready to download • YouTube</p>
+                    </div>
+                  </motion.div>
+                )}
 
                 {/* Settings Card */}
                 <div className="glass-panel p-6 flex-1 flex flex-col">
@@ -1156,6 +1176,113 @@ export default function App() {
                         </span>
                       ) : 'Download'}
                     </button>
+                  </div>
+                </div>
+              </motion.div>
+
+              <motion.div
+                initial={false}
+                animate={{ opacity: activeTab === 'settings' ? 1 : 0, y: activeTab === 'settings' ? 0 : 10 }}
+                transition={{ duration: 0.2 }}
+                className={`min-h-full flex flex-col gap-6 ${activeTab === 'settings' ? 'block' : 'hidden'}`}
+              >
+                <div className="glass-panel p-6 flex flex-col gap-8">
+                  <div>
+                    <div className="flex items-center mb-4">
+                      <Settings className="w-5 h-5 mr-2 text-primary" />
+                      <h2 className="text-xl font-semibold">General Settings</h2>
+                    </div>
+                    <div className="flex flex-col gap-4">
+                      <div className="flex items-center justify-between p-4 bg-background/50 border border-border rounded-xl">
+                        <div>
+                          <h3 className="font-medium text-textPrimary">Output Folder</h3>
+                          <p className="text-sm text-textSecondary mt-1">Change where your downloads are saved.</p>
+                        </div>
+                        <button
+                          onClick={() => setIsOutputFolderModalOpen(true)}
+                          className="px-4 py-2 bg-surface hover:bg-surfaceHover border border-border rounded-lg text-sm font-medium transition-colors flex items-center"
+                        >
+                          <FolderOpen className="w-4 h-4 mr-2" />
+                          Set Folder
+                        </button>
+                      </div>
+                      <div className="flex items-center justify-between p-4 bg-background/50 border border-border rounded-xl">
+                        <div>
+                          <h3 className="font-medium text-textPrimary">Developer Logs</h3>
+                          <p className="text-sm text-textSecondary mt-1">Open a new window to monitor background processes.</p>
+                        </div>
+                        <button
+                          onClick={() => window.electronAPI && window.electronAPI.openLogsWindow()}
+                          className="px-4 py-2 bg-surface hover:bg-surfaceHover border border-border rounded-lg text-sm font-medium transition-colors flex items-center"
+                        >
+                          <Terminal className="w-4 h-4 mr-2" />
+                          Show Logs
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center mb-4">
+                      <Cookie className="w-5 h-5 mr-2 text-primary" />
+                      <h2 className="text-xl font-semibold">Browser Authentication</h2>
+                    </div>
+                    <div className="p-4 bg-background/50 border border-border rounded-xl flex items-center justify-between">
+                      <div>
+                        <h3 className="font-medium text-textPrimary">Cookie Setup</h3>
+                        <p className="text-sm text-textSecondary mt-1">Sync your browser cookies to download age-restricted or private videos.</p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="flex flex-col items-center justify-center mr-1">
+                          <span className="text-[11px] font-semibold text-textSecondary mb-1 uppercase tracking-wider">Status</span>
+                          {cookieStatus === 'active' && <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 font-bold text-[10px] tracking-wide uppercase">Active ({cookieBrowser})</span>}
+                          {cookieStatus === 'stale' && <span className="px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20 font-bold text-[10px] tracking-wide uppercase">Stale</span>}
+                          {cookieStatus === 'missing' && <span className="px-2.5 py-0.5 rounded-full bg-rose-500/10 text-rose-500 border border-rose-500/20 font-bold text-[10px] tracking-wide uppercase">Missing</span>}
+                        </div>
+                        <button
+                          onClick={() => { setWizardStep(1); setShowCookieWizard(true); }}
+                          className="px-5 py-2 btn-primary rounded-lg text-sm font-medium transition-colors whitespace-nowrap"
+                        >
+                          {cookieStatus === 'active' ? 'Re-sync' : 'Setup Cookie Sync'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center">
+                        <Server className="w-5 h-5 mr-2 text-primary" />
+                        <h2 className="text-xl font-semibold">System Status</h2>
+                      </div>
+                      <button
+                        onClick={refreshStatus}
+                        disabled={isRefreshingStatus}
+                        className={`p-2 hover:bg-surface rounded-lg border border-border transition-colors ${isRefreshingStatus ? 'text-primary' : 'text-textSecondary hover:text-textPrimary'}`}
+                        title="Refresh Status"
+                      >
+                        <RefreshCw className={`w-4 h-4 ${isRefreshingStatus ? 'animate-spin' : ''}`} />
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <StatusItem name="Python Backend" status={systemStatus.backend?.state || 'CHECKING'} path={systemStatus.backend?.path} />
+                      <StatusItem name="FFmpeg" status={systemStatus.ffmpeg?.state || 'CHECKING'} path={systemStatus.ffmpeg?.path} />
+                      <StatusItem name="FFprobe" status={systemStatus.ffprobe?.state || 'CHECKING'} path={systemStatus.ffprobe?.path} />
+                      <StatusItem name="Cookies" status={cookieStatus === 'active' ? 'ONLINE' : (cookieStatus === 'stale' ? 'STALE' : 'MISSING')} path={cookieStatus === 'active' ? 'Configured' : 'Needs Setup'} />
+
+                      {systemStatus.dlls && systemStatus.dlls.length > 0 && (
+                        <div className="col-span-1 md:col-span-2 mt-2">
+                          <div className="text-xs font-semibold text-textSecondary uppercase tracking-wider mb-3">
+                            Shared Libraries (DLLs)
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {systemStatus.dlls.map(dll => (
+                              <StatusItem key={dll.name} name={dll.name} status={dll.state} path={dll.path} />
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </motion.div>
@@ -1316,6 +1443,188 @@ export default function App() {
           </div>
         </main>
       </div>
+
+      {/* Cookie Sync Wizard Modal */}
+      <AnimatePresence>
+        {showCookieWizard && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="bg-background border border-border rounded-2xl p-6 w-full max-w-lg shadow-2xl flex flex-col max-h-[90vh]"
+            >
+              <div className="flex justify-between items-center mb-4 flex-shrink-0">
+                <h3 className="text-xl font-semibold text-textPrimary">Browser Authentication</h3>
+                <button onClick={() => setShowCookieWizard(false)} className="p-2 text-textSecondary hover:text-white rounded-lg hover:bg-background transition-colors">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="overflow-y-auto flex-1 pr-2 pb-2 custom-scrollbar">
+                {wizardStep === 1 && (
+                  <div className="space-y-4">
+                    <div className="bg-background/50 border border-border rounded-lg p-4 mb-4">
+                      <p className="text-sm text-textSecondary leading-relaxed">
+                        This stays entirely on your device. Hermanos Forge — and its developer — never sees, stores, or sends your cookies anywhere. They're saved in a local file on this computer only, used only to talk to YouTube.
+                      </p>
+                    </div>
+                    <h4 className="font-medium text-textPrimary mb-2">Which browser do you normally use?</h4>
+                    <div className="grid grid-cols-2 gap-3">
+                      {['Firefox', 'Chrome', 'Edge', 'Brave', 'Opera'].map(browser => (
+                        <button
+                          key={browser}
+                          onClick={() => setCookieBrowser(browser)}
+                          className={`p-3 rounded-xl border flex items-center gap-3 transition-colors ${cookieBrowser === browser ? 'border-primary bg-primary/10' : 'border-border bg-background hover:border-textSecondary/30'}`}
+                        >
+                          <div className={`w-4 h-4 rounded-full border ${cookieBrowser === browser ? 'border-primary bg-primary flex items-center justify-center' : 'border-textSecondary/50'}`}>
+                            {cookieBrowser === browser && <div className="w-2 h-2 bg-white rounded-full" />}
+                          </div>
+                          <span className="font-medium text-sm">{browser}</span>
+                        </button>
+                      ))}
+                    </div>
+                    {cookieBrowser === 'Firefox' && (
+                      <div className="mt-4 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg flex gap-3 text-emerald-400 text-sm">
+                        <Check className="w-5 h-5 flex-shrink-0" />
+                        <p>Firefox works automatically — click Proceed and you're done.</p>
+                      </div>
+                    )}
+                    <div className="flex justify-end mt-6 gap-3">
+                      <button onClick={() => setShowCookieWizard(false)} className="px-5 py-2.5 rounded-xl font-medium bg-background border border-border text-textSecondary hover:text-white transition-colors">Cancel</button>
+                      <button
+                        onClick={() => {
+                          if (cookieBrowser === 'Firefox') {
+                            handleFirefoxSync();
+                          } else {
+                            setWizardStep(2);
+                          }
+                        }}
+                        disabled={isSyncingCookies}
+                        className="px-5 py-2.5 rounded-xl font-medium btn-primary flex items-center gap-2"
+                      >
+                        {isSyncingCookies ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Proceed'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {wizardStep === 2 && (
+                  <div className="space-y-4">
+                    <h4 className="font-medium text-textPrimary">Install Extension</h4>
+                    <p className="text-sm text-textSecondary leading-relaxed">
+                      Chrome, Edge, and other Chromium browsers lock down login cookies extra tightly, so this needs one small one-time extra step — about 30 seconds.
+                    </p>
+                    <p className="text-sm text-textSecondary leading-relaxed">
+                      Click the button below to open the Chrome Web Store and install the <strong>"Get cookies.txt LOCALLY"</strong> extension. (Edge users: allow extensions from other stores).
+                    </p>
+                    <div className="flex justify-center py-4">
+                      <button
+                        onClick={() => window.electronAPI && window.electronAPI.openExternal('https://chromewebstore.google.com/detail/get-cookiestxt-locally/cclelndahbckbenkjhflpdbgdldlbecc')}
+                        className="px-6 py-3 bg-surface hover:bg-surfaceHover border border-border rounded-xl text-sm font-medium transition-colors flex items-center gap-2"
+                      >
+                        <Download className="w-4 h-4" />
+                        Open Chrome Web Store
+                      </button>
+                    </div>
+                    <div className="flex justify-between mt-6">
+                      <button onClick={() => setWizardStep(1)} className="px-5 py-2.5 rounded-xl font-medium bg-background border border-border text-textSecondary hover:text-white transition-colors">Back</button>
+                      <button onClick={() => setWizardStep(3)} className="px-5 py-2.5 rounded-xl font-medium btn-primary">Next</button>
+                    </div>
+                  </div>
+                )}
+
+                {wizardStep === 3 && (
+                  <div className="space-y-4">
+                    <h4 className="font-medium text-textPrimary">Export Cookies</h4>
+                    <p className="text-sm text-textSecondary leading-relaxed">
+                      1. Go to <strong>youtube.com</strong> in your browser and make sure you're logged in.<br /><br />
+                      2. Click the new extension icon in your browser toolbar (you may need to pin it first).<br /><br />
+                      3. Make sure the Export Format is set to <strong>Netscape</strong>.<br /><br />
+                      4. Click the main <strong>Export</strong> button <em>(Do not click "Export All Cookies")</em>. This will save a <code className="px-1 py-0.5 bg-background border border-border rounded">cookies.txt</code> file to your Downloads folder.
+                    </p>
+                    <div className="flex justify-between mt-6">
+                      <button onClick={() => setWizardStep(2)} className="px-5 py-2.5 rounded-xl font-medium bg-background border border-border text-textSecondary hover:text-white transition-colors">Back</button>
+                      <button onClick={() => setWizardStep(4)} className="px-5 py-2.5 rounded-xl font-medium btn-primary">Next</button>
+                    </div>
+                  </div>
+                )}
+
+                {wizardStep === 4 && (
+                  <div className="space-y-4">
+                    <h4 className="font-medium text-textPrimary">Import File</h4>
+                    <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 flex gap-3 text-amber-500 text-sm">
+                      <AlertTriangle className="w-5 h-5 flex-shrink-0" />
+                      <p>⚠️ This file can contain login info for other sites too. Never share it or upload it anywhere. Hermanos Forge automatically keeps only the YouTube-related cookies and discards the rest once you import it.</p>
+                    </div>
+                    <p className="text-sm text-textSecondary text-center">
+                      <em>Note: You may safely delete your downloaded cookies.txt from your Downloads folder after dragging it here!</em>
+                    </p>
+
+                    <div
+                      className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors cursor-pointer flex flex-col items-center justify-center ${isDraggingCookie ? 'border-primary bg-primary/10' : 'border-border bg-background/50 hover:bg-background/80'}`}
+                      onDragOver={(e) => { e.preventDefault(); setIsDraggingCookie(true); }}
+                      onDragLeave={() => setIsDraggingCookie(false)}
+                      onDrop={async (e) => {
+                        e.preventDefault();
+                        setIsDraggingCookie(false);
+                        const file = e.dataTransfer.files[0];
+                        if (file && file.name.endsWith('.txt')) {
+                          const path = window.electronAPI.getPathForFile ? window.electronAPI.getPathForFile(file) : file.path;
+                          if (path) handleImportCookies(path);
+                        } else {
+                          toast.error("Please drop a valid .txt file.", { style: { borderRadius: '10px', background: '#1E293B', color: '#fff' } });
+                        }
+                      }}
+                      onClick={async () => {
+                        handleImportCookies(null);
+                      }}
+                    >
+                      {isSyncingCookies ? (
+                        <Loader2 className="w-10 h-10 mb-3 text-primary animate-spin" />
+                      ) : (
+                        <Upload className={`w-10 h-10 mb-3 ${isDraggingCookie ? 'text-primary' : 'text-textSecondary'}`} />
+                      )}
+                      <p className="font-medium text-textPrimary mb-1">Drag and drop cookies.txt here</p>
+                      <p className="text-xs text-textSecondary">or click to browse files</p>
+                    </div>
+
+                    <div className="flex justify-between mt-6">
+                      <button onClick={() => setWizardStep(3)} className="px-5 py-2.5 rounded-xl font-medium bg-background border border-border text-textSecondary hover:text-white transition-colors" disabled={isSyncingCookies}>Back</button>
+                      <button className="px-5 py-2.5 rounded-xl font-medium btn-primary invisible">Placeholder</button>
+                    </div>
+                  </div>
+                )}
+
+                {wizardStep === 5 && (
+                  <div className="space-y-4 text-center py-6">
+                    <div className="w-16 h-16 bg-emerald-500/10 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Check className="w-8 h-8" />
+                    </div>
+                    <h4 className="text-xl font-semibold text-textPrimary">Saved Successfully</h4>
+                    <p className="text-sm text-textSecondary max-w-sm mx-auto">
+                      You can now download age-restricted and private videos.
+                    </p>
+                    <p className="text-sm text-textSecondary max-w-sm mx-auto mt-4 bg-background/50 p-3 rounded-lg border border-border text-left">
+                      This usually stays working for a few weeks. If downloads start failing again, just repeat these steps — you'll get a heads-up in the app when that happens.
+                    </p>
+                    <div className="flex justify-center mt-6">
+                      <button onClick={() => setShowCookieWizard(false)} className="px-8 py-3 rounded-xl font-medium btn-primary">Done</button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <Toaster position="bottom-right" />
     </div>
   );
 }
@@ -1356,6 +1665,8 @@ export function StatusItem({ name, status, path }) {
     colorClass = 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20';
   } else if (status === 'MISSING') {
     colorClass = 'bg-rose-500/10 text-rose-500 border border-rose-500/20';
+  } else if (status === 'STALE') {
+    colorClass = 'bg-amber-500/10 text-amber-500 border border-amber-500/20';
   }
 
   return (
