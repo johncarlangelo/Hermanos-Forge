@@ -25,16 +25,29 @@ function sendLog(line) {
 
 function createWindow() {
     mainWindow = new BrowserWindow({
-        width: 900,
-        height: 700,
+        width: 980,
+        height: 720,
         minWidth: 800,
         minHeight: 600,
+        frame: false,
         webPreferences: {
             preload: path.join(__dirname, 'preload.cjs'),
             nodeIntegration: false,
             contextIsolation: true
         },
         autoHideMenuBar: true,
+    });
+
+    mainWindow.on('maximize', () => {
+        if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.webContents.send('window-maximized-change', true);
+        }
+    });
+
+    mainWindow.on('unmaximize', () => {
+        if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.webContents.send('window-maximized-change', false);
+        }
     });
 
     const startUrl = process.env.ELECTRON_START_URL || `file://${path.join(__dirname, '../dist/index.html')}`;
@@ -607,4 +620,32 @@ ipcMain.handle('check-system-status', async () => {
         ffprobe: { state: fs.existsSync(probePath) ? 'ONLINE' : 'MISSING', path: probePath },
         dlls: dlls
     };
+});
+
+// Window control handlers for custom title bar
+ipcMain.handle('window-minimize', (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (win) win.minimize();
+});
+
+ipcMain.handle('window-maximize', (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (win) {
+        if (win.isMaximized()) {
+            win.unmaximize();
+        } else {
+            win.maximize();
+        }
+    }
+    return win ? win.isMaximized() : false;
+});
+
+ipcMain.handle('window-close', (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (win) win.close();
+});
+
+ipcMain.handle('window-is-maximized', (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    return win ? win.isMaximized() : false;
 });

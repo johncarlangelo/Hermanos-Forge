@@ -14,6 +14,7 @@ This document records key technical, architectural, and design decisions made th
 - [ADR-006: Local-Only Cookie Storage with Strict Domain Whitelisting](#adr-006-local-only-cookie-storage-with-strict-domain-whitelisting)
 - [ADR-007: Tailwind CSS Design System & Dark Mode Primacy](#adr-007-tailwind-css-design-system--dark-mode-primacy)
 - [ADR-008: Native Splash Window for Cold-Boot Mitigation](#adr-008-native-splash-window-for-cold-boot-mitigation)
+- [ADR-009: Precision Studio Design System & Modular UI Architecture](#adr-009-precision-studio-design-system--modular-ui-architecture)
 
 ---
 
@@ -154,3 +155,26 @@ Instantiate a small, frameless native splash window loading a lightweight `splas
 #### Consequences
 - **Positive**: Eliminates cold-boot white flashes and delivers instantaneous visual feedback.
 - **Negative**: Requires lifecycle management between two `BrowserWindow` instances in `electron/main.cjs`.
+
+---
+
+### ADR-009: Precision Studio Design System & Modular UI Architecture
+
+* **Status**: Accepted
+* **Date**: 2026-10-28
+
+#### Context
+The existing interface suffered from visual fragmentation, hardcoded hex values, arbitrary inline styles, and monolithic files (e.g. 1,693-line `App.jsx`). Additionally, window chrome used standard OS borders without integration into the dark aesthetic.
+
+#### Decision
+1. Implement the *Precision Studio* design direction specified in `DESIGN.md`: graphite base surfaces (`#0D1117`), thin borders, balanced information density, understated mint/teal accent (`#14B8A6`), full light and dark mode support, and a custom frameless window title bar with native minimize/maximize/close controls.
+2. Adopt a modular frontend architecture:
+   - Configure `@/` path alias for `./src/*`.
+   - Shared UI primitives reside in `src/components/ui/` (`Button`, `Input`, `Select`, `Dialog`, `Tabs`, `Badge`, `Progress`, `TitleBar`).
+   - Feature views reside in `src/components/views/` and modals in `src/components/modals/`.
+3. Enforce strict compatibility: zero backend changes, zero Electron IPC contract breaks, zero destructive resets of user inputs, and strict preservation of existing `localStorage` keys.
+4. Maintain `AGENTS.md` as the persistent living guide for all UI and component conventions.
+
+#### Consequences
+- **Positive**: High-end desktop aesthetic, clear component reusability, modular maintainability, and consistent keyboard navigation.
+- **Negative**: Requires thorough regression testing across all existing media download, conversion, and stitching workflows.

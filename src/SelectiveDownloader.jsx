@@ -467,8 +467,8 @@ export default function SelectiveDownloader({ globalOutputDir, onRequestGlobalOu
     if (window.electronAPI && window.electronAPI.cancelDownload) {
       try {
         await window.electronAPI.cancelDownload();
-      } catch (e) {
-        // ignore errors from cancelling
+      } catch (err) {
+        console.error('Failed to cancel download:', err);
       }
     }
     setIsDownloading(false);

@@ -8,7 +8,7 @@ This document chronicles historical releases, merged capabilities, active sprint
 
 - **Current Version**: `v1.1.0` (In Development)
 - **Active Release Branch**: `dev`
-- **Active Task Branch**: `bug-fix/video-quality-fetch`
+- **Active Task Branch**: `redesign/app-ui`
 - **Latest Production Release**: `v1.0.1` ([Releases](https://github.com/johncarlangelo/Hermanos-Forge/releases))
 - **Engine Status**: Electron 42 + React 19 + Python 3 (yt-dlp + FFmpeg)
 
@@ -16,7 +16,18 @@ This document chronicles historical releases, merged capabilities, active sprint
 
 ## 2. Release & Milestone History
 
-### [Unreleased] `v1.1.0` — Cookie Auth & Quality Upgrades
+### [Unreleased] `v1.1.0` — Precision Studio UI Redesign & Architecture Modernization
+- **Precision Studio UI Overhaul (Phases 1–5 & Design Craft Elevation)**:
+  - Upgraded to Cine Dark / Raycast Studio visual language with deep obsidian backgrounds (`#090C10`), specular top edge highlights, and subtle ambient radial glow (`.studio-ambient-bg`).
+  - Integrated `framer-motion` micro-interactions: spring hover/tap physics on `Button`, sliding layout indicator pills on `Tabs` and sidebar navigation (`layoutId`).
+  - Elevated `Input` with command-palette aesthetics, glowing focus halos, size variants (`lg` for hero command bar), and `Kbd` shortcut badges (`Ctrl+V`).
+  - Single Downloader reference screen: Spotlight URL command bar with `Enter` keybinding, rich 16:9 thumbnail preview with HD badges and skeleton inspection loader, sliding format toggle, and animated progress meter with glowing leading edge.
+  - Mass Clip Stitcher: Batch clipboard paste (`Paste Batch`), card-based clip queue with drag-handle styling, live status pills, and concatenation demuxer flow.
+  - Selective Duration: High-precision timeline ruler with dual draggable start/end handles, zoom controls, and timecode readouts.
+  - History & Settings: Filterable media history with Explorer reveal, bento-grid settings with theme preview tiles, and live diagnostic probes.
+  - Built custom frameless Electron window title bar with draggable regions, brand emblem, engine status pill, and window controls.
+  - Verified with 0 ESLint errors and 0 warnings (`npm run lint`), and clean production build (`vite build`).
+
 - **Browser Cookie Authentication Wizard** (PR #23 / Issue #15):
   - Added multi-step Cookie Wizard modal in `src/App.jsx`.
   - 1-click automatic extraction for Firefox using `yt_dlp.cookiejar`.

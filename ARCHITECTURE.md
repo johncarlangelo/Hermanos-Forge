@@ -13,19 +13,25 @@ Hermanos Forge is split into two decoupled runtime layers:
 ```
 ┌────────────────────────────────────────────────────────┐
 │                      React 19 UI                       │
-│  (src/App.jsx, SelectiveDownloader, MassClip, etc.)   │
+│  (src/App.jsx Coordinator, TitleBar, Navigation)      │
+│  ├── Views: SingleDownloaderView, MassClipView, etc.  │
+│  ├── Modals: CookieWizard, PlaylistSelector, etc.     │
+│  └── UI Primitives: Button, Input, Dialog, etc.       │
 └───────────────────────────┬────────────────────────────┘
                             │ window.electronAPI / window.stitchAPI
                             ▼
 ┌────────────────────────────────────────────────────────┐
 │              Electron Preload (preload.cjs)            │
 │         contextBridge (Secure IPC isolation)           │
+│         - Media & Stitch APIs                          │
+│         - Window control APIs (minimize/maximize/close)│
 └───────────────────────────┬────────────────────────────┘
                             │ ipcRenderer.invoke / ipcRenderer.on
                             ▼
 ┌────────────────────────────────────────────────────────┐
 │              Electron Main (main.cjs)                  │
 │       Child process spawner, OS dialogs & helpers      │
+│       Frameless window lifecycle & maximize events     │
 └───────────────────────────┬────────────────────────────┘
                             │ CLI Arguments & stdout/stderr Line Streaming
                             ▼
@@ -34,6 +40,18 @@ Hermanos Forge is split into two decoupled runtime layers:
 │       yt-dlp + Bundled FFmpeg / FFprobe Subprocesses   │
 └────────────────────────────────────────────────────────┘
 ```
+
+### UI Component Architecture (Precision Studio)
+- **Application Shell Coordinator** (`src/App.jsx`): Manages active navigation tabs, global state persistence, notifications, output directory, and modal display.
+- **Frameless Window Title Bar** (`src/components/ui/TitleBar.jsx`): Draggable header region with active status indicators, quick logs button, and OS window controls.
+- **Dedicated View Containers** (`src/components/views/`):
+  - `SingleDownloaderView.jsx`: URL inspection, format/quality selectors, playlist prompts, audio/video downloads.
+  - `MassClipView.jsx`: Batch clip queue, sequential downloading, and FFmpeg concatenation stitching.
+  - `SelectiveDurationView.jsx`: Monospace start/end duration trimming, interactive timeline ruler, zoom controls.
+  - `HistoryView.jsx`: Categorized download history, search/filter, pagination, and direct file revelation in Windows Explorer.
+  - `SettingsView.jsx`: Dark/light theme switcher, cookie authentication status, diagnostic system probes.
+- **Overlays & Dialogs** (`src/components/modals/`): Modals encapsulated in the shared `Dialog` primitive for accessible focus trapping, keyboard dismissal, and clean state isolation.
+- **Design Primitives** (`src/components/ui/`): Button, Input, Select, Dialog, Tabs, Badge, Progress, Tooltip, Card.
 
 ---
 

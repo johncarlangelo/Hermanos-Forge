@@ -12,38 +12,81 @@ For technical architecture, design tokens, active tasks, and decision records, r
 
 ---
 
-## 1. General Operating Principles
+## 1. General Operating Principles & Agent Workflow
 
-1. **Verify Before Modifying**: Cross-reference active code patterns before introducing new dependencies, abstractions, or configuration parameters.
-2. **Non-Destructive Refactoring**: Never remove working capabilities, comments, or documentation unless explicitly requested or replacing deprecated implementations.
-3. **Root Execution**: Always execute build and verification commands from the repository root. Never use `cd` within script invocations.
-4. **Clean Verification**: Before declaring any coding task complete, ensure `npm run lint` passes with 0 errors and 0 warnings.
-5. **Living Documentation Discipline**:
-   - **Update `AGENTS.md` judiciously**: Modify this file *only* when general contributor rules, quality standards, or repository operating workflows evolve. Do not pollute it with transient feature logs or task tracking.
-   - **Keep companion docs up-to-date**: Whenever relevant to your changes, proactively update the corresponding companion document:
+1. **Persistent Source of Truth**: Future agents must read both `AGENTS.md` and `DESIGN.md` before planning or implementing any UI, component, or architectural changes.
+2. **Living Guide Discipline**:
+   - Treat `AGENTS.md` as the persistent, living source of truth for repository conventions.
+   - Whenever an implementation establishes new conventions, introduces reusable primitives, or changes architectural patterns, **update `AGENTS.md` in that exact same change**.
+   - Verify that implementation code and documentation stay in complete agreement.
+   - Keep companion docs up-to-date:
      - Log, pick up, or close items in [TASKS.md](file:///d:/Comsci%20things/Python/Quick%20Tools%20Project/Hermanos%20Forge/TASKS.md).
      - Record shipped features, PR merges, and version milestones in [PROGRESS.md](file:///d:/Comsci%20things/Python/Quick%20Tools%20Project/Hermanos%20Forge/PROGRESS.md).
-     - Document significant architectural choices, trade-offs, and patterns in [DECISIONS.md](file:///d:/Comsci%20things/Python/Quick%20Tools%20Project/Hermanos%20Forge/DECISIONS.md).
-     - Document changes to IPC streaming protocols, process management, or packaging in [ARCHITECTURE.md](file:///d:/Comsci%20things/Python/Quick%20Tools%20Project/Hermanos%20Forge/ARCHITECTURE.md).
-     - Document changes to CSS variables, tokens, or component conventions in [DESIGN.md](file:///d:/Comsci%20things/Python/Quick%20Tools%20Project/Hermanos%20Forge/DESIGN.md).
+     - Document significant architectural choices and trade-offs in [DECISIONS.md](file:///d:/Comsci%20things/Python/Quick%20Tools%20Project/Hermanos%20Forge/DECISIONS.md).
+     - Document changes to IPC streaming protocols or process management in [ARCHITECTURE.md](file:///d:/Comsci%20things/Python/Quick%20Tools%20Project/Hermanos%20Forge/ARCHITECTURE.md).
+     - Document visual specs and design tokens in [DESIGN.md](file:///d:/Comsci%20things/Python/Quick%20Tools%20Project/Hermanos%20Forge/DESIGN.md).
+3. **Verify Before Modifying**: Cross-reference active code patterns before introducing new dependencies, abstractions, or configuration parameters.
+4. **Non-Destructive Refactoring**: Never remove working capabilities, comments, or documentation unless explicitly requested or replacing deprecated implementations.
+5. **Root Execution**: Always execute build and verification commands from the repository root. Never use `cd` within script invocations.
+6. **Clean Verification**: Before declaring any coding task complete, ensure `npm run lint` passes with 0 errors and 0 warnings.
 
 ---
 
-## 2. Frontend Engineering Rules (React 19 & Tailwind)
+## 2. Frontend Engineering & UI Architecture (React 19 & Tailwind 3.4)
+
+### Path Aliases & Imports
+- Use the `@/` path alias for all internal imports (e.g. `@/components/ui/Button`, `@/lib/utils`). Avoid brittle relative path cascades (`../../components`).
+
+### Shared Component Architecture & UI Primitives
+- **Location**: All reusable primitives live under `src/components/ui/` (`Button.jsx`, `Input.jsx`, `Select.jsx`, `Dialog.jsx`, `Tabs.jsx`, `Badge.jsx`, `Progress.jsx`, `Tooltip.jsx`, `Card.jsx`, `TitleBar.jsx`).
+- **Standard Signature**:
+  - Accept standard props: `variant`, `size`, `className`, and forward all valid HTML attributes and refs.
+  - Combine classes using the `cn()` utility (`clsx` + `tailwind-merge`) from `@/lib/utils`.
+- **Reuse Over Duplication**:
+  - Never author raw `<button>`, `<input>`, or custom styled cards directly inside views when a shared primitive exists.
+  - Prefer extending an existing shared component (via new variants or props) over creating near-duplicates.
+  - If a genuinely new reusable pattern is required, implement it in `src/components/ui/` or `src/components/common/`, adhere to design tokens, and document its conventions here.
+
+### Pages, Screens & View Decomposition
+- **View Containers**: Screen views live under `src/components/views/` (e.g. `SingleDownloaderView`, `MassClipView`, `SelectiveDurationView`, `HistoryView`, `SettingsView`).
+- **Dialogs & Modals**: Reusable overlays live under `src/components/modals/` (e.g. `CookieWizardModal`, `PlaylistSelectorModal`) and are wrapped in the shared `Dialog` primitive.
+- **Decomposition Rule**: Avoid massive monolith files (e.g. >500 lines). `App.jsx` serves as the application shell and navigation coordinator; specific feature workflows must be extracted into dedicated view containers.
+- **Form State Preservation**: Each view manages or binds to persistent state. Switching navigation tabs or opening/closing dialogs must **never** wipe form inputs, entered URLs, or active job progress.
+
+### Design System & Visual Token Compliance
+- **Token Discipline**: All styling must use the *Precision Studio* design tokens defined in [src/index.css](file:///d:/Comsci%20things/Python/Quick%20Tools%20Project/Hermanos%20Forge/src/index.css) and [DESIGN.md](file:///d:/Comsci%20things/Python/Quick%20Tools%20Project/Hermanos%20Forge/DESIGN.md):
+  - Surfaces: `var(--bg-base)`, `var(--surface-1)`, `var(--surface-2)`, `var(--surface-hover)`
+  - Borders: `var(--border-subdued)`, `var(--border-strong)`
+  - Text: `var(--text-primary)`, `var(--text-secondary)`, `var(--text-tertiary)`
+  - Accents: `var(--accent-primary)` (mint/teal `#14B8A6`), `var(--accent-primary-hover)`
+  - Status: `var(--status-success)`, `var(--status-warning)`, `var(--status-error)`, `var(--status-info)`
+- **Zero Hardcoded Colors**: Never hardcode hex values (e.g. `#10b981`, `#0f172a`, `#ff4444`) directly in Tailwind utility classes or inline styles. Always resolve through tokens or themed utility classes.
+- **Dual-Theme Support**: Dark mode (`#0D1117` base) is the default; Light mode (`#F6F8FA` base) is fully supported via the `.light` class on the root element. Ensure all components render crisply in both modes.
+- **Typography & Font Stacks**:
+  - UI labels, prose, and buttons: Clean sans-serif stack (`Inter`, system UI font).
+  - Timestamps, URLs, format tags, and logs: Monospace stack (`JetBrains Mono`, `Consolas`, monospace) with tabular numbers (`tabular-nums`).
+- **Focus & Accessibility**: Every interactive element must have visible, consistent focus rings (`focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] focus-visible:outline-none`) and descriptive `aria-label` or `aria-labelledby` attributes.
+
+### State Preservation & Behavior Compatibility
+- **Preserve Existing Capabilities**: Never drop or disable existing user workflows (e.g. cookie authentication, playlist selection, MP3 conversion, log viewing, custom output folders).
+- **Canonical `localStorage` Keys**: Preserve existing keys and their JSON schemas:
+  - `download-history`: Array of completed download records (`id`, `title`, `url`, `type`, `quality`, `outputPath`, `timestamp`, `status`).
+  - `global-outputDir`: Saved default destination directory path string.
+  - `cookie-browser`: Active browser identifier string for cookie extraction.
+  - `cookie-status`: Current cookie synchronization status string.
+  - `cookie-sync-date`: ISO timestamp string of last cookie sync.
+  - `mass-clips`: Array of clip configuration objects.
+  - `theme`: Theme preference string (`'dark'` | `'light'`).
+- **Zero Destructive Resets**: Never auto-wipe inputs, queues, or history on timers, animations, or view switches. User work must be preserved.
+- **Strict IPC Contract Preservation**: Never rename, delete, or alter the signature, payload, or event semantics of Electron IPC channels (`window.electronAPI` and `window.stitchAPI`).
 
 ### React 19 Hook Discipline
 - **No Synchronous `setState` in Effects**: Never invoke `setState()` synchronously inside `useEffect()` without proper guards or external synchronization. Synchronous calls trigger cascading re-renders and violate `react-hooks/set-state-in-effect`.
 - **Dependency Completeness**: Always include all external variables and functions referenced within hooks in their dependency arrays, or memoize handlers via `useCallback` / `useMemo`.
-- **State Preservation**: Tab switches and modal navigation must preserve form inputs and progress states using local storage or persistent parent state containers.
 
 ### Code Hygiene & Linting
 - **Zero Unused Symbols**: No unused imports, variables, or unreferenced parameters (`no-unused-vars`).
 - **No Empty Catch Blocks**: Handle or log every caught error meaningfully; never leave empty catch statements (`no-empty`).
-
-### Design & Styling Standards
-- **Token Compliance**: Use CSS variables and Tailwind tokens defined in [src/index.css](file:///d:/Comsci%20things/Python/Quick%20Tools%20Project/Hermanos%20Forge/src/index.css) and [DESIGN.md](file:///d:/Comsci%20things/Python/Quick%20Tools%20Project/Hermanos%20Forge/DESIGN.md) (`var(--bg)`, `var(--surface)`, `var(--primary)`, `.glass-panel`, `.btn-primary`, `.input-field`).
-- **No Ad-Hoc Utility Clutter**: Prefer reusable component styles and design tokens over arbitrarily nested or competing inline utilities.
-- **Dark Mode Primacy**: Maintain the dark-mode aesthetic (`#09090B`) as the primary visual experience.
 
 ---
 
