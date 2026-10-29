@@ -11,17 +11,21 @@ export function Badge({
 }) {
   const variants = {
     default:
-      'bg-[var(--surface-2)] text-[var(--text-secondary)]',
+      'bg-[var(--surface-2)] text-[var(--text-secondary)] border border-[var(--border-subdued)]',
     accent:
-      'bg-[var(--accent-muted)] text-[var(--accent-primary)] font-semibold',
+      'bg-purple-950/70 text-purple-200 border border-purple-700/50 font-semibold',
+    cyan:
+      'bg-cyan-950/70 text-cyan-300 border border-cyan-800/50 font-semibold',
+    rose:
+      'bg-rose-950/70 text-rose-300 border border-rose-800/50 font-semibold',
     success:
-      'bg-emerald-500/15 text-emerald-400 font-semibold',
+      'bg-emerald-950/60 text-emerald-300 border border-emerald-800/40 font-semibold',
     warning:
-      'bg-amber-500/15 text-amber-400 font-semibold',
+      'bg-amber-950/60 text-amber-300 border border-amber-800/40 font-semibold',
     danger:
-      'bg-rose-500/15 text-rose-400 font-semibold',
+      'bg-rose-950/70 text-rose-300 border border-rose-800/50 font-semibold',
     info:
-      'bg-sky-500/15 text-sky-400 font-semibold',
+      'bg-cyan-950/60 text-cyan-300 border border-cyan-800/40 font-semibold',
     outline:
       'bg-transparent text-[var(--text-secondary)] border border-[var(--border-strong)]',
   };

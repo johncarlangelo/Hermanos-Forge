@@ -299,7 +299,7 @@ export function MassClipView({
           <div className="space-y-2 pb-3 border-b border-[var(--border-subdued)]">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-8 h-8 rounded-[8px] bg-gradient-to-br from-teal-500/20 to-teal-500/5 border border-teal-500/30 flex items-center justify-center text-[var(--accent-primary)] shadow-sm shrink-0">
+                <div className="w-8 h-8 rounded-[8px] bg-purple-950/50 border border-purple-800/40 flex items-center justify-center text-accent-neon shadow-sm shrink-0">
                   <Scissors className="w-4 h-4" />
                 </div>
                 <div className="flex items-center gap-2 flex-wrap min-w-0">
@@ -369,7 +369,7 @@ export function MassClipView({
                     : clip.state === ROW_STATE.DONE
                     ? 'border-emerald-500/40 bg-emerald-500/5'
                     : clip.state === ROW_STATE.DOWNLOADING
-                    ? 'border-teal-500/50 bg-teal-500/5 shadow-sm'
+                    ? 'border-purple-500/50 bg-purple-500/10 shadow-sm shadow-purple-950/40'
                     : 'border-[var(--border-subdued)] bg-[var(--surface-2)]/80 hover:border-[var(--border-strong)]'
                 }`}
               >
@@ -449,13 +449,13 @@ export function MassClipView({
 
           {/* Status Message Line */}
           {globalStatus && (
-            <div className="p-3 rounded-[10px] bg-gradient-to-r from-teal-500/15 to-transparent border border-teal-500/30 flex items-center justify-between text-xs text-teal-300 font-medium shadow-sm">
+            <div className="p-3 rounded-[10px] bg-gradient-to-r from-purple-950/60 to-transparent border border-purple-500/30 flex items-center justify-between text-xs text-purple-200 font-medium shadow-sm">
               <div className="flex items-center gap-2.5">
-                <Loader2 className="w-4 h-4 text-teal-400 animate-spin" />
+                <Loader2 className="w-4 h-4 text-accent-neon animate-spin" />
                 <span>{globalStatus}</span>
               </div>
               {isCoolingDown && (
-                <span className="text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full bg-teal-500/20 text-teal-300">
+                <span className="text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full bg-purple-950/70 border border-purple-700/50 text-purple-200">
                   Auto-Reset Active
                 </span>
               )}

@@ -115,7 +115,7 @@ export function HistoryView({
           <div className="space-y-2 pb-3 border-b border-[var(--border-subdued)]">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-8 h-8 rounded-[8px] bg-gradient-to-br from-teal-500/20 to-teal-500/5 border border-teal-500/30 flex items-center justify-center text-[var(--accent-primary)] shadow-sm shrink-0">
+                <div className="w-8 h-8 rounded-[8px] bg-purple-950/50 border border-purple-800/40 flex items-center justify-center text-accent-neon shadow-sm shrink-0">
                   <Clock className="w-4 h-4" />
                 </div>
                 <div className="flex items-center gap-2 flex-wrap min-w-0">

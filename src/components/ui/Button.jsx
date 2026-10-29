@@ -22,17 +22,17 @@ export const Button = forwardRef(function Button(
 
   const variants = {
     primary:
-      'bg-gradient-to-b from-[#14B8A6] to-[#0D9488] hover:from-[#17C6B3] hover:to-[#0F9E91] text-white shadow-[0_1px_2px_rgba(0,0,0,0.3),0_0_12px_rgba(20,184,166,0.25)] border border-teal-400/30 before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/30 before:to-transparent',
+      'bg-gradient-to-r from-accent-violet via-accent-purple to-accent-amethyst hover:brightness-110 text-white shadow-glow-violet border border-purple-400/30 before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/35 before:to-transparent',
     secondary:
-      'bg-[var(--surface-2)] hover:bg-[var(--surface-hover)] text-[var(--text-primary)] border border-[var(--border-subdued)] hover:border-[var(--border-strong)] shadow-sm before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/10 before:to-transparent',
+      'bg-[var(--surface-2)] hover:bg-[var(--surface-hover)] text-[var(--text-primary)] border border-[var(--border-subdued)] hover:border-purple-600/50 shadow-sm before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/10 before:to-transparent',
     outline:
-      'bg-transparent hover:bg-[var(--surface-hover)] text-[var(--text-primary)] border border-[var(--border-strong)] hover:border-[var(--accent-primary)]/50',
+      'bg-transparent hover:bg-purple-950/30 text-[var(--text-primary)] border border-[var(--border-strong)] hover:border-purple-500/50',
     ghost:
-      'bg-transparent hover:bg-[var(--surface-hover)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]',
+      'bg-transparent hover:bg-purple-950/30 text-[var(--text-secondary)] hover:text-[var(--text-primary)]',
     destructive:
-      'bg-gradient-to-b from-rose-500 to-rose-600 hover:from-rose-400 hover:to-rose-500 text-white shadow-sm border border-rose-400/20',
+      'bg-gradient-to-b from-rose-600 to-rose-700 hover:from-rose-500 hover:to-rose-600 text-white shadow-sm border border-rose-500/30',
     accentMuted:
-      'bg-[var(--accent-muted)] hover:bg-[var(--accent-primary)]/20 text-[var(--accent-primary)] border border-[var(--accent-primary)]/25',
+      'bg-[var(--accent-muted)] hover:bg-[var(--accent-primary)]/20 text-[var(--accent-neon)] border border-purple-700/50',
   };
 
   const sizes = {

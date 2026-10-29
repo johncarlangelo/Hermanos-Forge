@@ -3,53 +3,57 @@
 @tailwind utilities;
 
 @layer base {
-  /* Default: Dark mode (Precision Studio / Cine Dark) */
+  /* Default: Dark mode (Obsidian Forge Media Suite) */
   :root,
   [data-theme="dark"],
   .dark {
-    --bg-base: #090C10;
-    --surface-1: #0F141E;
-    --surface-2: #161D2B;
-    --surface-hover: #20293C;
-    --border-subdued: rgba(255, 255, 255, 0.08);
-    --border-strong: rgba(255, 255, 255, 0.16);
-    --text-primary: #F8FAFC;
-    --text-secondary: #94A3B8;
-    --text-tertiary: #64748B;
-    --accent-primary: #14B8A6;
-    --accent-hover: #0D9488;
-    --accent-muted: rgba(20, 184, 166, 0.14);
-    --focus-ring: #14B8A6;
+    --bg-base: #09090C;
+    --surface-1: #0E0E13;
+    --surface-2: #16161F;
+    --surface-hover: #222230;
+    --border-subdued: rgba(168, 85, 247, 0.16);
+    --border-strong: rgba(168, 85, 247, 0.32);
+    --text-primary: #F3F0F5;
+    --text-secondary: #A99FB2;
+    --text-tertiary: #6E6478;
+    --accent-primary: #9D4EDD;
+    --accent-hover: #8B3DD0;
+    --accent-muted: rgba(157, 78, 221, 0.16);
+    --accent-neon: #C084FC;
+    --accent-cyan: #00F0FF;
+    --focus-ring: #9D4EDD;
     --status-success: #10B981;
     --status-warning: #F59E0B;
     --status-danger: #EF4444;
-    --status-info: #38BDF8;
+    --status-info: #00F0FF;
 
     /* Backward compatibility mappings */
     --bg: var(--bg-base);
     --surface: var(--surface-1);
     --primary: var(--accent-primary);
-    --primary-rgb: 20, 184, 166;
+    --primary-rgb: 157, 78, 221;
     --primary-hover: var(--accent-hover);
     --border: var(--border-subdued);
   }
 
-  /* Light theme */
+  /* Light theme (Obsidian Slate Studio) */
   [data-theme="light"],
   .light {
-    --bg-base: #F8FAFC;
+    --bg-base: #F8F7FA;
     --surface-1: #FFFFFF;
-    --surface-2: #F1F5F9;
-    --surface-hover: #E2E8F0;
-    --border-subdued: rgba(0, 0, 0, 0.08);
-    --border-strong: rgba(0, 0, 0, 0.16);
-    --text-primary: #0F172A;
-    --text-secondary: #64748B;
-    --text-tertiary: #94A3B8;
-    --accent-primary: #0D9488;
-    --accent-hover: #0F766E;
-    --accent-muted: rgba(13, 148, 136, 0.12);
-    --focus-ring: #0D9488;
+    --surface-2: #F1EFF5;
+    --surface-hover: #E6E2EE;
+    --border-subdued: rgba(100, 70, 130, 0.14);
+    --border-strong: rgba(100, 70, 130, 0.26);
+    --text-primary: #17151D;
+    --text-secondary: #635C6E;
+    --text-tertiary: #958D9E;
+    --accent-primary: #8433C4;
+    --accent-hover: #7124AF;
+    --accent-muted: rgba(132, 51, 196, 0.12);
+    --accent-neon: #9D4EDD;
+    --accent-cyan: #0099A8;
+    --focus-ring: #8433C4;
     --status-success: #059669;
     --status-warning: #D97706;
     --status-danger: #DC2626;
@@ -59,7 +63,7 @@
     --bg: var(--bg-base);
     --surface: var(--surface-1);
     --primary: var(--accent-primary);
-    --primary-rgb: 13, 148, 136;
+    --primary-rgb: 132, 51, 196;
     --primary-hover: var(--accent-hover);
     --border: var(--border-subdued);
   }
@@ -75,7 +79,7 @@
   }
 
   html {
-    font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-family: 'DM Sans', Inter, ui-sans-serif, system-ui, -apple-system, sans-serif;
   }
 
   body {
@@ -86,7 +90,7 @@
   /* Selection styles */
   ::selection {
     background-color: var(--accent-muted);
-    color: var(--accent-primary);
+    color: var(--accent-neon);
   }
 
   /* Respect reduced motion */
@@ -121,7 +125,7 @@
     background-color: var(--surface-1);
     border: 1px solid var(--border-subdued);
     border-radius: 12px;
-    box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.25);
+    box-shadow: 0 4px 24px -2px rgba(0, 0, 0, 0.4);
   }
 
   .surface-panel::before {
@@ -130,15 +134,24 @@
     inset-inline: 0;
     top: 0;
     height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
+    background: linear-gradient(90deg, transparent, rgba(168, 85, 247, 0.25), transparent);
     pointer-events: none;
   }
 
-  /* Ambient studio glow background */
+  /* Ambient studio glow backgrounds */
+  .noise-overlay {
+    background-image: radial-gradient(rgba(168, 85, 247, 0.04) 1px, transparent 0);
+    background-size: 24px 24px;
+  }
+
+  .ambient-glow-purple {
+    background: radial-gradient(circle at 50% 0%, rgba(157, 78, 221, 0.14) 0%, transparent 65%);
+  }
+
   .studio-ambient-bg {
     background-image: 
-      radial-gradient(ellipse 70% 40% at 50% -10%, rgba(20, 184, 166, 0.10), transparent),
-      radial-gradient(ellipse 50% 30% at 90% 100%, rgba(56, 189, 248, 0.05), transparent);
+      radial-gradient(ellipse 70% 40% at 50% -10%, rgba(157, 78, 221, 0.12), transparent),
+      radial-gradient(ellipse 50% 30% at 90% 100%, rgba(0, 240, 255, 0.04), transparent);
   }
 
   /* Keyboard shortcut hint badge (Kbd) */
@@ -205,7 +218,7 @@
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--border-strong);
+  background: var(--accent-primary);
 }
 
 .timeline-scrollbar::-webkit-scrollbar-thumb:horizontal {

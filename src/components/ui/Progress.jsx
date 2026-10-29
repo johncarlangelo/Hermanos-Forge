@@ -21,11 +21,11 @@ export function Progress({
     >
       {indeterminate ? (
         <div
-          className="absolute inset-y-0 w-1/3 rounded-full animate-indeterminate bg-gradient-to-r from-transparent via-[var(--accent-primary)] to-transparent"
+          className="absolute inset-y-0 w-1/3 rounded-full animate-indeterminate bg-gradient-to-r from-transparent via-accent-violet to-transparent"
         />
       ) : (
         <div
-          className="relative h-full rounded-full transition-all duration-200 ease-out bg-gradient-to-r from-teal-500 to-emerald-400 shadow-[0_0_8px_rgba(20,184,166,0.5)]"
+          className="relative h-full rounded-full transition-all duration-200 ease-out bg-gradient-to-r from-accent-violet via-accent-purple to-accent-amethyst shadow-[0_0_12px_rgba(157,78,221,0.5)]"
           style={{
             width: `${percentage}%`,
           }}

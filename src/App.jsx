@@ -1,12 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { motion } from 'framer-motion';
 import {
   Download,
   Scissors,
   Film,
   Clock,
   Settings,
-  Terminal,
   Sun,
   Moon,
   FolderOpen,
@@ -629,6 +627,7 @@ export default function App() {
       id: 'mass-clip',
       label: 'Mass Clip Stitcher',
       icon: <Scissors className="w-4 h-4" />,
+      badge: 'Batch',
     },
     {
       id: 'selective',
@@ -643,116 +642,136 @@ export default function App() {
     },
     {
       id: 'settings',
-      label: 'Settings & Status',
+      label: 'Settings & Engine',
       icon: <Settings className="w-4 h-4" />,
     },
   ];
 
   return (
-    <div className="h-screen w-screen flex flex-col bg-[var(--bg-base)] text-[var(--text-primary)] overflow-hidden font-sans select-none">
+    <div className="h-screen w-screen flex flex-col bg-[var(--bg-base)] text-[var(--text-primary)] dark:bg-obsidian-950 dark:text-slate-100 overflow-hidden font-sans select-none relative noise-overlay">
+      {/* Top ambient lighting accent */}
+      <div className="absolute inset-x-0 top-0 h-44 ambient-glow-purple pointer-events-none z-0" />
+
       {/* Title Bar */}
       <TitleBar />
 
       {/* Main Desktop Shell */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Compact Sidebar */}
-        <aside className="w-48 sm:w-52 bg-[var(--surface-1)] border-r border-[var(--border-subdued)] flex flex-col justify-between p-3 shrink-0 select-none z-10 relative">
+      <div className="flex-1 flex overflow-hidden relative z-10">
+        {/* Obsidian Navigation Sidebar */}
+        <aside
+          className="w-60 sm:w-64 bg-[var(--surface-1)] dark:bg-obsidian-950/85 border-r border-purple-900/25 flex flex-col justify-between shrink-0 p-3.5 backdrop-blur-md select-none z-10 relative"
+          data-purpose="workspace-navigation"
+        >
           {/* Top: Nav Destination Links */}
-          <div className="space-y-1.5">
-            <span className="text-[10px] uppercase font-bold tracking-wider text-[var(--text-tertiary)] px-3 py-1 block">
-              Workspace
-            </span>
-
-            {navItems.map((item) => {
-              const isActive = activeTab === item.id;
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => setActiveTab(item.id)}
-                  className={`relative w-full flex items-center justify-between px-3 py-2.5 rounded-[8px] text-xs font-medium transition-colors select-none cursor-pointer ${
-                    isActive
-                      ? 'text-[var(--text-primary)] font-bold'
-                      : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-                  }`}
-                >
-                  {isActive && (
-                    <motion.div
-                      layoutId="sidebar-active-tab-indicator"
-                      className="absolute inset-0 bg-gradient-to-r from-teal-500/15 via-teal-500/10 to-transparent border border-teal-500/30 rounded-[8px] shadow-sm pointer-events-none before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-teal-400/30 before:to-transparent"
-                      transition={{ type: 'spring', bounce: 0.15, duration: 0.28 }}
-                    />
-                  )}
-
-                  <div className="relative z-10 flex items-center gap-2.5 truncate">
-                    <span className={isActive ? 'text-[var(--accent-primary)]' : 'text-[var(--text-tertiary)]'}>
-                      {item.icon}
-                    </span>
-                    <span className="truncate">{item.label}</span>
-                  </div>
-
-                  {item.badge !== undefined && (
-                    <span
-                      className={`relative z-10 text-[10px] font-mono px-2 py-0.5 rounded-full font-bold ${
-                        isActive
-                          ? 'bg-[var(--accent-primary)] text-white shadow-sm'
-                          : 'bg-[var(--surface-2)] text-[var(--text-tertiary)]'
-                      }`}
-                    >
-                      {item.badge}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Bottom: Quick Status and Theme Toggle */}
-          <div className="space-y-2.5 pt-3 border-t border-[var(--border-subdued)]">
-            {/* Output Destination Info */}
-            <div
-              onClick={() => setShowOutputFolderModal(true)}
-              className="p-2.5 rounded-[8px] bg-[var(--surface-2)]/80 hover:bg-[var(--surface-hover)] border border-[var(--border-subdued)] transition-all cursor-pointer group shadow-sm"
-              title={globalOutputDir || 'Default downloads folder'}
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5 text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider">
-                  <FolderOpen className="w-3.5 h-3.5 text-[var(--accent-primary)]" />
-                  <span>Destination</span>
-                </div>
-                <span className="text-[9px] text-[var(--accent-primary)] opacity-0 group-hover:opacity-100 transition-opacity">
-                  Change
-                </span>
-              </div>
-              <span className="font-mono text-[11px] text-[var(--text-primary)] truncate block mt-1 font-medium">
-                {globalOutputDir ? globalOutputDir.split('\\').pop() : 'System Default'}
+          <div className="space-y-4">
+            <div className="px-2.5 pt-1">
+              <span className="text-[10px] font-mono uppercase tracking-wider text-purple-400/70 font-semibold">
+                Workspace Tools
               </span>
             </div>
 
-            {/* Quick Actions */}
-            <div className="flex items-center justify-between gap-1 pt-0.5">
+            <nav aria-label="Main Navigation" className="space-y-1.5">
+              {navItems.map((item) => {
+                const isActive = activeTab === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => setActiveTab(item.id)}
+                    className={`group w-full flex items-center justify-between px-3 py-2.5 rounded-xl font-medium text-xs transition duration-150 cursor-pointer ${
+                      isActive
+                        ? 'bg-gradient-to-r from-accent-violet/25 via-purple-600/15 to-transparent border border-purple-500/40 text-purple-200 shadow-sm shadow-purple-950/50'
+                        : 'border border-transparent hover:bg-purple-950/30 hover:border-purple-800/30 text-slate-400 hover:text-purple-200'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 truncate">
+                      <div
+                        className={`p-1.5 rounded-lg transition shrink-0 ${
+                          isActive
+                            ? 'bg-accent-violet/25 text-accent-neon shadow-sm shadow-purple-900/30'
+                            : 'bg-obsidian-850 text-slate-400 group-hover:text-purple-300'
+                        }`}
+                      >
+                        {item.icon}
+                      </div>
+                      <span className={`truncate tracking-tight ${isActive ? 'text-white font-medium' : ''}`}>
+                        {item.label}
+                      </span>
+                    </div>
+
+                    {isActive ? (
+                      <span className="w-1.5 h-1.5 rounded-full bg-accent-neon shadow-glow-violet shrink-0" />
+                    ) : item.badge !== undefined ? (
+                      <span
+                        className={`font-mono text-[9px] uppercase px-1.5 py-0.5 rounded shrink-0 ${
+                          typeof item.badge === 'string'
+                            ? 'text-purple-400/80 bg-purple-950/50 border border-purple-800/40'
+                            : 'text-accent-neon bg-purple-950/80 border border-purple-700/50 font-semibold'
+                        }`}
+                      >
+                        {item.badge}
+                      </span>
+                    ) : null}
+                  </button>
+                );
+              })}
+            </nav>
+          </div>
+
+          {/* Navigation Lower Utilities */}
+          <div className="space-y-3 pt-4 border-t border-purple-900/30">
+            {/* Output Destination Info Card */}
+            <div
+              onClick={() => setShowOutputFolderModal(true)}
+              className="bg-obsidian-900/90 border border-purple-900/30 hover:border-purple-700/50 rounded-xl p-3 shadow-inner cursor-pointer transition group"
+              title={globalOutputDir || 'Default downloads folder'}
+            >
+              <div className="flex items-center justify-between text-[11px] mb-1.5">
+                <span className="flex items-center gap-1.5 text-slate-300 font-medium truncate">
+                  <FolderOpen className="w-3.5 h-3.5 text-accent-neon shrink-0" />
+                  <span>Output Folder</span>
+                </span>
+                <span className="font-mono text-accent-neon text-[10px] shrink-0 opacity-80 group-hover:opacity-100">
+                  Change
+                </span>
+              </div>
+              <div className="font-mono text-xs text-slate-200 truncate select-all">
+                {globalOutputDir ? globalOutputDir.split(/[/\\]/).pop() : 'System Default'}
+              </div>
+              <div className="text-[9px] text-purple-400/60 font-mono truncate mt-0.5">
+                {globalOutputDir || 'Downloads'}
+              </div>
+            </div>
+
+            {/* Bottom Action Buttons: Theme & Logs */}
+            <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
                 onClick={handleThemeToggle}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)] rounded-[6px] border border-[var(--border-subdued)] transition-colors cursor-pointer"
+                className="flex items-center justify-center gap-1.5 py-1.5 px-2 bg-obsidian-900 hover:bg-purple-950/40 border border-purple-900/30 hover:border-purple-700/50 rounded-lg text-slate-300 hover:text-purple-200 text-[11px] transition cursor-pointer"
                 title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
               >
                 {theme === 'dark' ? (
-                  <Sun className="w-3.5 h-3.5 text-amber-500" />
+                  <>
+                    <Moon className="w-3.5 h-3.5 text-accent-violet" />
+                    <span>Obsidian UI</span>
+                  </>
                 ) : (
-                  <Moon className="w-3.5 h-3.5 text-[var(--accent-primary)]" />
+                  <>
+                    <Sun className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Studio Light</span>
+                  </>
                 )}
-                <span>{theme === 'dark' ? 'Light' : 'Dark'}</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => window.electronAPI?.openLogsWindow?.()}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)] rounded-[6px] border border-[var(--border-subdued)] transition-colors cursor-pointer"
+                className="flex items-center justify-center gap-1.5 py-1.5 px-2 bg-obsidian-900 hover:bg-purple-950/40 border border-purple-900/30 hover:border-purple-700/50 rounded-lg text-slate-300 hover:text-purple-200 text-[11px] font-mono transition cursor-pointer"
                 title="Open Developer Logs"
                 aria-label="Open Logs"
               >
-                <Terminal className="w-3.5 h-3.5 text-teal-400" />
+                <span className="text-accent-neon font-bold">&gt;_</span>
                 <span>Logs</span>
               </button>
             </div>
@@ -798,7 +817,7 @@ export default function App() {
                 const validClips = clips.filter((c) => c.url.trim());
                 if (validClips.length > 0) {
                   const newItems = validClips.map((c, i) => {
-                    let clipTitle = filepath.split('\\').pop() + ` (Clip ${i + 1})`;
+                    let clipTitle = filepath.split(/[/\\]/).pop() + ` (Clip ${i + 1})`;
                     let clipFilepath = filepath;
                     if (c.state === 'done' && c.message) {
                       const parts = c.message.split('::');
@@ -821,7 +840,7 @@ export default function App() {
                   addHistoryItem({
                     id: Date.now(),
                     url: 'Multiple clips',
-                    filename: filepath.split('\\').pop(),
+                    filename: filepath.split(/[/\\]/).pop(),
                     filepath,
                     type: 'stitch',
                     date: new Date().toLocaleString(),
@@ -839,7 +858,7 @@ export default function App() {
                 addHistoryItem({
                   id: Date.now(),
                   url: videoUrl,
-                  filename: videoTitle || (filepath ? filepath.split('\\').pop() : 'Segment'),
+                  filename: videoTitle || (filepath ? filepath.split(/[/\\]/).pop() : 'Segment'),
                   durationTimestamp: `${start} - ${end}`,
                   filepath,
                   type: 'clip',
@@ -874,6 +893,28 @@ export default function App() {
           </div>
         </main>
       </div>
+
+      {/* Persistent Bottom Status Strip */}
+      <footer
+        className="h-7 bg-obsidian-950/90 border-t border-purple-900/30 px-4 flex items-center justify-between text-[11px] font-mono text-purple-400/60 select-none relative z-10 shrink-0"
+        data-purpose="window-bottom-status-strip"
+      >
+        <div className="flex items-center gap-3">
+          <span className="flex items-center gap-1.5 text-accent-neon font-medium">
+            <span className="w-1.5 h-1.5 rounded-full bg-accent-neon shadow-glow-violet" />
+            Ready to Forge
+          </span>
+          <span className="text-purple-900/50">|</span>
+          <span className="truncate max-w-[280px] sm:max-w-md text-slate-400">
+            Dest: {globalOutputDir || 'System Default (~/Downloads)'}
+          </span>
+        </div>
+        <div className="hidden sm:flex items-center gap-3">
+          <span>Engine: yt-dlp core</span>
+          <span className="text-purple-900/50">|</span>
+          <span className="text-purple-300/80">Hermanos Forge v1.1.0</span>
+        </div>
+      </footer>
 
       {/* Global Overlays & Modals */}
       <CookieWizardModal

@@ -764,7 +764,7 @@ export function SelectiveDurationView({
         <CardContent className="space-y-5 p-5 sm:p-6">
           <div className="flex items-center justify-between pb-3 border-b border-[var(--border-subdued)]">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-[8px] bg-gradient-to-br from-teal-500/20 to-teal-500/5 border border-teal-500/30 flex items-center justify-center text-[var(--accent-primary)] shadow-sm">
+              <div className="w-8 h-8 rounded-[8px] bg-purple-950/50 border border-purple-800/40 flex items-center justify-center text-accent-neon shadow-sm">
                 <Film className="w-4 h-4" />
               </div>
               <div>
@@ -794,7 +794,7 @@ export function SelectiveDurationView({
                 onChange={(e) => setUrl(e.target.value)}
                 placeholder="Enter YouTube URL to load timeline..."
                 disabled={isFetchingDetails || isDownloading}
-                leftIcon={<Video className="w-4 h-4 text-teal-400" />}
+                leftIcon={<Video className="w-4 h-4 text-accent-neon" />}
               />
             </div>
             <Button

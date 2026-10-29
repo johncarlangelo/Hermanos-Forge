@@ -80,7 +80,7 @@ export function SettingsView({
         <CardContent className="space-y-4 p-4 sm:p-5">
           <div className="flex items-center justify-between pb-3 border-b border-[var(--border-subdued)]">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-[8px] bg-gradient-to-br from-teal-500/20 to-teal-500/5 border border-teal-500/30 flex items-center justify-center text-[var(--accent-primary)] shadow-sm shrink-0">
+              <div className="w-8 h-8 rounded-[8px] bg-purple-950/50 border border-purple-800/40 flex items-center justify-center text-accent-neon shadow-sm shrink-0">
                 <Settings className="w-4 h-4" />
               </div>
               <div>
@@ -136,11 +136,11 @@ export function SettingsView({
                   onClick={() => theme !== 'dark' && onThemeToggle()}
                   className={`flex items-center gap-2 px-3.5 py-1.5 text-xs rounded-[8px] border transition-all duration-150 cursor-pointer ${
                     theme === 'dark'
-                      ? 'bg-[var(--surface-1)] text-[var(--text-primary)] border-teal-500/50 shadow-sm font-bold'
+                      ? 'bg-[var(--surface-1)] text-[var(--text-primary)] border-purple-500/50 shadow-sm font-bold'
                       : 'bg-transparent text-[var(--text-secondary)] border-[var(--border-subdued)] hover:text-[var(--text-primary)]'
                   }`}
                 >
-                  <Moon className="w-3.5 h-3.5 text-teal-400" />
+                  <Moon className="w-3.5 h-3.5 text-accent-neon" />
                   <span>Dark Studio</span>
                 </button>
                 <button
@@ -148,7 +148,7 @@ export function SettingsView({
                   onClick={() => theme !== 'light' && onThemeToggle()}
                   className={`flex items-center gap-2 px-3.5 py-1.5 text-xs rounded-[8px] border transition-all duration-150 cursor-pointer ${
                     theme === 'light'
-                      ? 'bg-[var(--surface-1)] text-[var(--text-primary)] border-teal-500/50 shadow-sm font-bold'
+                      ? 'bg-[var(--surface-1)] text-[var(--text-primary)] border-purple-500/50 shadow-sm font-bold'
                       : 'bg-transparent text-[var(--text-secondary)] border-[var(--border-subdued)] hover:text-[var(--text-primary)]'
                   }`}
                 >
