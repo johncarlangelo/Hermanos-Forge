@@ -9,7 +9,19 @@
 
 # <p align="center">Hermanos Forge</p>
 
-A sleek, modern video and audio downloader built with Electron + React. Download media as **MP4** or **MP3** from thousands of supported websites, select your preferred quality, and manage your download history — all from a premium dark-mode interface. (soon to be multi tool)
+A sleek, modern video and audio desktop studio built with Electron + React 19. Download media as **MP4** or **MP3** from thousands of supported websites, select your preferred quality, trim selective durations, stitch clips, and manage your download history — all wrapped in the **Obsidian Forge Media Studio** cybernetic aesthetic with dual-theme support (Obsidian Dark and Studio Light).
+
+---
+
+### 📚 Architecture & Engineering Documentation
+
+For deep technical specifications, design tokens, active tasks, and decision records, refer to:
+- 🎨 **Design System & Visual Tokens**: [DESIGN.md](file:///d:/Comsci%20things/Python/Quick%20Tools%20Project/Hermanos%20Forge/DESIGN.md)
+- 🤖 **Agent Rules & Engineering Standards**: [AGENTS.md](file:///d:/Comsci%20things/Python/Quick%20Tools%20Project/Hermanos%20Forge/AGENTS.md)
+- 🏗️ **Technical Architecture & IPC Protocol**: [ARCHITECTURE.md](file:///d:/Comsci%20things/Python/Quick%20Tools%20Project/Hermanos%20Forge/ARCHITECTURE.md)
+- 📋 **Task Board & Issue Backlog**: [TASKS.md](file:///d:/Comsci%20things/Python/Quick%20Tools%20Project/Hermanos%20Forge/TASKS.md)
+- 📈 **Milestones & Release Progress**: [PROGRESS.md](file:///d:/Comsci%20things/Python/Quick%20Tools%20Project/Hermanos%20Forge/PROGRESS.md)
+- 🧠 **Architectural Decision Records (ADRs)**: [DECISIONS.md](file:///d:/Comsci%20things/Python/Quick%20Tools%20Project/Hermanos%20Forge/DECISIONS.md)
 
 ---
 
@@ -125,19 +137,25 @@ This starts the Vite dev server and Electron simultaneously with hot-reload enab
 
 ```
 Hermanos Forge/
-├── backend.py              # Python backend (yt-dlp + ffmpeg logic)
+├── backend.py                  # Python backend (yt-dlp + FFmpeg logic)
 ├── electron/
-│   ├── main.cjs            # Electron main process + IPC handlers
-│   └── preload.cjs         # Context bridge for renderer ↔ main IPC
+│   ├── main.cjs                # Electron main process + IPC handlers + window lifecycle
+│   └── preload.cjs             # Context bridge for renderer ↔ main IPC isolation
 ├── src/
-│   ├── App.jsx             # React UI (main application and routing)
-│   ├── MassClipDownloader.jsx # Mass clip stitching interface
-│   └── LogsWindow.jsx      # Developer logs window
-├── ffmpeg/
-│   ├── ffmpeg.exe          # Bundled FFmpeg binary
-│   ├── ffprobe.exe         # Bundled FFprobe binary
-│   └── *.dll               # FFmpeg shared libraries (avcodec, avutil, etc.)
+│   ├── App.jsx                 # Application shell & navigation coordinator
+│   ├── LogsWindow.jsx          # Developer logs auxiliary window
+│   ├── components/
+│   │   ├── ui/                 # Shared primitives (Button, Input, Select, Dialog, TitleBar, etc.)
+│   │   ├── views/              # Feature views (SingleDownloader, MassClip, SelectiveDuration, etc.)
+│   │   └── modals/             # Overlays (CookieWizard, PlaylistSelector, OutputFolder, etc.)
+│   ├── lib/
+│   │   └── utils.js            # Class merge utility (cn)
+│   ├── assets/                 # Icons and media assets
+│   ├── index.css               # Obsidian Forge Media Studio design tokens & utilities
+│   └── main.jsx                # React root entry point
+├── ffmpeg/                     # Bundled FFmpeg & FFprobe binaries + shared DLLs
 ├── package.json
+├── tailwind.config.js
 └── vite.config.js
 ```
 
@@ -156,10 +174,12 @@ Hermanos Forge/
 
 ## 📦 Tech Stack
 
-- **Frontend**: React 19, Vite, Tailwind CSS v3, Framer Motion, Lucide Icons
-- **Desktop Shell**: Electron
-- **Backend**: Python 3, yt-dlp, pydub, ffmpeg
-- **Build**: PyInstaller (backend), electron-builder (installer)
+- **Frontend**: React 19, Vite 8, Tailwind CSS 3.4, Framer Motion, Lucide React
+- **Design System**: Obsidian Forge Media Studio (Obsidian Dark & Studio Light)
+- **Typography**: Space Grotesk (display), DM Sans (body), JetBrains Mono (data)
+- **Desktop Shell**: Electron (Frameless custom window with native controls)
+- **Backend**: Python 3, yt-dlp, pydub, FFmpeg
+- **Build**: PyInstaller (backend standalone binary), electron-builder (Windows NSIS installer)
 
 ---
 

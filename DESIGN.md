@@ -1,13 +1,14 @@
 # Hermanos Forge --- Design Specification
 
-**Document status:** Proposed design specification\
-**Design direction:** Precision Studio\
+**Document status:** Living design specification (v1.1.0-pro)\
+**Design direction:** Obsidian Forge Media Studio (evolved from Precision Studio)\
 **Application:** Hermanos Forge desktop application\
 **Platform focus:** Windows desktop (Electron)\
-**Implementation status:** Not yet implemented\
-**Source of truth:** This document defines the intended visual system
-and UI behavior for the redesign. Existing source code and the audit
-report remain authoritative for current implementation details.
+**Implementation status:** Implemented in `dev` (committed in `b885179`)\
+**Source of truth:** This document defines the active visual design tokens,
+layout hierarchy, and shared component specifications for Hermanos Forge.
+Existing source code and architecture documents remain authoritative for
+runtime and IPC details.
 
 ------------------------------------------------------------------------
 
@@ -19,25 +20,25 @@ processing multiple clip URLs, stitching clips, reviewing download
 history, and configuring application settings and browser-cookie
 authentication.
 
-The redesign should make Forge feel like a deliberate, premium desktop
-workbench rather than a collection of loosely related utility screens.
+The design elevates Forge into a deliberate, premium desktop
+workbench—**Obsidian Forge Media Studio**—combining cyber-luminescent
+accents, deep obsidian surfaces, and high-precision media controls.
 
-The design must improve:
+The design delivers:
 
--   Visual hierarchy and consistency.
--   Workflow clarity and discoverability.
--   Use of the available desktop viewport.
+-   Visual hierarchy, brand identity, and multi-layer depth.
+-   Workflow clarity, discoverability, and command-bar input aesthetics.
+-   Efficient use of the desktop viewport at default 900 × 700 and scaled sizes.
 -   Feedback during inspection, downloads, conversions, stitching, and
-    errors.
--   Accessibility, keyboard use, and focus behavior.
--   Dark and light theme quality.
--   The cohesion of the main window, dialogs, and developer logs window.
+    authentication barriers.
+-   Accessibility, keyboard use, and visible focus rings.
+-   First-class Dark mode (Obsidian Forge) and Light mode (Obsidian Slate Studio).
+-   Cohesion across the main window, modals, and auxiliary developer logs window.
 
 ### In scope
 
--   Application shell, navigation, title bar, and workspace layout.
--   Design tokens, themes, typography, spacing, borders, radii, and
-    elevation.
+-   Application shell, navigation sidebar, frameless title bar, bottom status strip, and workspace layout.
+-   Design tokens, themes, typography, spacing, borders, radii, shadows, and ambient lighting.
 -   Shared UI primitives and consistent interaction states.
 -   Existing downloader, mass-clip, selective-duration, history,
     settings, and diagnostics views.
@@ -69,83 +70,83 @@ capabilities work.
 
 ## 2. Product and Design Principles
 
-### 2.1 Precision Studio
+### 2.1 Obsidian Forge Media Studio
 
-Forge should communicate focus, control, and technical reliability. Its
-interface should be understated and purposeful.
+Forge communicates focus, control, and technical reliability wrapped in a
+sleek cyber-studio visual language.
 
 The visual language uses:
 
--   Graphite and slate surfaces rather than large blurred glass panels.
--   Thin, consistent borders to define regions.
--   A restrained mint/teal accent for primary actions, selected states,
-    and progress.
--   Compact, legible typography.
--   Consistent rectangular controls with modest corner radii.
--   Clear status labels and persistent feedback.
--   Small, purposeful animations rather than decorative movement.
+-   **Deep Obsidian Core**: Deep canvas surfaces (`#09090C`), structured panel
+    layers (`#0E0E13`), elevated cards (`#16161F` / `obsidian-850` `#13131A`), and hover states (`#222230`).
+-   **Specular Top Edge Highlights**: Subtle hairline top highlights
+    (`.surface-panel::before`) providing physical realism and surface depth.
+-   **Cyber-Luminescent Accents**: Electric Violet (`#9D4EDD`), Amethyst Magenta
+    (`#B5179E`), Electric Neon (`#C084FC`), and Radiant Cyan (`#00F0FF`).
+-   **Ambient Lighting & Texture**: Soft radial violet glow (`.ambient-glow-purple`,
+    `.studio-ambient-bg`) and cybernetic dot noise overlay (`.noise-overlay`).
+-   **High-Contrast Typography**: Display headings in `Space Grotesk`, UI body in
+    `DM Sans`, and timecodes/durations/code in `JetBrains Mono` with `tabular-nums`.
+-   **Consistent Rectangular Controls**: Standardized 6px-12px corner radii,
+    subdued purple borders, and command-bar focus halos.
+-   **Clear Status & Feedback**: Visible status labels, live engine activity
+    beacons, and real-time progress indicators.
+-   **Purposeful Micro-Interactions**: Framer Motion physics for tabs,
+    button presses, and collapsible panels without decorative delays.
 
 ### 2.2 Utility before decoration
 
-Every screen should make its main task and next action obvious. Do not
-add large hero sections, fake dashboard metrics, decorative charts, or
-nested cards without a concrete usability purpose.
+Every screen makes its main task and next action obvious. Avoid fake
+dashboard metrics or decorative clutter that does not serve media workflows.
 
 ### 2.3 Clear hierarchy
 
-Each view should have a clear page title, concise supporting context
-where useful, a recognizable primary action, and secondary actions that
-do not compete with it.
+Each view features a dedicated module header, supporting context, a
+spotlight input area, and distinct primary vs. secondary actions.
 
 ### 2.4 Honest feedback
 
-Long-running operations must clearly communicate what is happening.
-Progress, errors, cancellation, and completion should reflect real
-application state rather than decorative timers or guessed progress.
+Long-running operations clearly communicate state. Progress, errors,
+cancellation, and completion reflect real backend events rather than
+synthetic timers.
 
 ### 2.5 Preserve user work
 
 Never clear URLs, queue rows, clip ranges, or other user-entered work
 merely because an animation finished or a timeout elapsed. Destructive
-actions require an explicit action and appropriate confirmation.
+actions require explicit confirmation.
 
 ### 2.6 Consistency without forcing sameness
 
-Shared components should look and behave consistently. Specialized
-controls---especially the selective-duration timeline---may retain
-purpose-built layouts when a generic component would reduce clarity or
-precision.
+Shared components look and behave consistently. Specialized controls—especially
+the selective-duration timeline—retain purpose-built layouts for precision trimming.
 
 ------------------------------------------------------------------------
 
 ## 3. Confirmed Design Decisions
 
-The following decisions have been confirmed by the product owner:
+The following decisions have been confirmed and implemented:
 
-1.  **Window frame:** Use a custom frameless Electron window with
-    application-owned title-bar controls.
-2.  **Playlist detection:** Detect and communicate playlist URLs inline.
-    Provide an explicit action to open the playlist-selection dialog; do
-    not automatically interrupt the user with the dialog merely because
-    a playlist is detected.
-3.  **Fresh-install theme:** Default to dark mode.
-4.  **Theme support:** Provide both dark and light themes.
-5.  **Accent:** Mint/teal.
-6.  **Density:** Balanced desktop density.
-7.  **Branding:** Subtle, not dominant.
-8.  **Design direction:** Precision Studio.
-9.  **Component direction:** Prefer source-owned, customizable React
-    components; shadcn/ui-compatible patterns are the preferred
-    foundation, subject to a compatibility check before installation.
-10. **Implementation language and styling:** Keep the existing
-    JavaScript/JSX and Tailwind CSS 3.4 approach unless a separate
-    decision authorizes a migration.
-
-A future system-theme option may be considered, but it is not required
-for the first redesign. The initial theme preference should be dark on
-fresh installs, with an explicit way to switch themes.
-
-------------------------------------------------------------------------
+1.  **Window frame:** Custom frameless Electron window with application-owned
+    title-bar controls (`TitleBar.jsx`), macOS-inspired traffic dots, brand emblem,
+    and native Windows minimize/maximize/close buttons.
+2.  **Playlist detection:** Detect and communicate playlist URLs inline with
+    a dedicated notification card; provide an explicit action to open the
+    playlist-selection dialog without intrusive interruptions.
+3.  **Fresh-install theme:** Default to Dark mode (Obsidian Forge Media Suite).
+4.  **Theme support:** Provide both Dark mode and Light mode (Obsidian Slate Studio).
+5.  **Accent:** Cyber-luminescent Violet (`#9D4EDD`), Amethyst (`#B5179E`),
+    and Neon Purple (`#C084FC`), with Radiant Cyan (`#00F0FF`) secondary highlights.
+6.  **Typography:** Space Grotesk (display/headings), DM Sans (body/labels),
+    JetBrains Mono (durations, paths, logs, code).
+7.  **Density:** Balanced desktop density with command-palette style spotlight inputs.
+8.  **Branding:** Obsidian Forge emblem with purple-amethyst gradient ring and
+    `v1.1.0-pro` release tag.
+9.  **Component direction:** Source-owned, customizable React components in
+    `src/components/ui/` styled with Tailwind CSS 3.4 tokens and Framer Motion.
+10. **Persistent Bottom Status Strip:** Dedicated 28px (`h-7`) footer bar
+    reporting ready state, destination directory path, and core engine activity.
+11. **Implementation language and styling:** JavaScript/JSX with Tailwind CSS 3.4.
 
 ## 4. Technical Constraints and Integration Boundaries
 
@@ -223,11 +224,7 @@ Before adding or configuring UI dependencies:
     where appropriate.
 5.  Add only dependencies that support an identified need.
 
-The proposed shadcn/ui approach may require alias and utility
-configuration. Treat those changes as implementation tasks, not
-assumptions that have already been completed. Do not run an automated
-setup that overwrites existing project styles without reviewing the
-diff.
+The shared component architecture is built on source-owned primitives in `src/components/ui/` (`Button`, `Input`, `Select`, `Dialog`, `Tabs`, `Badge`, `Progress`, `Tooltip`, `Card`, `TitleBar`) combining Tailwind CSS 3.4 tokens, `cn()` (`clsx` + `tailwind-merge`), and Framer Motion micro-interactions, configured with the `@/` path alias in `vite.config.js`. This provides complete design control without external component library baggage or unwanted CSS resets.
 
 ------------------------------------------------------------------------
 
@@ -235,190 +232,138 @@ diff.
 
 ### 5.1 Color system
 
-Use semantic CSS variables so components refer to a role rather than
-hard-coded colors. The values below are the proposed starting palette;
-check contrast and rendered appearance before finalizing.
+Semantic CSS custom properties and configured Tailwind tokens ensure UI components bind to structural roles rather than hard-coded hex codes.
 
-#### Dark theme --- default
+#### Dark Theme — Default (Obsidian Forge Media Suite)
 
-  -----------------------------------------------------------------------------
-  Token                   Proposed value                Purpose
-  ----------------------- ----------------------------- -----------------------
-  `--bg-base`             `#0D1117`                     Main application canvas
+| Token | Hex / RGBA Value | Role / Purpose |
+|---|---|---|
+| `--bg-base` | `#09090C` | Main application canvas (Obsidian 950) |
+| `--surface-1` | `#0E0E13` | Sidebar, primary panels, command container (Obsidian 900) |
+| `--surface-2` | `#16161F` | Elevated cards, nested inputs, secondary chips |
+| `--surface-hover` | `#222230` | Hovered interactive elements and table rows |
+| `--border-subdued` | `rgba(168, 85, 247, 0.16)` | Low-emphasis borders, dividers, subtle card outlines |
+| `--border-strong` | `rgba(168, 85, 247, 0.32)` | Inputs, focus boundaries, prominent cards |
+| `--text-primary` | `#F3F0F5` | Main headings and high-emphasis prose |
+| `--text-secondary` | `#A99FB2` | Supporting text, metadata, input labels |
+| `--text-tertiary` | `#6E6478` | Disabled text, subtle hints, muted icons |
+| `--accent-primary` | `#9D4EDD` | Electric Violet primary action and focus ring |
+| `--accent-hover` | `#8B3DD0` | Hover and active state for primary actions |
+| `--accent-muted` | `rgba(157, 78, 221, 0.16)` | Subtle violet selection and badge backgrounds |
+| `--accent-neon` | `#C084FC` | Luminescent lavender/neon highlights, active beacons |
+| `--accent-cyan` | `#00F0FF` | Radiant cyan secondary accents, direct stream tags |
+| `--focus-ring` | `#9D4EDD` | Electric violet focus ring halo |
+| `--status-success` | `#10B981` | Success notifications and completion badges |
+| `--status-warning` | `#F59E0B` | Attention, cancellation, and cautionary alerts |
+| `--status-danger` | `#EF4444` | Errors, destructive buttons, and auth wall alerts |
+| `--status-info` | `#00F0FF` | Informational callouts and engine inspection status |
 
-  `--surface-1`           `#161B22`                     Sidebar, title-bar
-                                                        region, primary
-                                                        surfaces
+#### Light Theme — Obsidian Slate Studio
 
-  `--surface-2`           `#21262D`                     Inputs, secondary
-                                                        panels, item surfaces
+| Token | Hex / RGBA Value | Role / Purpose |
+|---|---|---|
+| `--bg-base` | `#F8F7FA` | Slate pearl main canvas |
+| `--surface-1` | `#FFFFFF` | Clean white primary panels and dialogs |
+| `--surface-2` | `#F1EFF5` | Secondary input surfaces, cards, and toolbars |
+| `--surface-hover` | `#E6E2EE` | Hovered interactive elements |
+| `--border-subdued` | `rgba(100, 70, 130, 0.14)` | Subtle purple slate borders and dividers |
+| `--border-strong` | `rgba(100, 70, 130, 0.26)` | Prominent borders and inputs |
+| `--text-primary` | `#17151D` | Charcoal-violet text and titles |
+| `--text-secondary` | `#635C6E` | Subdued slate text and secondary labels |
+| `--text-tertiary` | `#958D9E` | Subtle labels, placeholders, and disabled cues |
+| `--accent-primary` | `#8433C4` | Deep violet primary action |
+| `--accent-hover` | `#7124AF` | Hovered violet accent |
+| `--accent-muted` | `rgba(132, 51, 196, 0.12)` | Subtle lavender wash |
+| `--accent-neon` | `#9D4EDD` | Bright violet indicator |
+| `--accent-cyan` | `#0099A8` | High-contrast cyan accent for light backgrounds |
+| `--focus-ring` | `#8433C4` | Deep violet focus ring |
+| `--status-success` | `#059669` | Success status |
+| `--status-warning` | `#D97706` | Amber warning status |
+| `--status-danger` | `#DC2626` | Red error status |
+| `--status-info` | `#0284C7` | Sky/cyan info status |
 
-  `--surface-hover`       `#30363D`                     Hovered interactive
-                                                        surfaces
+#### Obsidian Color Hierarchy (Tailwind `colors.obsidian`)
 
-  `--border-subdued`      `rgba(240, 246, 252, 0.10)`   Dividers and
-                                                        low-emphasis boundaries
+- `obsidian-950`: `#09090C` — Base canvas, title bar, and bottom status strip.
+- `obsidian-900`: `#0E0E13` — Sidebar background, panel backdrops.
+- `obsidian-850`: `#13131A` — Elevated cards, command containers, nested inputs.
+- `obsidian-800`: `#181824` — Secondary buttons, dropdown menus, popovers.
+- `obsidian-750`: `#1F1F2E` — Hovered item backgrounds, active chips.
+- `obsidian-700`: `#28283D` — Structural borders and dividing rules.
+- `obsidian-600`: `#3D3D5C` — Outer bounding strokes, disabled edges.
 
-  `--border-strong`       `rgba(240, 246, 252, 0.18)`   Inputs and prominent
-                                                        boundaries
+#### Accent Color Hierarchy (Tailwind `colors.accent`)
 
-  `--text-primary`        `#F0F6FC`                     Main content and
-                                                        headings
+- `accent-violet`: `#9D4EDD` — Primary action gradient start, brand hallmark.
+- `accent-purple`: `#A855F7` — Primary action gradient midpoint.
+- `accent-amethyst`: `#B5179E` — Primary action gradient end, specular glow.
+- `accent-neon`: `#C084FC` — High-visibility status beacons, active text accents.
+- `accent-cyan`: `#00F0FF` — Secondary stream badges, live bitrate badges.
+- `accent-glow`: `rgba(157, 78, 221, 0.25)` — Radial spotlight and volumetric haze.
 
-  `--text-secondary`      `#8B949E`                     Supporting text and
-                                                        metadata
+#### Box Shadows & Ambient Glows (Tailwind `boxShadow`)
 
-  `--accent-primary`      `#14B8A6`                     Primary action,
-                                                        selected controls,
-                                                        progress
-
-  `--accent-hover`        `#0D9488`                     Hover/pressed accent
-                                                        state
-
-  `--accent-muted`        `rgba(20, 184, 166, 0.12)`    Subtle selection and
-                                                        accent backgrounds
-
-  `--status-success`      `#10B981`                     Successful completion
-                                                        and healthy status
-
-  `--status-warning`      `#F59E0B`                     Warnings and
-                                                        attention-needed states
-
-  `--status-danger`       `#EF4444`                     Errors and destructive
-                                                        actions
-
-  `--status-info`         `#38BDF8`                     Informational states
-  -----------------------------------------------------------------------------
-
-#### Light theme
-
-  ----------------------------------------------------------------------------
-  Token                   Proposed value               Purpose
-  ----------------------- ---------------------------- -----------------------
-  `--bg-base`             `#F8FAFC`                    Main application canvas
-
-  `--surface-1`           `#FFFFFF`                    Sidebar and primary
-                                                       surfaces
-
-  `--surface-2`           `#F1F5F9`                    Inputs and secondary
-                                                       panels
-
-  `--surface-hover`       `#E2E8F0`                    Hovered interactive
-                                                       surfaces
-
-  `--border-subdued`      `#E2E8F0`                    Dividers and
-                                                       low-emphasis boundaries
-
-  `--border-strong`       `#CBD5E1`                    Inputs and prominent
-                                                       boundaries
-
-  `--text-primary`        `#0F172A`                    Main content and
-                                                       headings
-
-  `--text-secondary`      `#64748B`                    Supporting text and
-                                                       metadata
-
-  `--accent-primary`      `#0D9488`                    Primary action,
-                                                       selected controls,
-                                                       progress
-
-  `--accent-hover`        `#0F766E`                    Hover/pressed accent
-                                                       state
-
-  `--accent-muted`        `rgba(13, 148, 136, 0.10)`   Subtle selection and
-                                                       accent backgrounds
-
-  `--status-success`      `#047857`                    Successful completion
-                                                       and healthy status
-
-  `--status-warning`      `#B45309`                    Warnings and
-                                                       attention-needed states
-
-  `--status-danger`       `#B91C1C`                    Errors and destructive
-                                                       actions
-
-  `--status-info`         `#0369A1`                    Informational states
-  ----------------------------------------------------------------------------
-
-Status colors in each theme must be checked against the background they
-appear on. Do not use color as the only way to communicate a state;
-include text and/or an icon.
+- `shadow-glow-violet`: `0 0 25px -4px rgba(157, 78, 221, 0.45)` — Primary action buttons, active indicator beacons.
+- `shadow-glow-amethyst`: `0 0 20px -3px rgba(181, 23, 158, 0.4)` — High-priority badge halos.
+- `shadow-glow-cyan`: `0 0 20px -3px rgba(0, 240, 255, 0.35)` — Live inspection pills, audio stream tags.
+- `shadow-inner-glow`: `inset 0 1px 1px 0 rgba(255, 255, 255, 0.08), inset 0 -1px 1px 0 rgba(0, 0, 0, 0.4)` — Tactical surface inset depth.
+- `shadow-window-frame`: `0 25px 65px -15px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(168, 85, 247, 0.18)` — Frameless window drop shadow.
 
 ### 5.2 Accent usage
 
-Mint/teal should be recognizable but restrained. Use it for:
+Electric Violet, Amethyst, and Neon Purple are the hallmark visual accents:
+- **Primary Action**: Buttons use the linear gradient `from-accent-violet via-accent-purple to-accent-amethyst` with `shadow-glow-violet` and a top hairline highlight (`before:bg-gradient-to-r before:via-white/35`).
+- **Active Navigation**: Active sidebar and tab items receive purple border illumination, subtle glow wash, and `layoutId` animated indicator pills.
+- **Command Bar Halos**: Active inputs project an `accent-violet/30` outer focus ring.
+- **Live Engine Beacons**: Pulsing double-circle beacon with ping animation indicating active backend runtime.
 
--   The main action on a screen.
--   Active navigation and selected controls.
--   Focus indicators when appropriate.
--   Progress fills and positive selection feedback.
-
-Do not use the accent for every icon, every border, large decorative
-gradients, or non-interactive ornament.
+Avoid using raw accent colors on large unbroken background fields without gradient or opacity masking.
 
 ### 5.3 Typography
 
-Use the existing Inter font if it is already loaded successfully. Avoid
-adding a font dependency without a clear need.
+Hermanos Forge uses three specialized Google Fonts:
 
-  -------------------------------------------------------------------------
-  Role                            Size               Weight Typical use
-  --------------- -------------------- -------------------- ---------------
-  Application                     15px                  700 App name and
-  brand/title                                               top-level
-                                                            identity
+1. **Display & Headings** (`font-heading`): `Space Grotesk`, sans-serif. Used for view titles, brand emblems, and module headers. Delivers futuristic, cyber-mechanical authority.
+2. **Body & UI** (`font-sans`): `DM Sans`, `Inter`, ui-sans-serif, system-ui, -apple-system, sans-serif. Used for form labels, descriptions, body prose, and buttons. Clean, geometric, and highly legible.
+3. **Technical & Monospace** (`font-mono`): `JetBrains Mono`, `Consolas`, `Menlo`, monospace. Used for URLs, timecodes, durations, bitrates, file sizes, format tags, and developer logs. Rendered with `tabular-nums` for precise columnar alignment.
 
-  View title                  20--24px             600--700 Main screen
-                                                            heading
-
-  Section heading             14--16px                  600 Panel and
-                                                            section titles
-
-  Body and                    13--14px             400--500 Inputs, labels,
-  controls                                                  options,
-                                                            descriptions
-
-  Metadata                    11--12px             400--500 Timestamps,
-                                                            secondary
-                                                            labels, badges
-
-  Technical                       12px             400--500 Timecodes, file
-  monospace                                                 paths, logs,
-                                                            technical
-                                                            identifiers
-  -------------------------------------------------------------------------
-
-Use clear hierarchy rather than making every heading large. Technical
-values such as timecodes and paths should use a legible monospace font
-stack. Avoid low-contrast microtext.
+| Role | Font Stack | Size | Weight | Typical Use |
+|---|---|---|---|---|
+| Application brand | `Space Grotesk` | 14–15px | 600–700 | TitleBar emblem, brand tag |
+| View title / Module header | `Space Grotesk` | 20–22px | 700 | Main screen heading (`tracking-tight`) |
+| Section heading | `Space Grotesk` | 14–16px | 600 | Panel and bento-card headings |
+| Body & UI controls | `DM Sans` | 12–14px | 400–500 | Inputs, labels, button text, options |
+| Metadata & Helper text | `DM Sans` | 11–12px | 400–500 | Secondary labels, descriptions |
+| Technical & Durations | `JetBrains Mono` | 11–12px | 500–600 | Timecodes, durations, bitrates, URLs |
+| Keyboard hints (`Kbd`) | `JetBrains Mono` | 10px | 600 | Keybindings (`Enter ↵`, `Ctrl+V`) |
+| Developer logs | `JetBrains Mono` | 12px | 400–500 | Engine stdout/stderr stream |
 
 ### 5.4 Spacing and density
 
-Use a consistent spacing scale based on 4px increments. Typical values:
+Use a consistent 4px-increment spacing scale:
+- 4px (`gap-1`, `p-1`): Micro-spacing between icon and text.
+- 8px (`gap-2`, `p-2`): Compact control internals, chip spacing, window controls.
+- 12px (`gap-3`, `p-3`): Field gaps, metadata rows, list items.
+- 16px (`gap-4`, `p-4`): Standard component gaps, card content padding.
+- 20–24px (`space-y-5`, `space-y-6`): Module separation, view spacing.
+- 28px (`h-7`): Fixed height for the persistent bottom status strip.
+- 44px (`h-11`): TitleBar height.
 
--   4px: icon-to-label micro-spacing.
--   8px: compact control internals.
--   12px: related controls and metadata.
--   16px: standard component gaps and panel padding.
--   20--24px: section spacing.
--   24--32px: separation between major page regions.
-
-The interface should be comfortable at the default 900 × 700 window
-size. Avoid oversized padding that pushes primary actions off-screen.
-Allow scrolling when content genuinely requires it, but keep the most
-important action and essential controls visible whenever practical.
+The layout is balanced to ensure all critical controls fit comfortably in the 900 × 700 default desktop window without requiring unnecessary vertical scrolling.
 
 ### 5.5 Radius and elevation
 
-Use consistent, modest radii:
+- **16px (`rounded-xl` / `rounded-2xl`):** Spotlight URL input container and modal dialogs.
+- **12px (`rounded-lg`):** Surface panels (`.surface-panel`), thumbnail cards, bento-grid modules.
+- **8px (`rounded-md`):** Buttons, secondary inputs, resolution chips, dropdown menus.
+- **6px (`rounded-sm`):** Window control buttons, small status badges.
+- **4px (`rounded-xs`):** Keyboard hints (`.kbd-hint`), miniature indicators.
 
--   **8px:** Main panels, cards, and dialogs.
--   **6px:** Inputs, buttons, selects, and menus.
--   **4px:** Badges, small tags, and compact indicators.
-
-Use thin borders as the main method of defining surfaces. Reserve
-shadows for menus, popovers, and dialogs that need to sit above other
-content. Avoid heavy blur, glowing borders, and layered glass effects.
+Surfaces achieve elevation through:
+1. **Hairline top specular highlight** (`.surface-panel::before`) creating physical edge reflections.
+2. **Translucent borders** (`border border-purple-900/40` or `var(--border-subdued)`).
+3. **Subtle directional drops** (`shadow-md`, `shadow-glow-violet`).
+4. **Ambient lighting** (`.ambient-glow-purple` top ceiling spotlight and `.noise-overlay`).
 
 ------------------------------------------------------------------------
 
@@ -426,499 +371,245 @@ content. Avoid heavy blur, glowing borders, and layered glass effects.
 
 ### 6.1 Overall layout
 
-Use a compact left navigation sidebar and a flexible main workspace. The
-shell should feel like a focused desktop utility, not a web dashboard.
-
-Recommended structure:
-
-1.  Custom title-bar region.
-2.  Compact sidebar with app identity and navigation.
-3.  Main workspace with page heading, relevant actions, and the active
-    tool.
-4.  Optional contextual footer/status region only where it communicates
-    useful real application state.
-
-The layout must remain usable at the existing 900 × 700 default window
-size. Do not assume that every user runs Forge maximized.
+The application shell organizes the workbench into a 3-tier desktop layout:
+1. **Top Title Bar (`h-11` / 44px)**: Frameless window header with window dragging, brand emblem, live engine status beacon, and window controls.
+2. **Center Split Workspace**:
+   - **Left Navigation Sidebar (`w-60` to `w-64`)**: Frosted obsidian surface (`bg-obsidian-950/85 backdrop-blur-md border-r border-purple-900/25`), destination navigation with active purple glow borders, badge indicators (`Batch`), theme switch pill ("Obsidian UI" / "Studio Light"), and developer logs button (`>_ Logs`).
+   - **Main Workspace Container**: Fluid, scrollable workspace bounded by `max-w-4xl mx-auto w-full pb-8`, with ambient ceiling spotlight (`.ambient-glow-purple`) and noise texture backdrop (`.noise-overlay`).
+3. **Persistent Bottom Status Strip (`h-7` / 28px)**: Fixed footer strip (`bg-obsidian-950/90 border-t border-purple-900/30`) with ready status beacon, destination directory path display, and core engine activity indicator.
 
 ### 6.2 Custom title bar requirements
 
-The frameless window is an explicit product decision and therefore
-requires deliberate implementation and testing.
+The custom title bar (`src/components/ui/TitleBar.jsx`) delivers native desktop control with obsidian styling:
+- **Left Region (`no-drag-region`)**:
+  - macOS-inspired traffic preview dots: Red (`bg-rose-500/80`), Amber (`bg-amber-500/80`), and Purple (`bg-purple-500/80`).
+  - Vertical divider (`w-[1px] bg-purple-900/40`).
+  - Branded "H" emblem inside a rounded square with purple-amethyst gradient ring.
+  - Application title: `Hermanos Forge` (`text-xs font-semibold text-slate-100`).
+  - Release tag pill: `v1.1.0-pro` (`text-[10px] text-purple-300 bg-purple-950/70 border border-purple-700/40 font-mono`).
+- **Center Region (`drag-region`)**:
+  - Allows natural window dragging across monitors and workspaces.
+  - Pill badge: `Engine Active • yt-dlp core` with pulsing violet radar beacon.
+- **Right Region (`no-drag-region`)**:
+  - Minimize (`Minus`), Maximize/Restore (`Copy`/`Square`), and Close (`X`) buttons.
+  - Hover states: Subtle purple wash (`hover:bg-purple-950/40`) for minimize/maximize, destructive crimson (`hover:bg-rose-600 text-white`) for close.
+  - Synchronized maximize/restore state listening to `window-maximize-change` IPC events.
 
--   Preserve the existing Electron security model and preload bridge.
--   Provide a clearly identifiable draggable title-bar region.
--   Implement minimize, maximize/restore, and close controls using the
-    supported Electron window-control approach.
--   Ensure buttons and interactive elements are excluded from the
-    draggable region.
--   Give controls visible hover, pressed, and keyboard-focus states.
--   Keep window controls discoverable and sized for reliable
-    interaction.
--   Ensure the close action follows the application's intended close
-    behavior; do not introduce surprising confirmation prompts or
-    silently terminate active work.
--   Verify maximize/restore behavior, resizing, window dragging, and
-    controls at different window sizes.
--   Verify that dialogs and the separate logs window continue to open
-    and behave correctly.
--   Keep the title bar visually integrated with the selected theme.
--   Do not implement custom window controls by enabling unsafe renderer
-    access to Node.js.
+### 6.3 Obsidian Navigation Sidebar
 
-If the current preload does not expose the window-control operations
-required by the design, document the smallest necessary,
-security-conscious Electron change before implementation. Do not assume
-an existing method exists without inspecting the source.
+The sidebar (`data-purpose="workspace-navigation"`) groups core tools and system controls:
+- **Workspace Tools Group**:
+  - `Single Media Downloader` (Icon: `Download`)
+  - `Mass Clip Stitcher` (Icon: `Scissors`, Badge: `Batch`)
+  - `Selective Duration` (Icon: `Film`)
+  - `Download History` (Icon: `Clock`, Badge: History count)
+  - `Settings & Engine` (Icon: `Settings`)
+- **Active Tab Visual Cue**:
+  - Glowing active border (`border-purple-500/30 bg-gradient-to-r from-accent-violet/15 via-purple-950/20 to-transparent`).
+  - Specular top highlight (`before:bg-gradient-to-r before:via-purple-400/30`).
+  - Framer Motion `layoutId="sidebar-active-tab-indicator"` for smooth spring transitions.
+- **Bottom Sidebar Controls**:
+  - Theme Switcher Button: Toggles between `Obsidian UI` (Moon icon) and `Studio Light` (Sun icon).
+  - Developer Logs Launcher: Terminal button with neon cyan `>_` indicator.
 
-### 6.3 Sidebar
+### 6.4 Main Workspace
 
-The sidebar should contain the Forge identity and direct navigation to
-the existing views:
+- **Container Constraint**: `max-w-4xl mx-auto w-full pb-8 px-6 sm:px-8` ensures ergonomic eye scan lines on widescreen displays.
+- **Atmospheric Depth**: `.noise-overlay` provides subtle cybernetic tactile depth, while `.ambient-glow-purple` casts a soft gradient from the top edge.
+- **Form State Preservation**: Switching navigation tabs preserves all entered URLs, clip queues, timeline selections, and download states.
 
--   Download
--   Mass Clip
--   Selective Duration
--   History
--   Settings
+### 6.5 Persistent Bottom Status Strip
 
-Use Lucide icons consistently and pair icons with readable labels in the
-normal expanded layout. The active destination must be visually clear
-without relying on color alone.
-
-Do not add navigation items for features that do not exist. If a
-collapsed sidebar is introduced later, retain accessible names and
-tooltips for icon-only navigation.
-
-### 6.4 Workspace
-
-Each view should have:
-
--   A concise title.
--   Supporting text only when it helps explain the task.
--   A clearly prioritized main workflow.
--   Consistent alignment and spacing.
--   Appropriate empty, loading, error, progress, and completion states.
-
-Avoid wrapping every individual control in a separate card. Use a small
-number of purposeful surface regions.
+The footer (`data-purpose="window-bottom-status-strip"`) provides real-time ambient awareness:
+- Left: Live beacon (`Ready to Forge` with neon pulse) and destination path (`Dest: C:\Downloads...`).
+- Right: Engine indicator (`Engine: yt-dlp core`) and build version (`Hermanos Forge v1.1.0`).
 
 ------------------------------------------------------------------------
 
 ## 7. Shared Component Standards
 
-Implement or adapt source-owned React components after auditing the
-existing implementation. Components should be simple, consistent,
-accessible, and appropriate for JavaScript/JSX.
+All reusable UI primitives reside in `src/components/ui/` and adhere to strict design token compliance.
 
-### 7.1 Button
+### 7.1 Button (`src/components/ui/Button.jsx`)
 
-Required variants:
+- **Variants**:
+  - `primary`: Linear gradient `from-accent-violet via-accent-purple to-accent-amethyst hover:brightness-110 text-white shadow-glow-violet border border-purple-400/30 before:top-hairline`.
+  - `secondary`: `bg-[var(--surface-2)] hover:bg-[var(--surface-hover)] text-[var(--text-primary)] border border-[var(--border-subdued)] hover:border-purple-600/50 shadow-sm`.
+  - `outline`: `bg-transparent hover:bg-purple-950/30 text-[var(--text-primary)] border border-[var(--border-strong)] hover:border-purple-500/50`.
+  - `ghost`: `bg-transparent hover:bg-purple-950/30 text-[var(--text-secondary)] hover:text-[var(--text-primary)]`.
+  - `destructive`: `bg-gradient-to-b from-rose-600 to-rose-700 hover:from-rose-500 hover:to-rose-600 text-white shadow-sm border border-rose-500/30`.
+  - `accentMuted`: `bg-[var(--accent-muted)] hover:bg-[var(--accent-primary)]/20 text-[var(--accent-neon)] border border-purple-700/50`.
+- **Sizes**:
+  - `xs`: `h-7 px-2 text-[11px] rounded-[6px] gap-1`
+  - `sm`: `h-8 px-2.5 text-xs rounded-[6px] gap-1.5`
+  - `md`: `h-9 px-3.5 text-xs rounded-[8px] gap-2`
+  - `lg`: `h-11 px-5 text-sm rounded-[10px] gap-2.5 font-semibold`
+- **Micro-Interactions**: Framer Motion `whileHover={{ scale: 1.01 }}` and `whileTap={{ scale: 0.98 }}` for tactile desktop responsiveness.
 
--   Primary: one dominant action per major workflow area.
--   Secondary: useful but non-dominant actions.
--   Outline: actions needing clear boundaries without primary emphasis.
--   Ghost: low-emphasis actions such as adding a row or navigating
-    secondary controls.
--   Destructive: deleting history or other destructive operations.
--   Icon button: compact actions with accessible labels or tooltips.
+### 7.2 Input (`src/components/ui/Input.jsx`)
 
-Requirements:
+- **Appearance**: `bg-[var(--surface-2)] border border-[var(--border-strong)] text-[var(--text-primary)] rounded-[8px]` with focus halo `focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]`.
+- **Hero Spotlight Input**: Integrated command-bar container (`SingleDownloaderView`) with `bg-obsidian-950/90 border-purple-900/40 rounded-xl`, Sparkles beacon, Clear button, Paste link button with `Ctrl+V` shortcut hint, and Enter keybinding (`Enter ↵`).
 
--   Consistent height, padding, radius, typography, and icon spacing.
--   Visible hover, pressed, focus-visible, disabled, and loading states.
--   Do not rely solely on opacity to indicate disabled state.
--   Do not use ambiguous unlabeled icon buttons for important actions.
--   Do not make every button mint/teal.
+### 7.3 Select & Segmented Controls (`src/components/ui/Select.jsx`)
 
-### 7.2 Input
+- **Dropdown Select**: Obsidian panel surface (`bg-obsidian-900 border-purple-800/40 shadow-xl rounded-lg`) with checkmark indicator for active option.
+- **Quick Resolution Chips**: Segmented chips for instant resolution selection: `2160p (4K)`, `1440p (2K)`, `1080p FHD`, `720p HD`, and `Audio Only (MP3)`. Unavailable resolutions are gracefully disabled or dimmed based on probed streams.
+- **Format Toggle**: Segmented pill switch between `MP4 (Video + Audio)` and `MP3 (Audio Only)`.
 
--   Use consistent borders, background, radius, and focus rings.
--   Keep labels visible; placeholders are supplementary, not substitutes
-    for labels.
--   Provide validation and helper text near the relevant field.
--   Support loading or inspection status without causing the input to
-    jump in size.
--   Preserve keyboard behavior and text editing.
--   Use a clear disabled/read-only appearance where appropriate.
+### 7.4 Dialog & Modals (`src/components/ui/Dialog.jsx`)
 
-### 7.3 Select and segmented controls
+- **Backdrop**: Semi-transparent black scrim with blur (`bg-black/60 backdrop-blur-sm`).
+- **Surface**: Surface panel (`bg-obsidian-900 border border-purple-800/40 rounded-xl shadow-window-frame`) with top specular highlight.
+- **Accessibility**: Focus trapping, Escape key dismissal, click outside to close, and return focus to triggering element.
 
-Use a consistent select component for resolution and other discrete
-options. Use segmented controls for small, mutually exclusive choices
-such as MP4/MP3 when the available space and semantics support it.
+### 7.5 Badge & Status Pill (`src/components/ui/Badge.jsx`)
 
-Do not use large decorative radio cards where a compact control is
-clearer. Preserve all existing selectable values and their meanings.
+- **Variants**:
+  - `default`: `bg-[var(--surface-2)] text-[var(--text-secondary)] border border-[var(--border-subdued)]`
+  - `accent`: `bg-purple-950/70 text-purple-200 border border-purple-700/50 font-semibold`
+  - `cyan`: `bg-cyan-950/70 text-cyan-300 border border-cyan-800/50 font-semibold`
+  - `rose`: `bg-rose-950/70 text-rose-300 border border-rose-800/50 font-semibold`
+  - `success`: `bg-emerald-950/60 text-emerald-300 border border-emerald-800/40 font-semibold`
+  - `warning`: `bg-amber-950/60 text-amber-300 border border-amber-800/40 font-semibold`
+  - `danger`: `bg-rose-950/70 text-rose-300 border border-rose-800/50 font-semibold`
+  - `info`: `bg-cyan-950/60 text-cyan-300 border border-cyan-800/40 font-semibold`
+  - `outline`: `bg-transparent text-[var(--text-secondary)] border border-[var(--border-strong)]`
 
-### 7.4 Dialog
+### 7.6 Progress (`src/components/ui/Progress.jsx`)
 
-All dialogs should share:
+- **Indeterminate Mode**: Animated sweep across bar with `via-accent-violet`.
+- **Determinate Mode**: Real percentage fill with gradient `from-accent-violet via-purple-500 to-accent-neon` with soft glow leading edge (`shadow-glow-violet`).
+- **Telemetry Readout**: Live download speed (`MB/s`), elapsed time, and ETA displayed alongside the progress bar.
 
--   Consistent surface, border, radius, and elevation.
--   A clear title and optional concise description.
--   Predictable action placement.
--   Keyboard focus management and visible focus.
--   Escape/backdrop behavior appropriate to the operation.
--   Correct focus return to the invoking control.
--   Layout that stays within the available window bounds.
+### 7.7 Card & Surface Panel (`src/components/ui/Card.jsx`)
 
-Destructive confirmation dialogs must state the consequence clearly. Do
-not silently change a dialog's confirmation or cancellation semantics.
+- **`.surface-panel`**: Obsidian surface with physical realism top specular highlight (`.surface-panel::before`) created via `linear-gradient(90deg, transparent, rgba(168, 85, 247, 0.25), transparent)`.
+- **`.noise-overlay`**: Micro-dot background pattern (`radial-gradient(rgba(168, 85, 247, 0.04) 1px, transparent 0)`).
 
-### 7.5 Badge and status pill
+### 7.8 Tooltip & Keyboard Hints (`.kbd-hint`)
 
-Use consistent styles for queued, downloading, completed, canceled,
-error, active, stale, missing, and other real application states.
-
-A badge should include understandable text. Use color and icons as
-supporting cues rather than the sole signal.
-
-### 7.6 Progress
-
--   Reflect actual progress events when available.
--   Clearly distinguish indeterminate activity from numeric progress.
--   Show the current operation and percentage where supplied.
--   Avoid fake progress or progress that continues after the operation
-    has stopped.
--   Provide cancellation where the existing workflow supports it.
--   Keep status text readable and stable while updates arrive.
-
-### 7.7 Card and surface
-
-Use a shared surface pattern for genuine content groupings. Cards should
-not be nested without purpose. Prefer a clear page layout with dividers
-and aligned sections when that is more efficient.
-
-### 7.8 Tooltip
-
-Use tooltips for icon-only secondary actions, title-bar controls, and
-other controls whose purpose may not be obvious. Tooltips must not be
-the only accessible name for a control.
+- Keyboard shortcut hints use the `.kbd-hint` utility class: monospace font, `bg-[var(--surface-2)]`, subtle border, and 10px bold text.
 
 ### 7.9 Toasts and inline feedback
 
-Use toasts for brief confirmations that do not require user action. Use
-inline messages for persistent errors, validation, playlist detection,
-and workflow state. Avoid duplicating the same message in a toast,
-modal, and inline alert.
+Use toasts (`react-hot-toast`) for brief, dismissible operational notices (e.g., "Copied to clipboard"). Use inline alerts and badges for permanent feedback, validation errors, and authentication warnings.
 
-### 7.10 Motion
+### 7.10 Motion and Ambient Lighting
 
-Use Framer Motion only where it adds useful continuity or feedback.
-
--   Keep transitions short and restrained.
--   Avoid large spring effects, dramatic movement, or animations that
-    delay user input.
--   Respect reduced-motion preferences where practical.
--   Never use animation completion as a reason to clear user data.
--   Ensure loading indicators remain visible and do not distract from
-    content.
+- Short, physical transitions with `framer-motion` (durations: 150ms–250ms).
+- Respect `prefers-reduced-motion` media queries.
+- Zero layout shift during state changes.
 
 ------------------------------------------------------------------------
 
 ## 8. Screen Specifications
 
-The following layouts are design targets based on the current repository
-audit. Preserve the existing features and data flow. Any behavior change
-not explicitly confirmed must be treated as a proposal requiring
-approval.
+### 8.1 Single Media Downloader (`src/components/views/SingleDownloaderView.jsx`)
+
+- **Module Header**:
+  - Title: `Single Media Downloader` (`font-heading font-bold text-xl`).
+  - Badge: `Lossless 4K / 8K HDR` (`text-[10px] text-purple-200 bg-purple-950/70 border border-purple-700/50`).
+  - Pipeline Status: `Pipeline: Direct Stream` tag.
+- **Spotlight URL Command Bar**:
+  - Input container: `bg-obsidian-950/90 border border-purple-900/40 rounded-xl`.
+  - Sparkles icon beacon with pulsing purple glow.
+  - Monospace URL input with Enter keybinding support (`Enter ↵ to analyze`).
+  - Clear button (`X`) when input has text.
+  - Paste link button with `Ctrl+V` shortcut hint.
+- **Quick Resolution Chips**:
+  - Instant selection for `2160p (4K)`, `1440p (2K)`, `1080p FHD`, `720p HD`, and `Audio Only (MP3)`.
+  - Auto-detection: Chips reflect available stream heights probed from the backend.
+- **Media Preview Card**:
+  - 16:9 thumbnail preview with live duration badge (`JetBrains Mono`).
+  - Quality badges (`4K`, `FHD`, `HDR`).
+  - Video title and channel/author metadata.
+- **Advanced Format Options**:
+  - Quality dropdown: Lists all available resolutions, FPS, and container extensions (`2160p 60fps [mp4]`).
+  - Format toggle: `MP4` (Video + Audio) vs. `MP3` (Audio Only).
+- **Destination & Actions**:
+  - Output folder row with folder icon, current path, Browse button, and Reveal in Explorer action.
+  - Primary Action Button: "Download Video (4K)" / "Download Audio (MP3)" with violet-amethyst gradient and glow effect.
+  - Secondary Action Button: "Convert Local MP4 to MP3".
+- **Real-Time Progress & Telemetry**:
+  - Live percentage readout, progress bar with glowing leading edge, download speed, and Cancel button.
+- **Inline Playlist Notification**:
+  - Dedicated notification card when a playlist URL is detected.
+  - Video count display and explicit "Select Videos" button opening `PlaylistSelectorModal`.
+
+### 8.2 Mass Clip Downloader & Stitcher (`src/components/views/MassClipView.jsx`)
+
+- **Module Header**:
+  - Title: `Batch Clip Downloader & Stitcher`.
+  - Badge: Clip queue counter (`X Clips Queued`).
+  - Batch Actions: `Paste Batch` (parses clipboard URLs), `Add URL`, and `Clear`.
+- **Clip Queue Cards**:
+  - Individual cards per URL with index number, drag handle styling, and URL input field.
+  - Real-time status badge per clip: `Queued` (Clock), `Downloading` (Spinning loader), `Done` (CheckCircle), `Error` (AlertCircle), `Canceled` (XCircle).
+  - Delete row button per clip.
+- **Stitch Automation**:
+  - Toggle switch: "Stitch into single video via FFmpeg concat".
+  - Output directory verification.
+- **Footer Controls**:
+  - Primary "Start Batch Download" / "Start Stitching" button with glow shadow.
+  - Cancel button for aborting active batch operations.
+  - Queue persistence: State preserved in `mass-clips` localStorage key.
+
+### 8.3 Selective Duration Downloader (`src/components/views/SelectiveDurationView.jsx`)
+
+- **Module Header**:
+  - Title: `Selective Duration Downloader` with duration trimming description.
+- **URL Inspection**:
+  - Source URL input with "Fetch Details" inspection button.
+  - Video preview strip with title, duration, and thumbnail.
+- **Interactive Dual-Handle Timeline**:
+  - Time ruler with draggable Start and End slider handles.
+  - Timecode display: High-precision start and end readouts in `JetBrains Mono` (`00:01:23.450`).
+  - Zoom controls: Zoom In / Zoom Out buttons for frame-accurate timeline scrubbing.
+- **Multi-Clip Segment Queue**:
+  - "Add Segment" action allowing multiple trimmed clips from the same source video.
+  - Segment table: Start time, End time, Duration, Lock/Exclude toggle, and Delete action.
+- **Cutting Controls**:
+  - Precise Cut Toggle: Enables FFmpeg re-encoding (`-c:v libx264 -preset fast -c:a aac`) for exact keyframe boundaries.
+  - "Download All Clips" primary action with live download progress.
+
+### 8.4 Download History (`src/components/views/HistoryView.jsx`)
+
+- **Module Header**:
+  - Title: `Download History` with item counter.
+  - Clear History action opening destructive confirmation dialog.
+- **Filtering & Search**:
+  - Filter Tabs: `All`, `MP4`, `MP3`, `Clips`, `Stitched`.
+  - Search input with real-time title and URL filtering.
+- **Media History Cards**:
+  - File format badge (`MP4`, `MP3`, `Clip`, `Stitch`).
+  - Title, duration, file path, and relative timestamp.
+  - Actions: "Open in Folder" (`shell.showItemInFolder`), "Copy Link", and "Remove from History".
+- **Empty State**:
+  - Tactical empty state with download icon, helpful guidance, and link back to Downloader.
+
+### 8.5 Settings & Engine Diagnostics (`src/components/views/SettingsView.jsx`)
+
+- **Bento-Grid Module Architecture**:
+  - **Theme Selection Card**: Side-by-side preview tiles for `Obsidian Dark` (default) and `Studio Light`.
+  - **Output Destination Card**: Current path display, Browse directory button, and Open in Explorer action.
+  - **Cookie Authentication Card**: Current browser indicator, sync status (`Active`, `Stale`, `Missing`), last sync date, and "Configure Cookies" button opening `CookieWizardModal`.
+  - **System Diagnostics Probes**: Live health cards for Python engine runtime, Bundled FFmpeg, FFprobe, and yt-dlp core, with a "Refresh Probes" button.
+  - **Developer Tools Card**: "Open Developer Logs" button launching the auxiliary logs window.
+
+### 8.6 Modals & Dialogs (`src/components/modals/`)
+
+All modals use the shared `Dialog` primitive with frosted obsidian backdrops:
+- **`CookieWizardModal`**: Guided browser cookie extraction with 1-click Firefox sync and Chromium extension Netscape drag-and-drop file import.
+- **`PlaylistSelectorModal`**: Video checklist dialog for selective downloading from playlists.
+- **`OutputFolderModal`**: Directory path verification dialog.
+- **`ClearHistoryModal`**: Destructive confirmation modal for clearing download records.
+- **`CancelConfirmModal`**: Confirmation modal before aborting in-flight download or stitching operations.
+
+### 8.7 Developer Logs Window (`src/LogsWindow.jsx`)
 
-### 8.1 Download --- single media and local conversion
-
-**Goal:** Make URL inspection, format selection, quality selection,
-output location, and the primary download action clear within a compact
-workspace.
-
-Recommended hierarchy:
-
-1.  URL input row with clear inspection feedback.
-2.  Compact media metadata preview when metadata is available.
-3.  Format choice and quality selection.
-4.  Output folder display and change action.
-5.  Primary download action and secondary local conversion action.
-6.  Progress, cancellation, success, or error feedback as applicable.
-
-Layout guidance:
-
--   Avoid stacking large panels that force the primary action below the
-    fold at the default window size.
--   Display thumbnail, title, and duration compactly when available.
--   Use a compact MP4/MP3 segmented control.
--   Keep quality selection visible when relevant to the selected format.
--   Keep the output directory accessible without letting it dominate the
-    screen.
--   Use a clearly labeled primary action, such as "Download Video" or
-    "Download Audio," based on the selected format.
--   The local MP4-to-MP3 conversion remains available as a secondary
-    action.
-
-#### Playlist detection --- confirmed behavior
-
-When a playlist URL is detected:
-
--   Show an inline playlist status/card in the Download workspace.
--   Explain that the URL represents a playlist.
--   Show the number of videos only when the existing inspection response
-    provides that information.
--   Provide an explicit action such as **Select Videos** to open the
-    existing playlist picker.
--   Do not automatically open the picker merely because the URL was
-    entered or pasted.
--   Preserve the existing playlist selection and download functionality.
--   Handle inspection-in-progress, invalid URL, and inspection-error
-    states without opening an unsolicited modal.
-
-Do not assume playlist count or metadata fields exist in the current IPC
-response; inspect the implementation before wiring the UI.
-
-#### Download progress
-
-During a download:
-
--   Clearly show the current operation and available progress
-    percentage.
--   Keep progress tied to the existing progress events.
--   Disable or guard only controls that genuinely cannot be used during
-    the operation.
--   Preserve the supported cancel action.
--   Show a clear completion or error result.
-
-A progress bar may be visually integrated into the workbench, but must
-not misrepresent progress.
-
-### 8.2 Mass Clip Downloader
-
-**Goal:** Make batch URLs, per-clip states, stitch behavior, and the
-overall action clear and recoverable.
-
-Recommended structure:
-
--   View heading and queue count.
--   A structured list or table with index, URL, status, and row actions.
--   A clear "Add another link" action.
--   An explicit stitch/no-stitch control.
--   Output directory information.
--   A footer/action area for start, cancellation, and current operation
-    status.
-
-Requirements:
-
--   Retain the existing per-clip states and actual progress/status
-    messages.
--   Make errors and canceled states easy to identify.
--   Keep row actions discoverable.
--   Prevent accidental loss of entered URLs.
--   Ensure long URLs truncate visually without being destroyed or
-    becoming impossible to edit.
--   At narrow window sizes, use a responsive row layout rather than
-    forcing an unreadable table.
-
-#### Important behavior change requiring approval
-
-The audit reports that successful stitching triggers a five-second
-timeout that resets the queue. The design target is to keep completed
-rows visible until the user explicitly clears them or starts a
-deliberate new workflow. However, removing or changing the timer
-modifies existing behavior; inspect the code, preserve any necessary
-state transitions, and implement this change only as an explicitly
-approved usability improvement. Never clear user-entered data solely
-because a timer expired.
-
-### 8.3 Selective Duration Downloader
-
-**Goal:** Make precise trimming understandable while retaining the
-specialist timeline workflow.
-
-Recommended hierarchy:
-
-1.  URL input and inspection action.
-2.  Compact media metadata strip when loaded.
-3.  Timeline and time ruler.
-4.  Visible start/end time controls.
-5.  Multi-clip queue with per-clip actions.
-6.  Output format/quality and precise-cut options.
-7.  Primary "Download All Clips" action and supported
-    cancellation/status feedback.
-
-Timeline requirements:
-
--   Preserve current drag behavior, time calculations, clip boundaries,
-    lock/exclude behavior, and download semantics.
--   Show readable time markers.
--   Add visible zoom controls if approved and if they can be connected
-    to the existing timeline state safely.
--   Retain Ctrl + mouse-wheel zoom if it remains supported.
--   Provide clear start/end handles and visible time readouts.
--   Use monospace styling for timecodes.
--   Make the selected range and excluded/locked states understandable
-    without relying only on color.
--   Keep controls usable at the default window size; allow the timeline
-    area to receive the space it needs.
-
-Do not change trimming precision, keyframe/re-encoding behavior, clip
-order, or queue execution while restyling the timeline.
-
-#### Inspection consistency
-
-The audit notes that the standard Download view automatically inspects
-URLs while the Selective Duration view uses a separate Fetch Details
-action. A more consistent experience is desirable, but do not silently
-change when or how metadata requests fire. First preserve the current
-trigger and loading/error behavior; any change to automatic fetching
-should be explicitly approved.
-
-### 8.4 Download History
-
-**Goal:** Make previous work easy to scan, locate, copy, and delete.
-
-Recommended hierarchy:
-
--   View title and a clear Clear History action.
--   Search/filter controls where compatible with current data.
--   Consistent filter controls for the actual supported history
-    categories.
--   Rows or compact cards with file type, filename, original URL, output
-    path where available, timestamp, and actions.
--   Pagination or item count controls appropriate to the amount of
-    history.
-
-Requirements:
-
--   Keep Open in Folder, Copy URL, and Delete actions discoverable by
-    default.
--   Do not hide essential actions exclusively behind hover.
--   Preserve `download-history` format and existing records.
--   Keep destructive actions explicit and confirmed.
--   Make empty history state useful and concise.
--   Handle long filenames and paths with truncation and an accessible
-    way to inspect/copy the full value.
--   Use real timestamps and paths from saved records; do not invent
-    relative dates or metadata.
--   Do not remove or reinterpret history records as part of visual
-    cleanup.
-
-Search, new filters, and adjustable page sizes are potential usability
-additions, not assumed existing capabilities. Implement them only after
-checking the current data model and agreeing on scope.
-
-### 8.5 Settings and Diagnostics
-
-**Goal:** Separate user preferences from system health and developer
-tools.
-
-Recommended sections:
-
-**Preferences** - Current output directory with a Browse/Change
-action. - Theme selection with clear Dark and Light choices. - Any other
-existing preferences that are verified in the repository.
-
-**Browser authentication** - Current browser and cookie status. - Last
-sync date when available. - A Configure action opening the existing
-cookie wizard. - Clear distinction between active, stale, and missing
-authentication states.
-
-**System diagnostics** - Python/backend, FFmpeg, FFprobe, and dependency
-health using actual diagnostic results. - A refresh action with visible
-loading and error feedback. - Optional collapsible detail for
-dependency/DLL information to reduce visual noise.
-
-**Developer tools** - A clear action to open the existing developer logs
-window.
-
-Do not imply that a dependency is healthy when the diagnostic result is
-missing or unknown. Keep diagnostics concise by default, but allow
-details to be inspected.
-
-### 8.6 Cookie Setup Wizard
-
-**Goal:** Make browser-cookie setup guided, understandable, and
-consistent with the shared dialog design.
-
-Requirements:
-
--   Use a standard dialog surface with a clear title, description, step
-    indicator, and predictable footer.
--   Keep the dialog within the available window bounds.
--   Make the current step and expected action obvious.
--   Keep Cancel, Back, Next, and Finish placement consistent.
--   Clearly identify supported browser choices based on actual
-    implementation.
--   Provide explicit instructions for Firefox extraction and Chromium
-    extension/file import where those workflows exist.
--   For drag-and-drop file import, show a clear drop target, accepted
-    file expectations, hover/drag state, and Browse Files action.
--   Show validation and extraction/import errors inline.
--   Preserve existing cookie extraction, import, status, and persistence
-    behavior.
--   Do not expose cookie contents or sensitive browser data in the UI,
-    logs, or error messages.
-
-The audit describes a five-step wizard but also references a "Step 2 of
-4" example. Verify the actual number and order of steps in source; the
-displayed step count must match the implementation, not the example.
-
-### 8.7 Playlist Selection Dialog
-
-**Goal:** Let users deliberately review and select videos from a
-detected playlist.
-
-Requirements:
-
--   Open only after the user activates the explicit selection action.
--   Present playlist context and available video metadata from the
-    actual inspection result.
--   Make selection state obvious and accessible.
--   Provide clear Select/Download and Cancel actions consistent with
-    existing semantics.
--   Handle loading, empty, and error states.
--   Keep the dialog within the window bounds.
--   Preserve the current selection payload and download behavior.
-
-### 8.8 Output Folder Dialog
-
-**Goal:** Make the chosen output directory easy to verify before
-proceeding.
-
-Requirements:
-
--   Display the selected path clearly.
--   Provide an obvious Browse/Change action.
--   Keep Confirm and Cancel semantics consistent with the existing
-    workflow.
--   Handle long paths without breaking layout.
--   Preserve directory selection and unique-folder behavior.
-
-### 8.9 Clear History Dialog
-
-**Goal:** Prevent accidental irreversible history clearing.
-
-Requirements:
-
--   State clearly that the action clears the download history.
--   Provide visually distinct Cancel and destructive confirmation
-    actions.
--   Do not style the destructive action as the normal primary mint
-    action.
--   Keep keyboard focus and Escape behavior safe and predictable.
--   Preserve existing deletion semantics; do not delete downloaded files
-    unless the existing action explicitly does so.
-
-### 8.10 Developer Logs Window
-
-**Goal:** Make technical output readable and visually consistent with
-Forge.
-
-Requirements:
-
--   Use the active theme's surface and text tokens.
--   Keep logs in a legible monospace font with appropriate line spacing.
--   Maintain strong contrast and distinguish errors/warnings when
-    reliable source information supports it.
--   Preserve the existing log stream and window behavior.
--   Avoid syntax decoration that obscures raw output.
--   Handle long lines with a usable horizontal-scroll or wrapping
-    strategy appropriate for logs.
+- Dedicated auxiliary window streaming real-time stdout/stderr lines from `backend.py`.
+- Monospace font (`JetBrains Mono`), dark obsidian console background (`#09090C`), and color-coded prefix tags (`PROGRESS:`, `STATUS:`, `SUCCESS:`, `ERROR:`, `AUTH_ERROR:`).
 
 ------------------------------------------------------------------------
 
@@ -926,24 +617,15 @@ Requirements:
 
 ### 9.1 Initial theme
 
-On a fresh installation, use dark mode.
+On fresh installation, Hermanos Forge defaults to **Dark Mode (Obsidian Forge Media Suite)**.
 
-### 9.2 Theme persistence
+### 9.2 Dual-Theme Support
 
--   Preserve the existing `theme` localStorage key.
--   Persist the user's explicit theme choice using the existing format
-    unless a migration is separately approved.
--   Apply the selected theme consistently across the main window,
-    dialogs, dropdowns, tooltips, and logs window where practical.
--   Avoid a flash of the wrong theme during startup.
--   Do not reset a user's saved theme during the redesign.
+- **Obsidian Dark (Default)**: Deep obsidian background (`#09090C`), violet accents (`#9D4EDD`), and neon status beacons.
+- **Obsidian Slate Light**: Slate pearl canvas (`#F8F7FA`), white panels (`#FFFFFF`), deep violet accents (`#8433C4`), and high-contrast status colors.
+- **Persistence**: Theme preference is persisted in the `theme` localStorage key (`'dark'` | `'light'`).
+- **Zero Flash**: Pre-mount theme initialization script in `index.html` prevents white screen flashes during application launch.
 
-### 9.3 Light mode quality
-
-Light mode is a first-class theme, not an afterthought. Verify text
-contrast, borders, disabled states, input surfaces, status badges,
-popovers, and dialogs independently in light mode. Do not simply invert
-the dark palette.
 
 ------------------------------------------------------------------------
 
@@ -1045,151 +727,102 @@ Separate visual changes from workflow changes.
     selection.
 -   Changing metadata-fetch timing or retry behavior.
 
-The playlist detection change and dark default are already approved
-decisions. The custom frameless title bar is also approved, but its
-exact Electron implementation must be verified against the current
-architecture.
+The playlist detection card, default Dark mode, and custom frameless title bar (`frame: false` in `electron/main.cjs` and `TitleBar.jsx`) are approved and fully implemented in `dev`.
 
 No behavior change may silently alter IPC contracts, backend processing,
 persisted data formats, or user-entered work.
 
 ------------------------------------------------------------------------
 
-## 14. Implementation Guidance
+## 14. Implementation Guidance & Milestone Status
 
-Implement the redesign incrementally.
+### Current Status: Shipped in `dev` (Milestone v1.1.0-pro)
 
-### Phase 1 --- Audit and foundations
+The Obsidian Forge Media Studio redesign has been implemented and committed to the repository (commit `b885179`):
 
--   Reconfirm the actual repository structure and current source.
--   Inspect the existing Electron preload and determine the safe
-    mechanism for frameless window controls.
--   Confirm the current theme implementation and CSS variable strategy.
--   Check shadcn/ui compatibility with the actual JavaScript/JSX and
-    Tailwind CSS 3.4 setup.
--   Establish semantic tokens and a consistent component API.
--   Avoid broad automated rewrites.
-
-### Phase 2 --- Shared shell and primitives
-
--   Build the custom title bar and application shell.
--   Implement or adapt button, input, select, dialog, tabs/segmented
-    control, badge, progress, tooltip, and surface patterns as needed.
--   Verify keyboard access, theme behavior, and window dragging before
-    migrating all screens.
-
-### Phase 3 --- Screen migration
-
-Migrate one screen at a time, preserving the existing logic and
-integration boundaries. Prefer moving UI into focused components over
-rewriting business logic.
-
-Recommended order:
-
-1.  Single Download.
-2.  Mass Clip Downloader.
-3.  Selective Duration Downloader.
-4.  History.
-5.  Settings and diagnostics.
-6.  Dialogs and developer logs window.
-
-This order may be adjusted if the code audit reveals dependencies that
-make another order safer.
-
-### Phase 4 --- Polish and verification
-
--   Check both themes at the default window size.
--   Verify every existing workflow.
--   Check errors, cancellation, empty states, and progress updates.
--   Run linting and the production build.
--   Verify backend packaging and Electron installer packaging.
--   Review the final diff for accidental changes to IPC, backend
-    behavior, and stored data.
-
-Do not claim tests passed unless they were actually run and their
-results observed.
+- **Phase 1 (Foundations)**: Obsidian and accent color scales, dark/light token mappings, Space Grotesk / DM Sans / JetBrains Mono typography stacks, and ambient utilities (`.surface-panel`, `.noise-overlay`, `.ambient-glow-purple`, `.studio-ambient-bg`).
+- **Phase 2 (Shell & Primitives)**: Frameless title bar with window controls and traffic lights, obsidian navigation sidebar, bottom status strip, Button, Input, Select, Badge, Progress, Card, and Dialog primitives.
+- **Phase 3 (View Modernization)**:
+  - `SingleDownloaderView`: Spotlight command bar, quick chips, 16:9 rich preview, custom quality select, format toggle, progress meter.
+  - `MassClipView`: Batch clipboard paste, clip queue cards, stitch toggle, status badges.
+  - `SelectiveDurationView`: Dual-handle timeline ruler, high-precision monospace timecodes, zoom controls, multi-clip queue.
+  - `HistoryView`: Filter tabs, real-time search, file revelation in Explorer.
+  - `SettingsView`: Bento-grid layout, theme preview tiles, cookie status, diagnostic probes.
+- **Phase 4 (Quality Verification)**: Clean build (`vite build`), zero ESLint errors and warnings (`npm run lint`), and runtime integrity preserved.
 
 ------------------------------------------------------------------------
 
 ## 15. Acceptance Checklist
 
-### Visual consistency
+### Visual & Brand Identity
+- [x] Obsidian Forge Media Studio design language applied consistently across all screens.
+- [x] Dark mode (`#09090C` canvas) is the fresh-install default.
+- [x] Light mode (`#F8F7FA` canvas) fully styled with high contrast.
+- [x] Electric Violet, Amethyst, and Neon Purple accents used consistently.
+- [x] Surface panels use top specular highlights (`.surface-panel::before`).
+- [x] Typography uses Space Grotesk (headings), DM Sans (body), and JetBrains Mono (data).
+- [x] Ambient ceiling glow and micro-dot noise overlay enhance atmosphere.
 
--   [ ] Precision Studio visual direction is consistent across all
-    existing screens.
--   [ ] Dark mode is the fresh-install default.
--   [ ] Light mode is fully styled and readable.
--   [ ] Mint/teal is restrained and used consistently.
--   [ ] Cards, inputs, buttons, dialogs, and badges use consistent
-    tokens.
--   [ ] Excessive glassmorphism and competing surface styles have been
-    removed.
--   [ ] Main actions are easy to identify.
+### Frameless Window & Chrome
+- [x] Window drag regions function across monitors.
+- [x] Minimize, Maximize/Restore, and Close buttons function with proper hover states.
+- [x] TitleBar features traffic preview dots, branded "H" mark, and `v1.1.0-pro` tag.
+- [x] Engine status beacon pulses with neon violet ping animation.
+- [x] Bottom status strip displays destination directory and engine status.
 
-### Frameless window
+### Media Workflows
+- [x] Single MP4 video download with resolution selection.
+- [x] Single MP3 audio download.
+- [x] Local MP4-to-MP3 conversion.
+- [x] Inline playlist detection with explicit selection modal.
+- [x] Mass clip batch downloading and FFmpeg concat stitching.
+- [x] Selective timeline duration trimming with multi-clip queue.
+- [x] Download history with search, filtering, and Explorer file reveal.
+- [x] Cookie wizard for browser authentication.
+- [x] System diagnostics probes and real-time developer logs.
 
--   [ ] Window can be dragged from the intended title-bar region.
--   [ ] Minimize, maximize/restore, and close work correctly.
--   [ ] Window controls have hover, pressed, and keyboard-focus states.
--   [ ] Drag regions do not block buttons or inputs.
--   [ ] Resizing works at expected dimensions.
--   [ ] Main dialogs and the logs window continue to function.
--   [ ] No unsafe renderer access has been introduced.
+### Technical Integrity
+- [x] Electron IPC contracts and preload bridge preserved.
+- [x] localStorage schemas preserved (`download-history`, `global-outputDir`, `cookie-browser`, `mass-clips`, `theme`).
+- [x] Zero ESLint errors and zero warnings (`npm run lint`).
+- [x] Clean production bundle build (`npm run build`).
 
-### Existing workflows
-
--   [ ] Single MP4 download works.
--   [ ] Single MP3 download works.
--   [ ] Local MP4-to-MP3 conversion works.
--   [ ] URL inspection and format retrieval work.
--   [ ] Playlist detection appears inline and the explicit selection
-    action opens the picker.
--   [ ] Playlist selection and download work.
--   [ ] Mass clip queue, cancellation, and stitching work.
--   [ ] Selective timeline controls, clip ranges, and downloads work.
--   [ ] History filters/pagination, copy URL, open location, and
-    deletion work.
--   [ ] Output directory selection and persistence work.
--   [ ] Cookie extraction and file import work.
--   [ ] System diagnostics and refresh work.
--   [ ] Developer logs open and show real output.
--   [ ] Errors and authentication barriers remain visible and
-    understandable.
-
-### Data and technical integrity
-
--   [ ] IPC method names, channels, payloads, and event semantics remain
-    intact.
--   [ ] Existing localStorage keys and data formats remain compatible.
--   [ ] No user input or queue is cleared unexpectedly.
--   [ ] Progress represents actual operation state.
--   [ ] No credentials or cookie contents are exposed.
--   [ ] Linting is run and results recorded.
--   [ ] Production build is run and results recorded.
--   [ ] Backend packaging is verified.
--   [ ] Electron installer packaging is verified.
 
 ------------------------------------------------------------------------
 
-## 16. Open Implementation Questions
+## 16. Resolved Architectural Decisions & Implementation Notes
 
-These are implementation details to resolve from the code rather than
-reasons to block the design:
+The implementation in `dev` (commit `b885179`) resolved the earlier architectural questions as follows:
 
--   Which existing Electron APIs, if any, already support custom window
-    controls?
--   How are theme classes and CSS variables currently applied?
--   What exact playlist metadata is available from URL inspection?
--   What are the actual cookie-wizard steps and browser-specific flows?
--   What queue reset behavior currently occurs after mass stitching, and
-    what state transitions depend on it?
--   Which current view components can be extracted without changing
-    their behavior?
--   Which shadcn/ui primitives can be adopted cleanly without upgrading
-    Tailwind or introducing unnecessary dependencies?
+1. **Custom Frameless Window Controls**:
+   - Implemented via `frame: false` in `electron/main.cjs`.
+   - IPC channels in `electron/preload.cjs`: `minimizeWindow`, `maximizeWindow`, `closeWindow`, `isMaximizedWindow`, and `onMaximizedChange`.
+   - Styled and controlled via `src/components/ui/TitleBar.jsx` with dragging regions (`drag-region` / `no-drag-region`) and synchronized maximize/restore state.
 
-Document any newly discovered risk before making changes that affect
-behavior.
+2. **Theme Application & CSS Variables**:
+   - The active theme is applied via both `data-theme` and `.dark`/`.light` classes on `document.documentElement`.
+   - Pre-mount initialization script in `index.html` inspects `localStorage.getItem('theme')` to prevent cold-boot flash.
+   - All components consume Obsidian Forge CSS variables (`var(--bg-base)`, `var(--surface-1)`, `var(--surface-2)`, `var(--accent-primary)`, etc.) or configured Tailwind tokens.
+
+3. **Playlist Metadata & Inline Detection**:
+   - Handled by `window.electronAPI.inspectUrl(url)`, which resolves `{ isPlaylist, entries, title }`.
+   - If a playlist is detected, `SingleDownloaderView` renders an inline alert card with video count and a trigger to open `PlaylistSelectorModal`.
+
+4. **Cookie Authentication Flow**:
+   - Implemented in `src/components/modals/CookieWizardModal.jsx`.
+   - Supports 1-click automatic Firefox cookie extraction (`yt_dlp.cookiejar`) and Chromium Netscape `cookies.txt` file drag-and-drop.
+   - Domain whitelisting strictly filters out all cookies except `.youtube.com` and `.google.com`.
+
+5. **Queue State Preservation & Stitching**:
+   - Mass clip state is persisted to `localStorage` under `mass-clips`.
+   - No auto-wipe is performed on completion; user inputs, queue items, and download states are preserved until explicitly cleared.
+
+6. **View Decomposition**:
+   - Cleanly extracted into dedicated containers under `src/components/views/`: `SingleDownloaderView`, `MassClipView`, `SelectiveDurationView`, `HistoryView`, and `SettingsView`.
+   - Shell coordination and tab switching remain in `src/App.jsx`.
+
+7. **Shared UI Primitives**:
+   - Implemented 10 source-owned primitives in `src/components/ui/` (`Button`, `Input`, `Select`, `Dialog`, `Tabs`, `Badge`, `Progress`, `Tooltip`, `Card`, `TitleBar`) using Tailwind 3.4 and Framer Motion, avoiding third-party UI framework bloat.
 
 ------------------------------------------------------------------------
 

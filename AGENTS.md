@@ -54,17 +54,29 @@ For technical architecture, design tokens, active tasks, and decision records, r
 - **Form State Preservation**: Each view manages or binds to persistent state. Switching navigation tabs or opening/closing dialogs must **never** wipe form inputs, entered URLs, or active job progress.
 
 ### Design System & Visual Token Compliance
-- **Token Discipline**: All styling must use the *Precision Studio* design tokens defined in [src/index.css](file:///d:/Comsci%20things/Python/Quick%20Tools%20Project/Hermanos%20Forge/src/index.css) and [DESIGN.md](file:///d:/Comsci%20things/Python/Quick%20Tools%20Project/Hermanos%20Forge/DESIGN.md):
+- **Token Discipline**: All styling must use the *Obsidian Forge Media Studio* design tokens defined in [src/index.css](file:///d:/Comsci%20things/Python/Quick%20Tools%20Project/Hermanos%20Forge/src/index.css) and [DESIGN.md](file:///d:/Comsci%20things/Python/Quick%20Tools%20Project/Hermanos%20Forge/DESIGN.md):
   - Surfaces: `var(--bg-base)`, `var(--surface-1)`, `var(--surface-2)`, `var(--surface-hover)`
   - Borders: `var(--border-subdued)`, `var(--border-strong)`
   - Text: `var(--text-primary)`, `var(--text-secondary)`, `var(--text-tertiary)`
-  - Accents: `var(--accent-primary)` (mint/teal `#14B8A6`), `var(--accent-primary-hover)`
-  - Status: `var(--status-success)`, `var(--status-warning)`, `var(--status-error)`, `var(--status-info)`
-- **Zero Hardcoded Colors**: Never hardcode hex values (e.g. `#10b981`, `#0f172a`, `#ff4444`) directly in Tailwind utility classes or inline styles. Always resolve through tokens or themed utility classes.
-- **Dual-Theme Support**: Dark mode (`#0D1117` base) is the default; Light mode (`#F6F8FA` base) is fully supported via the `.light` class on the root element. Ensure all components render crisply in both modes.
+  - Accents: `var(--accent-primary)` (violet `#9D4EDD`), `var(--accent-hover)` (`#8B3DD0`), `var(--accent-muted)`, `var(--accent-neon)` (`#C084FC`), `var(--accent-cyan)` (`#00F0FF`)
+  - Status: `var(--status-success)` (`#10B981`), `var(--status-warning)` (`#F59E0B`), `var(--status-danger)` (`#EF4444`), `var(--status-info)` (`#00F0FF`)
+  - Obsidian Scale (Tailwind `colors.obsidian`): `obsidian-950` (`#09090C`), `obsidian-900` (`#0E0E13`), `obsidian-850` (`#13131A`), `obsidian-800` (`#181824`), `obsidian-750` (`#1F1F2E`), `obsidian-700` (`#28283D`), `obsidian-600` (`#3D3D5C`)
+  - Accent Scale (Tailwind `colors.accent`): `accent-violet` (`#9D4EDD`), `accent-amethyst` (`#B5179E`), `accent-purple` (`#A855F7`), `accent-neon` (`#C084FC`), `accent-cyan` (`#00F0FF`), `accent-glow` (`rgba(157, 78, 221, 0.25)`)
+  - Glow Shadows: `shadow-glow-violet`, `shadow-glow-amethyst`, `shadow-glow-cyan`, `shadow-inner-glow`, `shadow-window-frame`
+- **Zero Hardcoded Colors**: Never hardcode hex values (e.g. `#10b981`, `#0f172a`, `#ff4444`) directly in Tailwind utility classes or inline styles. Always resolve through CSS custom variables or configured Tailwind theme tokens (`obsidian-*`, `accent-*`).
+- **Dual-Theme Support**:
+  - Dark mode (`#09090C` canvas, `#0E0E13` surface-1, `#16161F` surface-2) is the fresh-install default.
+  - Light mode (Obsidian Slate Studio: `#F8F7FA` canvas, `#FFFFFF` surface-1, `#F1EFF5` surface-2) is fully supported via the `.light` class / `[data-theme="light"]` on the root element. Ensure all components render with crisp contrast in both modes.
 - **Typography & Font Stacks**:
-  - UI labels, prose, and buttons: Clean sans-serif stack (`Inter`, system UI font).
-  - Timestamps, URLs, format tags, and logs: Monospace stack (`JetBrains Mono`, `Consolas`, monospace) with tabular numbers (`tabular-nums`).
+  - Display & Headings (`font-heading`): `Space Grotesk`, sans-serif (`font-heading font-bold tracking-tight`).
+  - UI labels, prose, and buttons (`font-sans`): `DM Sans`, `Inter`, ui-sans-serif, system-ui, -apple-system, sans-serif.
+  - Timestamps, URLs, format tags, timecodes, and logs (`font-mono`): `JetBrains Mono`, `Consolas`, `Menlo`, monospace with tabular numbers (`tabular-nums`).
+- **Surfaces, Glows & Depth**:
+  - `.surface-panel`: Card/panel with top specular highlight border (`border-t` gradient).
+  - `.noise-overlay`: Subtle cybernetic dot grid texture (`background-size: 24px 24px`).
+  - `.ambient-glow-purple`: Radial purple ceiling spotlight for application headers and main views.
+  - `.studio-ambient-bg`: Dual radial gradient for deep studio atmosphere.
+  - `.kbd-hint`: Standardized keyboard shortcut pill with monospace font.
 - **Focus & Accessibility**: Every interactive element must have visible, consistent focus rings (`focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] focus-visible:outline-none`) and descriptive `aria-label` or `aria-labelledby` attributes.
 
 ### State Preservation & Behavior Compatibility
