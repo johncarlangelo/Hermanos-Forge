@@ -164,3 +164,6 @@ The following specialized design skills are installed locally inside `.agent/ski
 1. **`ui-ux-pro-max`**: Design intelligence database covering 50 styles, 21 color palettes, 50 font pairings, 20 charts, and 9 technology stacks.
 2. **`impeccable`**: Frontend craft system providing commands for design review, visual audit, polish, micro-animations, typography, and accessibility (`/document`, `/audit`, `/critique`, `/polish`, `/animate`, `/layout`).
 3. **`design-taste-frontend` (Taste Skill)**: Anti-slop frontend art direction, browser-based layout auditing, and high-end visual aesthetics.
+4. **`forge-issue` (`/forge-issue`)**: Interactive and template-conforming issue creator enforcing `.github/ISSUE_TEMPLATE/` schemas, `--assignee "@me"`, and repository priority and category labels.
+5. **`forge-pr` (`/forge-pr`)**: Standardized PR authoring skill that runs pre-flight verification (`npm run lint`, `npm run build`), targets `dev` by default, enforces Conventional Commits titles, and structures the PR description and verification record.
+6. **`forge-branch` (`/forge-branch`)**: Branch workflow skill that ensures a clean working tree, synchronizes remote `dev`, validates naming conventions (`feature/*`, `bug-fix/*`, `chore/*`, `docs/*`), and switches to the new branch.
