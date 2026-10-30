@@ -41,3 +41,6 @@ __pycache__/
 
 # Skills
 .agent
+
+# Temporary mockup outputs
+temp_google_stitch_output/

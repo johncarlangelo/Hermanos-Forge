@@ -188,7 +188,9 @@ export default function MassClipDownloader({ onStitchSuccess, globalOutputDir, o
     if (window.stitchAPI) {
       try {
         await window.stitchAPI.cancelStitch(globalOutputDir);
-      } catch (e) {}
+      } catch (err) {
+        console.error('Failed to cancel stitch:', err);
+      }
     }
     setIsProcessing(false);
     setGlobalStatus('');

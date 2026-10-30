@@ -189,7 +189,10 @@ def get_metadata(youtube_url, app_data_path=None):
                 'duration': info.get('duration', 0),
                 'formats': video_formats,
                 'title': info.get('title'),
-                'extractor_key': info.get('extractor_key', info.get('extractor', 'Unknown'))
+                'extractor_key': info.get('extractor_key', info.get('extractor', 'Unknown')),
+                'thumbnail': info.get('thumbnail'),
+                'id': info.get('id'),
+                'uploader': info.get('uploader') or info.get('channel') or info.get('uploader_id'),
             }
             
             print(f"METADATA:{json.dumps(metadata)}", flush=True)

@@ -41,7 +41,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
         return () => ipcRenderer.removeListener('log-update', handler);
     },
     checkSystemStatus: () => ipcRenderer.invoke('check-system-status'),
-    openExternal: (url) => ipcRenderer.invoke('open-external', url)
+    openExternal: (url) => ipcRenderer.invoke('open-external', url),
+    minimizeWindow: () => ipcRenderer.invoke('window-minimize'),
+    maximizeWindow: () => ipcRenderer.invoke('window-maximize'),
+    closeWindow: () => ipcRenderer.invoke('window-close'),
+    isMaximizedWindow: () => ipcRenderer.invoke('window-is-maximized'),
+    onMaximizedChange: (callback) => {
+        const handler = (_event, isMax) => callback(isMax);
+        ipcRenderer.on('window-maximized-change', handler);
+        return () => ipcRenderer.removeListener('window-maximized-change', handler);
+    }
 });
 
 contextBridge.exposeInMainWorld('stitchAPI', {

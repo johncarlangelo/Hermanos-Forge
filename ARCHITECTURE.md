@@ -13,19 +13,25 @@ Hermanos Forge is split into two decoupled runtime layers:
 ```
 ┌────────────────────────────────────────────────────────┐
 │                      React 19 UI                       │
-│  (src/App.jsx, SelectiveDownloader, MassClip, etc.)   │
+│  (src/App.jsx Coordinator, TitleBar, Navigation)      │
+│  ├── Views: SingleDownloaderView, MassClipView, etc.  │
+│  ├── Modals: CookieWizard, PlaylistSelector, etc.     │
+│  └── UI Primitives: Button, Input, Dialog, etc.       │
 └───────────────────────────┬────────────────────────────┘
                             │ window.electronAPI / window.stitchAPI
                             ▼
 ┌────────────────────────────────────────────────────────┐
 │              Electron Preload (preload.cjs)            │
 │         contextBridge (Secure IPC isolation)           │
+│         - Media & Stitch APIs                          │
+│         - Window control APIs (minimize/maximize/close)│
 └───────────────────────────┬────────────────────────────┘
                             │ ipcRenderer.invoke / ipcRenderer.on
                             ▼
 ┌────────────────────────────────────────────────────────┐
 │              Electron Main (main.cjs)                  │
 │       Child process spawner, OS dialogs & helpers      │
+│       Frameless window lifecycle & maximize events     │
 └───────────────────────────┬────────────────────────────┘
                             │ CLI Arguments & stdout/stderr Line Streaming
                             ▼
@@ -34,6 +40,20 @@ Hermanos Forge is split into two decoupled runtime layers:
 │       yt-dlp + Bundled FFmpeg / FFprobe Subprocesses   │
 └────────────────────────────────────────────────────────┘
 ```
+
+### UI Component Architecture (Obsidian Forge Media Studio)
+- **Application Shell Coordinator** (`src/App.jsx`): Manages active navigation tabs, global state persistence, notifications, default output directory, ambient ceiling spotlight (`.ambient-glow-purple`), noise texture backdrop (`.noise-overlay`), and modal display.
+- **Frameless Window Title Bar** (`src/components/ui/TitleBar.jsx`): Draggable header region with traffic preview dots, purple-amethyst gradient brand emblem, pulsing `Engine Active • yt-dlp core` status beacon, release tag (`v1.1.0-pro`), and native Windows minimize/maximize/close controls.
+- **Obsidian Navigation Sidebar** (`data-purpose="workspace-navigation"`): Frosted obsidian surface (`dark:bg-obsidian-950/85 backdrop-blur-md border-r border-purple-900/25`) coordinating tool destinations, tab pills with `layoutId` animation, theme toggle ("Obsidian UI" / "Studio Light"), and developer logs launcher (`>_ Logs`).
+- **Persistent Bottom Status Strip** (`data-purpose="window-bottom-status-strip"`): Fixed 28px (`h-7`) footer bar displaying destination directory path, live engine beacon, and version tag.
+- **Dedicated View Containers** (`src/components/views/`):
+  - `SingleDownloaderView.jsx`: Spotlight URL command bar with `Enter ↵` analysis, quick resolution chips (4K, 2K, FHD, HD, MP3), 16:9 rich preview with duration chip, quality dropdown, format toggle, inline playlist prompt, audio/video downloads, and progress telemetry.
+  - `MassClipView.jsx`: Batch clipboard paste (`Paste Batch`), card-based clip queue with drag-handle styling, live per-clip status badges (Queued, Downloading, Done, Error, Canceled), and FFmpeg concatenation stitching demuxer.
+  - `SelectiveDurationView.jsx`: High-precision duration trimming, interactive dual-handle timeline ruler, monospace timecodes in `JetBrains Mono`, zoom controls, multi-clip segment queue, and precise keyframe cut option.
+  - `HistoryView.jsx`: Categorized media download records, format filter tabs (All, MP4, MP3, Clips, Stitched), search filtering, and direct file revelation in Windows Explorer (`shell.showItemInFolder`).
+  - `SettingsView.jsx`: Bento-grid layout, theme switcher with Obsidian Dark and Studio Light preview tiles, default destination directory selector, browser cookie authentication card, and live diagnostic system probes.
+- **Overlays & Dialogs** (`src/components/modals/`): Modals encapsulated in the shared `Dialog` primitive for accessible focus trapping, keyboard dismissal, and clean state isolation (`CookieWizardModal`, `PlaylistSelectorModal`, `OutputFolderModal`, `ClearHistoryModal`, `CancelConfirmModal`).
+- **Design Primitives** (`src/components/ui/`): Button, Input, Select, Dialog, Tabs, Badge, Progress, Tooltip, Card, TitleBar.
 
 ---
 

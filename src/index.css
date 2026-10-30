@@ -3,136 +3,212 @@
 @tailwind utilities;
 
 @layer base {
-  /* Theme variables and sensible defaults. Uses data-theme="light" or data-theme="dark" on <html> */
-  :root {
-    /* Light theme variables */
-    --bg: #F8FAFC;
-    --surface: rgba(15,23,42,0.03);
-    --surface-hover: rgba(15,23,42,0.06);
-    --primary: #2563EB;
-    --primary-rgb: 37,99,235;
-    --primary-hover: #1D4ED8;
-    --text-primary: #0F172A;
-    --text-secondary: #475569;
-    --border: rgba(15,23,42,0.06);
-    --accent-gradient: linear-gradient(90deg,var(--primary),#60a5fa);
-  }
+  /* Default: Dark mode (Obsidian Forge Media Suite) */
+  :root,
+  [data-theme="dark"],
+  .dark {
+    --bg-base: #09090C;
+    --surface-1: #0E0E13;
+    --surface-2: #16161F;
+    --surface-hover: #222230;
+    --border-subdued: rgba(168, 85, 247, 0.16);
+    --border-strong: rgba(168, 85, 247, 0.32);
+    --text-primary: #F3F0F5;
+    --text-secondary: #A99FB2;
+    --text-tertiary: #6E6478;
+    --accent-primary: #9D4EDD;
+    --accent-hover: #8B3DD0;
+    --accent-muted: rgba(157, 78, 221, 0.16);
+    --accent-neon: #C084FC;
+    --accent-cyan: #00F0FF;
+    --focus-ring: #9D4EDD;
+    --status-success: #10B981;
+    --status-warning: #F59E0B;
+    --status-danger: #EF4444;
+    --status-info: #00F0FF;
 
-  [data-theme="dark"] {
-    --bg: #09090B; /* Almost pure black for deeper dark mode */
-    --surface: rgba(255,255,255,0.035);
-    --surface-hover: rgba(255,255,255,0.06);
-    --primary: #3B82F6;
-    --primary-rgb: 59,130,246;
-    --primary-hover: #2563EB;
-    --text-primary: #F8FAFC;
-    --text-secondary: #94A3B8;
-    --border: rgba(255,255,255,0.06);
-    --accent-gradient: linear-gradient(90deg,var(--primary),#60a5fa);
+    /* Backward compatibility mappings */
+    --bg: var(--bg-base);
+    --surface: var(--surface-1);
+    --primary: var(--accent-primary);
+    --primary-rgb: 157, 78, 221;
+    --primary-hover: var(--accent-hover);
+    --border: var(--border-subdued);
   }
 
   html, body, #root {
     height: 100%;
+    margin: 0;
+    padding: 0;
+    background-color: var(--bg-base);
+    color: var(--text-primary);
+    overflow: hidden;
+    user-select: none;
   }
 
   html {
-    font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    font-family: 'DM Sans', Inter, ui-sans-serif, system-ui, -apple-system, sans-serif;
   }
 
   body {
-    @apply bg-background text-textPrimary antialiased;
-    -webkit-font-smoothing:antialiased;
-    -moz-osx-font-smoothing:grayscale;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
-  /* Selection styles using theme-aware primary color */
-  ::selection { background-color: rgba(var(--primary-rgb), 0.30); color: var(--text-primary); }
-  ::-moz-selection { background-color: rgba(var(--primary-rgb), 0.30); color: var(--text-primary); }
+  /* Selection styles */
+  ::selection {
+    background-color: var(--accent-muted);
+    color: var(--accent-neon);
+  }
+
   /* Respect reduced motion */
   @media (prefers-reduced-motion: reduce) {
-    * { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
+    *, ::before, ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }
 
 @layer utilities {
+  /* Title bar drag regions */
+  .drag-region {
+    -webkit-app-region: drag;
+  }
+  
+  .no-drag-region {
+    -webkit-app-region: no-drag;
+  }
+
+  /* Focus ring utility */
+  .focus-ring {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--bg-base)];
+  }
+
+  /* Precision Studio Surface Panel with top specular highlight */
+  .surface-panel {
+    position: relative;
+    background-color: var(--surface-1);
+    border: 1px solid var(--border-subdued);
+    border-radius: 12px;
+    box-shadow: 0 4px 24px -2px rgba(0, 0, 0, 0.4);
+  }
+
+  .surface-panel::before {
+    content: '';
+    position: absolute;
+    inset-inline: 0;
+    top: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(168, 85, 247, 0.25), transparent);
+    pointer-events: none;
+  }
+
+  /* Ambient studio glow backgrounds */
+  .noise-overlay {
+    background-image: radial-gradient(rgba(168, 85, 247, 0.04) 1px, transparent 0);
+    background-size: 24px 24px;
+  }
+
+  .ambient-glow-purple {
+    background: radial-gradient(circle at 50% 0%, rgba(157, 78, 221, 0.14) 0%, transparent 65%);
+  }
+
+  .studio-ambient-bg {
+    background-image: 
+      radial-gradient(ellipse 70% 40% at 50% -10%, rgba(157, 78, 221, 0.12), transparent),
+      radial-gradient(ellipse 50% 30% at 90% 100%, rgba(0, 240, 255, 0.04), transparent);
+  }
+
+  /* Keyboard shortcut hint badge (Kbd) */
+  .kbd-hint {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1;
+    padding: 0.2rem 0.45rem;
+    border-radius: 4px;
+    background-color: var(--surface-2);
+    color: var(--text-tertiary);
+    border: 1px solid var(--border-subdued);
+    box-shadow: 0 1px 0 rgba(0, 0, 0, 0.2);
+    user-select: none;
+  }
+
+  /* Legacy utility fallbacks */
   .glass-panel {
-    @apply bg-surface backdrop-blur-md border border-border rounded-xl shadow-sm transition-colors duration-300 hover:bg-surfaceHover;
-    box-shadow: 0 6px 18px rgba(2,6,23,0.06);
+    position: relative;
+    background-color: var(--surface-1);
+    border: 1px solid var(--border-subdued);
+    border-radius: 12px;
     padding: 1.25rem;
   }
-  
-  .btn-primary {
-    @apply bg-primary hover:bg-primaryHover text-white px-6 py-2 rounded-full font-semibold shadow-sm hover:shadow-md transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:pointer-events-none;
-    box-shadow: 0 6px 14px rgba(59,130,246,0.18);
-  }
-  
+
   .input-field {
-    @apply w-full bg-surface border border-border rounded-lg px-4 py-3 text-textPrimary placeholder:text-textSecondary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);
+    width: 100%;
+    background-color: var(--surface-2);
+    border: 1px solid var(--border-strong);
+    border-radius: 8px;
+    padding: 0.5rem 0.75rem;
+    color: var(--text-primary);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+  .input-field:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 1px var(--accent-primary);
+  }
+  .input-field::placeholder {
+    color: var(--text-secondary);
   }
 
   select.input-field option {
-    background-color: var(--bg);
+    background-color: var(--surface-2);
     color: var(--text-primary);
-  }
-
-  /* Header-specific helpers */
-  .app-header { @apply flex items-center justify-between gap-4 mb-8; }
-  .nav-group { @apply flex items-center gap-3; }
-  .pill-nav { @apply flex items-center gap-2 bg-surface p-1 rounded-full; }
-
-  /* App icon / brand */
-  .app-icon-wrap {
-    @apply rounded-lg flex items-center justify-center;
-    width: 48px;
-    height: 48px;
-    padding: 6px;
-    background: var(--surface);
-    box-shadow: 0 6px 14px rgba(var(--primary-rgb), 0.12);
-  }
-
-  .app-icon {
-    width: 100%;
-    height: 100%;
-    display: block;
-    object-fit: contain;
-    border-radius: 6px;
-  }
-
-  .version-pill {
-    @apply text-sm font-medium px-3 py-1 rounded-full border;
-    background: var(--surface);
-    color: var(--text-secondary);
-    border-color: var(--border);
   }
 }
 
-/* Custom Scrollbar */
+/* Custom Scrollbars */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  @apply bg-surface hover:bg-surfaceHover rounded-full;
+  background: var(--surface-hover);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-primary);
 }
 
 .timeline-scrollbar::-webkit-scrollbar-thumb:horizontal {
-  @apply bg-primary border border-border;
-  opacity: 0.8;
+  background: var(--accent-primary);
+  border-radius: 4px;
 }
-.custom-scrollbar::-webkit-scrollbar {
-  width: 6px;
+
+@keyframes indeterminate {
+  0% {
+    left: -35%;
+    width: 35%;
+  }
+  60% {
+    left: 100%;
+    width: 50%;
+  }
+  100% {
+    left: 100%;
+    width: 50%;
+  }
 }
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
-}
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background-color: rgba(156, 163, 175, 0.3);
-  border-radius: 10px;
-}
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(156, 163, 175, 0.5);
+
+.animate-indeterminate {
+  animation: indeterminate 1.5s infinite ease-in-out;
 }
