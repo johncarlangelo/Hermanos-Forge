@@ -43,10 +43,10 @@ export function PlaylistSelectorModal({
       description="Choose which videos to queue for sequential batch download."
       maxWidth="max-w-xl"
     >
-      <div className="space-y-3">
+      <div className="space-y-3.5">
         {/* Actions bar */}
-        <div className="flex items-center justify-between py-1 border-b border-[var(--border-subdued)]">
-          <label className="flex items-center gap-2 cursor-pointer select-none text-xs text-[var(--text-primary)] hover:text-white transition-colors">
+        <div className="flex items-center justify-between py-1.5 border-b border-[var(--border-subdued)]">
+          <label className="flex items-center gap-2.5 cursor-pointer select-none text-xs sm:text-sm font-medium text-[var(--text-primary)] hover:text-white transition-colors">
             <input
               type="checkbox"
               checked={isAllSelected}
@@ -54,7 +54,7 @@ export function PlaylistSelectorModal({
               className="sr-only"
             />
             <div
-              className={`w-4 h-4 rounded-[3px] border flex items-center justify-center transition-colors ${
+              className={`w-4 h-4 rounded-[4px] border flex items-center justify-center transition-colors ${
                 isAllSelected
                   ? 'bg-[var(--accent-primary)] border-[var(--accent-primary)] text-white'
                   : 'border-[var(--border-strong)] bg-[var(--surface-2)]'
@@ -65,13 +65,13 @@ export function PlaylistSelectorModal({
             <span>Select All ({validEntries.length})</span>
           </label>
 
-          <Badge variant="accent" size="sm">
+          <Badge variant="accent" size="md">
             {selectedVideos.length} of {playlistEntries.length} selected
           </Badge>
         </div>
 
         {/* Video list */}
-        <div className="max-h-72 overflow-y-auto space-y-1.5 pr-1 py-1">
+        <div className="max-h-80 overflow-y-auto space-y-2 pr-1 py-1 custom-scrollbar">
           {playlistEntries.map((video, index) => {
             const isUnavailable =
               !video.title ||
@@ -83,7 +83,7 @@ export function PlaylistSelectorModal({
               <div
                 key={video.id || index}
                 onClick={() => !isUnavailable && handleToggleItem(video.id)}
-                className={`flex items-center gap-3 p-2.5 rounded-[6px] border transition-colors ${
+                className={`flex items-center gap-3 p-3 rounded-xl border transition-colors ${
                   isUnavailable
                     ? 'opacity-40 bg-[var(--surface-2)]/30 border-transparent cursor-not-allowed'
                     : isSelected
@@ -92,7 +92,7 @@ export function PlaylistSelectorModal({
                 }`}
               >
                 <div
-                  className={`w-4 h-4 rounded-[3px] border flex items-center justify-center shrink-0 transition-colors ${
+                  className={`w-4 h-4 rounded-[4px] border flex items-center justify-center shrink-0 transition-colors ${
                     isUnavailable
                       ? 'border-transparent bg-transparent'
                       : isSelected
@@ -103,12 +103,12 @@ export function PlaylistSelectorModal({
                   {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
                 </div>
 
-                <div className="flex-1 min-w-0 flex items-center gap-2">
-                  <span className="font-mono text-[11px] text-[var(--text-tertiary)] shrink-0 w-5">
+                <div className="flex-1 min-w-0 flex items-center gap-2.5">
+                  <span className="font-mono text-xs text-[var(--text-tertiary)] shrink-0 w-6">
                     {index + 1}.
                   </span>
                   <span
-                    className={`text-xs truncate ${
+                    className={`text-xs sm:text-sm font-medium truncate ${
                       isUnavailable
                         ? 'line-through text-[var(--text-secondary)]'
                         : 'text-[var(--text-primary)]'
@@ -120,7 +120,7 @@ export function PlaylistSelectorModal({
                 </div>
 
                 {isUnavailable && (
-                  <Badge variant="danger" size="sm" icon={<AlertCircle className="w-3 h-3" />}>
+                  <Badge variant="danger" size="sm" icon={<AlertCircle className="w-3.5 h-3.5" />}>
                     Private/Deleted
                   </Badge>
                 )}
@@ -131,19 +131,20 @@ export function PlaylistSelectorModal({
       </div>
 
       <DialogFooter className="mt-4 -mx-5 -mb-5 px-5">
-        <Button variant="secondary" size="sm" onClick={onClose}>
+        <Button variant="secondary" size="md" onClick={onClose} className="text-xs sm:text-sm font-semibold">
           Cancel
         </Button>
         <Button
           variant="primary"
-          size="sm"
+          size="md"
           disabled={selectedVideos.length === 0}
+          className="text-xs sm:text-sm font-bold"
           onClick={() => {
             onConfirmDownload();
             onClose();
           }}
         >
-          <Download className="w-3.5 h-3.5" />
+          <Download className="w-4 h-4" />
           Download Selected ({selectedVideos.length}) as {downloadType.toUpperCase()}
         </Button>
       </DialogFooter>

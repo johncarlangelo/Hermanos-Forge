@@ -17,33 +17,34 @@ export function OutputFolderModal({
       maxWidth="max-w-md"
     >
       <div className="space-y-4">
-        <div className="p-3 bg-[var(--surface-2)] border border-[var(--border-subdued)] rounded-[6px]">
-          <span className="text-[11px] font-medium text-[var(--text-secondary)] block mb-1">
+        <div className="p-3.5 bg-[var(--surface-2)] border border-[var(--border-subdued)] rounded-xl">
+          <span className="text-xs font-semibold text-[var(--text-secondary)] block mb-1">
             Current Destination Path
           </span>
-          <p className="font-mono text-xs text-[var(--text-primary)] break-all select-all">
+          <p className="font-mono text-xs sm:text-sm text-[var(--text-primary)] break-all select-all">
             {currentPath || 'No destination path configured'}
           </p>
         </div>
 
-        <p className="text-xs text-[var(--text-secondary)]">
+        <p className="text-xs sm:text-sm text-[var(--text-secondary)] leading-relaxed">
           You can change this location at any time. When downloading playlists, a unique subfolder will be created inside this path.
         </p>
       </div>
 
       <DialogFooter className="mt-4 -mx-5 -mb-5 px-5">
-        <Button variant="secondary" size="sm" onClick={onClose}>
+        <Button variant="secondary" size="md" onClick={onClose} className="text-xs sm:text-sm font-semibold">
           Close
         </Button>
         <Button
           variant="primary"
-          size="sm"
+          size="md"
+          className="text-xs sm:text-sm font-semibold"
           onClick={async () => {
             await onSelectFolder();
             onClose();
           }}
         >
-          <FolderOpen className="w-3.5 h-3.5" />
+          <FolderOpen className="w-4 h-4" />
           Choose New Folder
         </Button>
       </DialogFooter>

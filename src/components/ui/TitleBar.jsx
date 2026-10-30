@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Minus, Square, Copy, X } from 'lucide-react';
+import appIcon from '@/assets/icon.svg';
 
 export function TitleBar() {
   const [isMaximized, setIsMaximized] = useState(false);
@@ -45,49 +46,22 @@ export function TitleBar() {
       {/* Top subtle highlight */}
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-purple-400/25 to-transparent pointer-events-none" />
 
-      {/* Window Controls & Branding */}
-      <div className="flex items-center gap-3.5 no-drag-region">
-        {/* Mockup Traffic Lights / Quick Control Dots */}
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={handleClose}
-            aria-label="Close Window"
-            title="Close"
-            className="w-3 h-3 rounded-full bg-rose-500/80 border border-rose-600 hover:opacity-80 transition cursor-pointer"
-          />
-          <button
-            type="button"
-            onClick={handleMinimize}
-            aria-label="Minimize Window"
-            title="Minimize"
-            className="w-3 h-3 rounded-full bg-amber-500/80 border border-amber-600 hover:opacity-80 transition cursor-pointer"
-          />
-          <button
-            type="button"
-            onClick={handleMaximize}
-            aria-label={isMaximized ? 'Restore Window' : 'Maximize Window'}
-            title={isMaximized ? 'Restore' : 'Maximize'}
-            className="w-3 h-3 rounded-full bg-purple-500/80 border border-purple-600 hover:opacity-80 transition cursor-pointer"
-          />
-        </div>
-        <div className="h-4 w-[1px] bg-purple-900/40 mx-0.5" />
-
+      {/* Branding */}
+      <div className="flex items-center gap-3 no-drag-region">
         {/* App Brand Mark & Release Tag */}
         <div className="flex items-center gap-2.5">
-          <div className="w-6 h-6 rounded-md bg-gradient-to-tr from-accent-violet via-purple-500 to-accent-amethyst p-[1px] shadow-sm shadow-purple-900/40">
-            <div className="w-full h-full bg-obsidian-900 rounded-[5px] flex items-center justify-center overflow-hidden">
-              <span className="font-mono font-bold text-xs bg-gradient-to-r from-accent-neon to-purple-200 bg-clip-text text-transparent">
-                H
-              </span>
-            </div>
-          </div>
+          <img
+            src={appIcon}
+            alt="Hermanos Forge"
+            draggable="false"
+            className="w-6 h-6 rounded-md object-contain shadow-sm select-none"
+          />
           <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-slate-100 tracking-wide font-sans">
+            <span className="text-xs sm:text-sm font-semibold text-slate-100 tracking-wide font-sans">
               Hermanos Forge
             </span>
-            <span className="font-mono text-[10px] text-purple-300 bg-purple-950/70 border border-purple-700/40 px-1.5 py-0.5 rounded">
-              v1.1.0-pro
+            <span className="font-mono text-xs text-purple-300 bg-purple-950/70 border border-purple-700/40 px-1.5 py-0.5 rounded">
+              v1.1.0
             </span>
           </div>
         </div>
@@ -99,9 +73,9 @@ export function TitleBar() {
           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent-violet opacity-75" />
           <span className="relative inline-flex rounded-full h-2 w-2 bg-accent-neon shadow-glow-violet" />
         </span>
-        <span className="text-[11px] font-medium text-slate-200">Engine Active</span>
-        <span className="text-purple-400/60 text-[10px]">•</span>
-        <span className="text-[10px] font-mono text-purple-300">yt-dlp core</span>
+        <span className="text-xs font-medium text-slate-200">Engine Active</span>
+        <span className="text-purple-400/60 text-xs">•</span>
+        <span className="text-xs font-mono text-purple-300">yt-dlp core</span>
       </div>
 
       {/* Window Controls & Quick Actions */}

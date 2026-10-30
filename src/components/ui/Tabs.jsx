@@ -58,7 +58,7 @@ export function Tabs({
               {tab.badge !== undefined && (
                 <span
                   className={cn(
-                    'ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold',
+                    'ml-1 px-1.5 py-0.5 rounded-full text-xs font-mono font-semibold',
                     isActive
                       ? 'bg-[var(--accent-muted)] text-[var(--accent-primary)]'
                       : 'bg-[var(--surface-hover)] text-[var(--text-tertiary)]'

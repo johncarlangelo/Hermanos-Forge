@@ -50,7 +50,7 @@ export default function LogsWindow() {
 
     return (
       <div key={idx} className={`leading-relaxed break-all whitespace-pre-wrap ${colorClass}`}>
-        <span className="text-[var(--text-tertiary)] select-none mr-2 font-mono text-[10px]">
+        <span className="text-[var(--text-tertiary)] select-none mr-2 font-mono text-xs">
           {(idx + 1).toString().padStart(4, '0')}
         </span>
         {line}
@@ -109,7 +109,7 @@ export default function LogsWindow() {
       </header>
 
       {/* Log Stream Body */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-0.5 custom-scrollbar bg-[var(--surface-1)]/40 font-mono text-[11px]">
+      <div className="flex-1 overflow-y-auto p-3.5 space-y-1 custom-scrollbar bg-[var(--surface-1)]/40 font-mono text-xs">
         {logs.length === 0 && (
           <div className="h-full flex items-center justify-center text-[var(--text-tertiary)] italic">
             Console stream idle. Start an operation to observe live subprocess logs...

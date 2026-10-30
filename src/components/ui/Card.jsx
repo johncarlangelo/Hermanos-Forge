@@ -33,7 +33,7 @@ export function CardTitle({ className, children, ...props }) {
   return (
     <h3
       className={cn(
-        'text-xs font-semibold text-[var(--text-primary)] tracking-wide',
+        'text-sm sm:text-base font-bold text-[var(--text-primary)] tracking-tight',
         className
       )}
       {...props}
@@ -46,7 +46,7 @@ export function CardTitle({ className, children, ...props }) {
 export function CardDescription({ className, children, ...props }) {
   return (
     <p
-      className={cn('text-[11px] text-[var(--text-secondary)] mt-0.5', className)}
+      className={cn('text-xs sm:text-sm text-[var(--text-secondary)] mt-1 leading-relaxed', className)}
       {...props}
     >
       {children}
@@ -56,7 +56,7 @@ export function CardDescription({ className, children, ...props }) {
 
 export function CardContent({ className, children, ...props }) {
   return (
-    <div className={cn('p-4', className)} {...props}>
+    <div className={cn('p-5 sm:p-6', className)} {...props}>
       {children}
     </div>
   );

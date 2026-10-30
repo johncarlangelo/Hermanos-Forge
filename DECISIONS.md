@@ -16,6 +16,7 @@ This document records key technical, architectural, and design decisions made th
 - [ADR-008: Native Splash Window for Cold-Boot Mitigation](#adr-008-native-splash-window-for-cold-boot-mitigation)
 - [ADR-009: Precision Studio Design System & Modular UI Architecture](#adr-009-precision-studio-design-system--modular-ui-architecture)
 - [ADR-010: Obsidian Forge Media Studio Design Language & Visual Evolution](#adr-010-obsidian-forge-media-studio-design-language--visual-evolution)
+- [ADR-011: Strict Obsidian Dark Theme Primacy & Removal of Light Mode](#adr-011-strict-obsidian-dark-theme-primacy--removal-of-light-mode)
 
 ---
 
@@ -210,3 +211,23 @@ While ADR-009 successfully modularized the codebase into views, primitives, and 
 #### Consequences
 - **Positive**: Cohesive, world-class desktop studio feel; high scannability; clear component contracts; zero IPC or backend disruptions.
 - **Negative**: Requires strict token discipline in all future feature development to prevent utility class drift.
+
+---
+
+### ADR-011: Strict Obsidian Dark Theme Primacy & Removal of Light Mode
+
+* **Status**: Accepted
+* **Date**: 2026-10-30
+
+#### Context
+User feedback confirmed that the application's cybernetic aesthetic, neon accent lighting, and media workbench workflows perform best under a unified Obsidian Dark palette. Maintaining dual-theme tokens and toggle mechanisms introduced unnecessary complexity and overhead without providing substantial value for the core use case.
+
+#### Decision
+1. Fully remove Light Mode styling tokens, CSS override blocks, and HTML detection scripts.
+2. Remove theme toggles, buttons, and state management in `App.jsx` and `SettingsView.jsx`.
+3. Standardize strictly on Obsidian Dark UI (`#09090C` canvas, `#0E0E13` surface-1, `#16161F` surface-2) across all application screens, dialogs, and components.
+
+#### Consequences
+- **Positive**: Drastically simplifies styling maintenance, guarantees consistent high-contrast visual fidelity, and aligns with user experience preferences.
+- **Negative**: Users preferring light backgrounds cannot toggle the interface mode.
+

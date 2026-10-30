@@ -2,8 +2,6 @@ import { useState } from 'react';
 import {
   Settings,
   FolderOpen,
-  Sun,
-  Moon,
   Cookie,
   Server,
   RefreshCw,
@@ -23,8 +21,6 @@ import pkg from '../../../package.json';
 export function SettingsView({
   globalOutputDir,
   onSelectOutputDir,
-  theme,
-  onThemeToggle,
   cookieBrowser,
   cookieStatus,
   cookieSyncDate,
@@ -74,88 +70,49 @@ export function SettingsView({
   };
 
   return (
-    <div className="space-y-4 max-w-4xl mx-auto w-full pb-6">
+    <div className="space-y-6 max-w-4xl mx-auto w-full pb-8">
       {/* General Preferences */}
       <Card className="surface-panel">
-        <CardContent className="space-y-4 p-4 sm:p-5">
-          <div className="flex items-center justify-between pb-3 border-b border-[var(--border-subdued)]">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-[8px] bg-purple-950/50 border border-purple-800/40 flex items-center justify-center text-accent-neon shadow-sm shrink-0">
-                <Settings className="w-4 h-4" />
+        <CardContent className="space-y-5 p-5 sm:p-6">
+          <div className="flex items-center justify-between pb-3.5 border-b border-[var(--border-subdued)]">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-purple-950/50 border border-purple-800/40 flex items-center justify-center text-accent-neon shadow-sm shrink-0">
+                <Settings className="w-4.5 h-4.5" />
               </div>
               <div>
-                <h2 className="text-sm sm:text-base font-bold text-[var(--text-primary)] tracking-tight">
-                  Preferences & Appearance
+                <h2 className="text-base sm:text-lg font-bold text-[var(--text-primary)] tracking-tight font-heading">
+                  Preferences &amp; System
                 </h2>
-                <p className="text-xs text-[var(--text-secondary)]">
-                  Configure output destination directory, visual theme, and desktop defaults.
+                <p className="text-xs sm:text-sm text-[var(--text-secondary)] mt-0.5 leading-relaxed">
+                  Configure output destination directory, browser authentication, and desktop defaults.
                 </p>
               </div>
             </div>
-            <Badge variant="default" size="sm">
+            <Badge variant="default" size="md">
               v{pkg.version}
             </Badge>
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-4">
             {/* Output Destination */}
-            <div className="p-3 bg-[var(--surface-2)]/70 border border-[var(--border-subdued)] rounded-[10px] flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
+            <div className="p-4 bg-[var(--surface-2)]/70 border border-[var(--border-subdued)] rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 shadow-sm">
               <div className="min-w-0 flex-1">
-                <span className="text-xs font-bold text-[var(--text-primary)] block">
+                <span className="text-sm font-bold text-[var(--text-primary)] block">
                   Default Destination Directory
                 </span>
-                <span className="font-mono text-xs text-[var(--text-secondary)] block mt-0.5 select-all truncate" title={globalOutputDir}>
+                <span className="font-mono text-xs sm:text-sm text-[var(--text-secondary)] block mt-1 select-all truncate" title={globalOutputDir}>
                   {globalOutputDir || 'System Default (~/Downloads)'}
                 </span>
               </div>
               <Button
                 variant="outline"
-                size="sm"
+                size="md"
                 onClick={onSelectOutputDir}
-                className="shrink-0 self-start sm:self-auto font-medium"
+                className="shrink-0 self-start sm:self-auto font-semibold text-xs sm:text-sm"
               >
-                <FolderOpen className="w-3.5 h-3.5" />
+                <FolderOpen className="w-4 h-4" />
                 <span>Change Directory</span>
               </Button>
-            </div>
-
-            {/* Theme Toggle Tiles */}
-            <div className="p-3.5 bg-[var(--surface-2)]/70 border border-[var(--border-subdued)] rounded-[10px] flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
-              <div>
-                <span className="text-xs font-bold text-[var(--text-primary)] block">
-                  Interface Theme
-                </span>
-                <span className="text-xs text-[var(--text-secondary)] block mt-0.5">
-                  Choose between high-contrast Cine Dark or Clean Studio Light.
-                </span>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => theme !== 'dark' && onThemeToggle()}
-                  className={`flex items-center gap-2 px-3.5 py-1.5 text-xs rounded-[8px] border transition-all duration-150 cursor-pointer ${
-                    theme === 'dark'
-                      ? 'bg-[var(--surface-1)] text-[var(--text-primary)] border-purple-500/50 shadow-sm font-bold'
-                      : 'bg-transparent text-[var(--text-secondary)] border-[var(--border-subdued)] hover:text-[var(--text-primary)]'
-                  }`}
-                >
-                  <Moon className="w-3.5 h-3.5 text-accent-neon" />
-                  <span>Dark Studio</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => theme !== 'light' && onThemeToggle()}
-                  className={`flex items-center gap-2 px-3.5 py-1.5 text-xs rounded-[8px] border transition-all duration-150 cursor-pointer ${
-                    theme === 'light'
-                      ? 'bg-[var(--surface-1)] text-[var(--text-primary)] border-purple-500/50 shadow-sm font-bold'
-                      : 'bg-transparent text-[var(--text-secondary)] border-[var(--border-subdued)] hover:text-[var(--text-primary)]'
-                  }`}
-                >
-                  <Sun className="w-3.5 h-3.5 text-amber-500" />
-                  <span>Light Studio</span>
-                </button>
-              </div>
             </div>
           </div>
         </CardContent>
@@ -163,35 +120,35 @@ export function SettingsView({
 
       {/* Browser Authentication */}
       <Card>
-        <CardContent className="space-y-4 p-4 sm:p-5">
-          <div className="flex items-center justify-between pb-2 border-b border-[var(--border-subdued)]">
-            <div className="flex items-center gap-2">
-              <div className="p-1.5 rounded-[6px] bg-[var(--accent-muted)] text-[var(--accent-primary)]">
-                <Cookie className="w-4 h-4" />
+        <CardContent className="space-y-5 p-5 sm:p-6">
+          <div className="flex items-center justify-between pb-3 border-b border-[var(--border-subdued)]">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 rounded-lg bg-[var(--accent-muted)] text-[var(--accent-primary)]">
+                <Cookie className="w-4.5 h-4.5" />
               </div>
               <div>
-                <h2 className="text-sm font-semibold text-[var(--text-primary)]">
+                <h2 className="text-base font-bold text-[var(--text-primary)] font-heading">
                   Browser Authentication
                 </h2>
-                <p className="text-[11px] text-[var(--text-secondary)] mt-0.5">
+                <p className="text-xs sm:text-sm text-[var(--text-secondary)] mt-0.5 leading-relaxed">
                   Authenticate your session to unlock age-restricted, private, and member-only YouTube streams.
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="p-3 bg-[var(--surface-2)]/70 border border-[var(--border-subdued)] rounded-[8px] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-xs font-semibold text-[var(--text-primary)]">
+          <div className="p-4 bg-[var(--surface-2)]/70 border border-[var(--border-subdued)] rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3.5">
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <span className="text-sm font-semibold text-[var(--text-primary)]">
                   Cookie Vault Status:
                 </span>
                 {renderStatusPill(cookieStatus === 'active' ? 'ONLINE' : cookieStatus)}
-                <span className="text-xs font-mono text-[var(--text-secondary)]">
+                <span className="text-xs sm:text-sm font-mono text-[var(--text-secondary)]">
                   ({cookieBrowser})
                 </span>
               </div>
-              <span className="text-[11px] text-[var(--text-secondary)] block">
+              <span className="text-xs sm:text-sm text-[var(--text-secondary)] block">
                 {cookieSyncDate
                   ? `Last synchronized: ${new Date(cookieSyncDate).toLocaleString()}`
                   : 'Cookies have not yet been synchronized on this workstation.'}
@@ -200,11 +157,11 @@ export function SettingsView({
 
             <Button
               variant={cookieStatus === 'active' ? 'outline' : 'primary'}
-              size="sm"
+              size="md"
               onClick={onOpenCookieWizard}
-              className="shrink-0 self-start sm:self-auto"
+              className="shrink-0 self-start sm:self-auto font-semibold text-xs sm:text-sm"
             >
-              <Cookie className="w-3.5 h-3.5" />
+              <Cookie className="w-4 h-4" />
               <span>{cookieStatus === 'active' ? 'Re-sync Cookies' : 'Configure Cookies'}</span>
             </Button>
           </div>
@@ -213,17 +170,17 @@ export function SettingsView({
 
       {/* System Status & Diagnostics */}
       <Card>
-        <CardContent className="space-y-4 p-4 sm:p-5">
-          <div className="flex items-center justify-between pb-2 border-b border-[var(--border-subdued)]">
-            <div className="flex items-center gap-2">
-              <div className="p-1.5 rounded-[6px] bg-[var(--accent-muted)] text-[var(--accent-primary)]">
-                <Server className="w-4 h-4" />
+        <CardContent className="space-y-5 p-5 sm:p-6">
+          <div className="flex items-center justify-between pb-3 border-b border-[var(--border-subdued)]">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 rounded-lg bg-[var(--accent-muted)] text-[var(--accent-primary)]">
+                <Server className="w-4.5 h-4.5" />
               </div>
               <div>
-                <h2 className="text-sm font-semibold text-[var(--text-primary)]">
+                <h2 className="text-base font-bold text-[var(--text-primary)] font-heading">
                   System Diagnostics
                 </h2>
-                <p className="text-[11px] text-[var(--text-secondary)] mt-0.5">
+                <p className="text-xs sm:text-sm text-[var(--text-secondary)] mt-0.5 leading-relaxed">
                   Verify runtime availability of Python binary, FFmpeg codecs, and shared DLL modules.
                 </p>
               </div>
@@ -231,28 +188,29 @@ export function SettingsView({
 
             <Button
               variant="outline"
-              size="sm"
+              size="md"
               onClick={onRefreshStatus}
               isLoading={isRefreshingStatus}
               title="Refresh component health"
+              className="text-xs sm:text-sm font-semibold"
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${isRefreshingStatus ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`w-4 h-4 ${isRefreshingStatus ? 'animate-spin' : ''}`} />
               <span>Refresh</span>
             </Button>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Backend Runtime */}
-            <div className="p-3 bg-[var(--surface-2)]/70 border border-[var(--border-subdued)] rounded-[8px]">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-xs font-semibold text-[var(--text-primary)] flex items-center gap-1.5">
-                  <Cpu className="w-3.5 h-3.5 text-[var(--accent-primary)]" />
+            <div className="p-4 bg-[var(--surface-2)]/70 border border-[var(--border-subdued)] rounded-xl">
+              <div className="flex items-center justify-between gap-2.5">
+                <span className="text-sm font-semibold text-[var(--text-primary)] flex items-center gap-2">
+                  <Cpu className="w-4 h-4 text-[var(--accent-primary)]" />
                   Python Backend
                 </span>
                 {renderStatusPill(systemStatus.backend?.state || 'CHECKING')}
               </div>
               <span
-                className="font-mono text-[10px] text-[var(--text-tertiary)] truncate block mt-1.5"
+                className="font-mono text-xs text-[var(--text-tertiary)] truncate block mt-2"
                 title={systemStatus.backend?.path}
               >
                 {systemStatus.backend?.path || 'Checking runtime path...'}
@@ -260,16 +218,16 @@ export function SettingsView({
             </div>
 
             {/* FFmpeg */}
-            <div className="p-3 bg-[var(--surface-2)]/70 border border-[var(--border-subdued)] rounded-[8px]">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-xs font-semibold text-[var(--text-primary)] flex items-center gap-1.5">
-                  <Server className="w-3.5 h-3.5 text-[var(--accent-primary)]" />
+            <div className="p-4 bg-[var(--surface-2)]/70 border border-[var(--border-subdued)] rounded-xl">
+              <div className="flex items-center justify-between gap-2.5">
+                <span className="text-sm font-semibold text-[var(--text-primary)] flex items-center gap-2">
+                  <Server className="w-4 h-4 text-[var(--accent-primary)]" />
                   FFmpeg Binary
                 </span>
                 {renderStatusPill(systemStatus.ffmpeg?.state || 'CHECKING')}
               </div>
               <span
-                className="font-mono text-[10px] text-[var(--text-tertiary)] truncate block mt-1.5"
+                className="font-mono text-xs text-[var(--text-tertiary)] truncate block mt-2"
                 title={systemStatus.ffmpeg?.path}
               >
                 {systemStatus.ffmpeg?.path || 'Checking binary path...'}
@@ -277,16 +235,16 @@ export function SettingsView({
             </div>
 
             {/* FFprobe */}
-            <div className="p-3 bg-[var(--surface-2)]/70 border border-[var(--border-subdued)] rounded-[8px]">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-xs font-semibold text-[var(--text-primary)] flex items-center gap-1.5">
-                  <Server className="w-3.5 h-3.5 text-[var(--accent-primary)]" />
+            <div className="p-4 bg-[var(--surface-2)]/70 border border-[var(--border-subdued)] rounded-xl">
+              <div className="flex items-center justify-between gap-2.5">
+                <span className="text-sm font-semibold text-[var(--text-primary)] flex items-center gap-2">
+                  <Server className="w-4 h-4 text-[var(--accent-primary)]" />
                   FFprobe Binary
                 </span>
                 {renderStatusPill(systemStatus.ffprobe?.state || 'CHECKING')}
               </div>
               <span
-                className="font-mono text-[10px] text-[var(--text-tertiary)] truncate block mt-1.5"
+                className="font-mono text-xs text-[var(--text-tertiary)] truncate block mt-2"
                 title={systemStatus.ffprobe?.path}
               >
                 {systemStatus.ffprobe?.path || 'Checking probe path...'}
@@ -294,17 +252,17 @@ export function SettingsView({
             </div>
 
             {/* Developer Logs Action */}
-            <div className="p-3 bg-[var(--surface-2)]/70 border border-[var(--border-subdued)] rounded-[8px] flex items-center justify-between gap-2.5">
+            <div className="p-4 bg-[var(--surface-2)]/70 border border-[var(--border-subdued)] rounded-xl flex items-center justify-between gap-3">
               <div className="min-w-0 pr-1">
-                <span className="text-xs font-semibold text-[var(--text-primary)] block truncate">
+                <span className="text-sm font-semibold text-[var(--text-primary)] block truncate">
                   Developer Logs
                 </span>
-                <span className="text-[10px] text-[var(--text-tertiary)] block mt-0.5 truncate">
+                <span className="text-xs text-[var(--text-tertiary)] block mt-0.5 truncate">
                   Monitor subprocess streams
                 </span>
               </div>
-              <Button variant="secondary" size="sm" onClick={handleOpenLogs} className="shrink-0 whitespace-nowrap">
-                <Terminal className="w-3.5 h-3.5" />
+              <Button variant="secondary" size="md" onClick={handleOpenLogs} className="shrink-0 whitespace-nowrap text-xs sm:text-sm font-semibold">
+                <Terminal className="w-4 h-4" />
                 <span>Show Logs</span>
               </Button>
             </div>
@@ -316,18 +274,18 @@ export function SettingsView({
               <button
                 type="button"
                 onClick={() => setShowDlls(!showDlls)}
-                className="flex items-center justify-between w-full p-2 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+                className="flex items-center justify-between w-full p-2.5 text-xs sm:text-sm font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors rounded-lg hover:bg-[var(--surface-hover)]"
               >
                 <span>Bundled Shared Libraries ({systemStatus.dlls.length} DLLs detected)</span>
-                {showDlls ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                {showDlls ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
               </button>
 
               {showDlls && (
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2 p-2 bg-[var(--surface-2)]/60 rounded-[6px] border border-[var(--border-subdued)]">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 mt-2.5 p-3 bg-[var(--surface-2)]/60 rounded-xl border border-[var(--border-subdued)]">
                   {systemStatus.dlls.map((dll) => (
                     <div
                       key={dll.name}
-                      className="p-1.5 bg-[var(--surface-1)] rounded-[4px] border border-[var(--border-subdued)] text-[10px] font-mono flex items-center justify-between"
+                      className="p-2 bg-[var(--surface-1)] rounded-lg border border-[var(--border-subdued)] text-xs font-mono flex items-center justify-between"
                       title={dll.path}
                     >
                       <span className="truncate mr-1 text-[var(--text-primary)]">{dll.name}</span>

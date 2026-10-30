@@ -36,38 +36,6 @@
     --border: var(--border-subdued);
   }
 
-  /* Light theme (Obsidian Slate Studio) */
-  [data-theme="light"],
-  .light {
-    --bg-base: #F8F7FA;
-    --surface-1: #FFFFFF;
-    --surface-2: #F1EFF5;
-    --surface-hover: #E6E2EE;
-    --border-subdued: rgba(100, 70, 130, 0.14);
-    --border-strong: rgba(100, 70, 130, 0.26);
-    --text-primary: #17151D;
-    --text-secondary: #635C6E;
-    --text-tertiary: #958D9E;
-    --accent-primary: #8433C4;
-    --accent-hover: #7124AF;
-    --accent-muted: rgba(132, 51, 196, 0.12);
-    --accent-neon: #9D4EDD;
-    --accent-cyan: #0099A8;
-    --focus-ring: #8433C4;
-    --status-success: #059669;
-    --status-warning: #D97706;
-    --status-danger: #DC2626;
-    --status-info: #0284C7;
-
-    /* Backward compatibility mappings */
-    --bg: var(--bg-base);
-    --surface: var(--surface-1);
-    --primary: var(--accent-primary);
-    --primary-rgb: 132, 51, 196;
-    --primary-hover: var(--accent-hover);
-    --border: var(--border-subdued);
-  }
-
   html, body, #root {
     height: 100%;
     margin: 0;
@@ -160,10 +128,10 @@
     align-items: center;
     justify-content: center;
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-    font-size: 10px;
+    font-size: 11px;
     font-weight: 600;
     line-height: 1;
-    padding: 0.15rem 0.35rem;
+    padding: 0.2rem 0.45rem;
     border-radius: 4px;
     background-color: var(--surface-2);
     color: var(--text-tertiary);

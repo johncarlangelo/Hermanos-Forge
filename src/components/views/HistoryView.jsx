@@ -108,21 +108,21 @@ export function HistoryView({
   };
 
   return (
-    <div className="space-y-4 max-w-4xl mx-auto w-full pb-6">
+    <div className="space-y-6 max-w-4xl mx-auto w-full pb-8">
       <Card className="surface-panel">
-        <CardContent className="space-y-4 p-4 sm:p-5">
+        <CardContent className="space-y-5 p-5 sm:p-6">
           {/* Header */}
-          <div className="space-y-2 pb-3 border-b border-[var(--border-subdued)]">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-8 h-8 rounded-[8px] bg-purple-950/50 border border-purple-800/40 flex items-center justify-center text-accent-neon shadow-sm shrink-0">
-                  <Clock className="w-4 h-4" />
+          <div className="space-y-2 pb-3.5 border-b border-[var(--border-subdued)]">
+            <div className="flex flex-wrap items-center justify-between gap-3.5">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-9 h-9 rounded-xl bg-purple-950/50 border border-purple-800/40 flex items-center justify-center text-accent-neon shadow-sm shrink-0">
+                  <Clock className="w-4.5 h-4.5" />
                 </div>
-                <div className="flex items-center gap-2 flex-wrap min-w-0">
-                  <h2 className="text-sm sm:text-base font-bold text-[var(--text-primary)] tracking-tight">
-                    Download History & Archive
+                <div className="flex items-center gap-2.5 flex-wrap min-w-0">
+                  <h2 className="text-base sm:text-lg font-bold text-[var(--text-primary)] tracking-tight font-heading">
+                    Download History &amp; Archive
                   </h2>
-                  <Badge variant="default" size="sm">
+                  <Badge variant="default" size="md">
                     {history.length} {history.length === 1 ? 'Record' : 'Records'}
                   </Badge>
                 </div>
@@ -131,23 +131,23 @@ export function HistoryView({
               {history.length > 0 && (
                 <Button
                   variant="ghost"
-                  size="sm"
+                  size="md"
                   onClick={onOpenClearModal}
-                  className="text-rose-400 hover:bg-rose-500/10 hover:text-rose-300 font-medium shrink-0"
+                  className="text-rose-400 hover:bg-rose-500/10 hover:text-rose-300 font-semibold text-xs sm:text-sm shrink-0"
                 >
-                  <Trash2 className="w-3.5 h-3.5" />
+                  <Trash2 className="w-4 h-4" />
                   <span>Clear Archive</span>
                 </Button>
               )}
             </div>
 
-            <p className="text-xs text-[var(--text-secondary)]">
+            <p className="text-xs sm:text-sm text-[var(--text-secondary)] leading-relaxed">
               Review previously processed downloads, open local file destinations, and manage logs.
             </p>
           </div>
 
           {/* Subtabs and Search Bar */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
             <div className="overflow-x-auto pb-1 sm:pb-0">
               <Tabs
                 tabs={subTabs}
@@ -156,12 +156,12 @@ export function HistoryView({
                   setActiveSubTab(tab);
                   setCurrentPage(1);
                 }}
-                size="sm"
+                size="md"
                 layoutId="history-subtab-pill"
               />
             </div>
 
-            <div className="w-full sm:w-60 shrink-0">
+            <div className="w-full sm:w-64 shrink-0">
               <Input
                 type="text"
                 size="md"
@@ -171,7 +171,7 @@ export function HistoryView({
                   setSearchQuery(e.target.value);
                   setCurrentPage(1);
                 }}
-                leftIcon={<Search className="w-3.5 h-3.5 text-[var(--text-tertiary)]" />}
+                leftIcon={<Search className="w-4 h-4 text-[var(--text-tertiary)]" />}
                 rightIcon={
                   searchQuery ? (
                     <button
@@ -180,23 +180,24 @@ export function HistoryView({
                       aria-label="Clear search"
                       className="p-1 text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
                     >
-                      <X className="w-3.5 h-3.5" />
+                      <X className="w-4 h-4" />
                     </button>
                   ) : null
                 }
+                className="text-xs sm:text-sm"
               />
             </div>
           </div>
 
           {/* History List */}
-          <div className="space-y-2 min-h-[300px]">
+          <div className="space-y-3 min-h-[300px]">
             {filteredHistory.length === 0 ? (
-              <div className="flex flex-col items-center justify-center p-12 text-center border border-dashed border-[var(--border-subdued)] rounded-[8px]">
+              <div className="flex flex-col items-center justify-center p-12 text-center border border-dashed border-[var(--border-subdued)] rounded-xl">
                 <FolderOpen className="w-10 h-10 text-[var(--text-tertiary)] opacity-60 mb-2" />
-                <span className="text-xs font-semibold text-[var(--text-secondary)]">
+                <span className="text-sm font-bold text-[var(--text-secondary)]">
                   No records found
                 </span>
-                <p className="text-[11px] text-[var(--text-tertiary)] mt-1 max-w-xs">
+                <p className="text-xs sm:text-sm text-[var(--text-tertiary)] mt-1.5 max-w-sm leading-relaxed">
                   {searchQuery
                     ? `No downloads match "${searchQuery}". Try a different keyword.`
                     : `No completed downloads recorded in this section yet.`}
@@ -206,45 +207,45 @@ export function HistoryView({
               paginatedItems.map((item) => (
                 <div
                   key={item.id}
-                  className="p-3 bg-[var(--surface-2)]/70 border border-[var(--border-subdued)] rounded-[8px] hover:bg-[var(--surface-hover)] transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                  className="p-4 bg-[var(--surface-2)]/70 border border-[var(--border-subdued)] rounded-xl hover:bg-[var(--surface-hover)] transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4"
                 >
-                  <div className="flex items-start gap-3 min-w-0">
-                    <div className="p-2 rounded-[6px] bg-[var(--surface-1)] border border-[var(--border-subdued)] shrink-0 mt-0.5">
+                  <div className="flex items-start gap-3.5 min-w-0">
+                    <div className="p-2.5 rounded-lg bg-[var(--surface-1)] border border-[var(--border-subdued)] shrink-0 mt-0.5">
                       {getItemIcon(item.type)}
                     </div>
-                    <div className="min-w-0 flex-1 space-y-0.5">
-                      <div className="flex items-center gap-2">
+                    <div className="min-w-0 flex-1 space-y-1">
+                      <div className="flex items-center gap-2.5">
                         <span
-                          className="text-xs font-semibold text-[var(--text-primary)] truncate block"
+                          className="text-sm font-bold text-[var(--text-primary)] truncate block"
                           title={item.filename}
                         >
                           {item.filename || 'Downloaded Media'}
                         </span>
-                        <Badge variant="default" size="sm" className="uppercase font-mono text-[9px]">
+                        <Badge variant="default" size="sm" className="uppercase font-mono text-xs px-2 py-0.5 font-bold">
                           {item.type}
                         </Badge>
                       </div>
 
                       {item.durationTimestamp && (
-                        <span className="text-[11px] font-mono text-[var(--accent-primary)] block">
+                        <span className="text-xs sm:text-sm font-mono text-[var(--accent-primary)] font-semibold block">
                           Cut Range: {item.durationTimestamp}
                         </span>
                       )}
 
                       <span
-                        className="text-[11px] text-[var(--text-secondary)] truncate block font-mono cursor-pointer hover:text-[var(--accent-primary)] transition-colors"
+                        className="text-xs sm:text-sm text-[var(--text-secondary)] truncate block font-mono cursor-pointer hover:text-[var(--accent-primary)] transition-colors"
                         onClick={() => handleCopyUrl(item.url)}
                         title="Click to copy URL"
                       >
                         {item.url}
                       </span>
 
-                      <div className="flex items-center gap-2 text-[10px] text-[var(--text-tertiary)] font-mono">
+                      <div className="flex items-center gap-2 text-xs text-[var(--text-tertiary)] font-mono">
                         <span>{item.date}</span>
                         {item.filepath && (
                           <>
                             <span className="opacity-40">•</span>
-                            <span className="truncate max-w-[280px]" title={item.filepath}>
+                            <span className="truncate max-w-[320px]" title={item.filepath}>
                               {item.filepath}
                             </span>
                           </>
@@ -254,36 +255,36 @@ export function HistoryView({
                   </div>
 
                   {/* Actions */}
-                  <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-center">
+                  <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
                     <Button
                       variant="outline"
-                      size="iconSm"
+                      size="icon"
                       onClick={() => handleCopyUrl(item.url)}
                       title="Copy URL"
                       aria-label="Copy URL"
                     >
-                      <Copy className="w-3.5 h-3.5" />
+                      <Copy className="w-4 h-4" />
                     </Button>
                     {item.filepath && (
                       <Button
                         variant="outline"
-                        size="iconSm"
+                        size="icon"
                         onClick={() => handleOpenLocation(item.filepath)}
                         title="Show in File Explorer"
                         aria-label="Open in File Explorer"
                       >
-                        <ExternalLink className="w-3.5 h-3.5" />
+                        <ExternalLink className="w-4 h-4" />
                       </Button>
                     )}
                     <Button
                       variant="ghost"
-                      size="iconSm"
+                      size="icon"
                       onClick={() => onDeleteHistoryItem(item.id)}
                       title="Remove record from history"
                       aria-label="Delete history record"
                       className="text-[var(--text-secondary)] hover:text-[var(--status-danger)] hover:bg-[var(--status-danger)]/10"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>
                 </div>
@@ -293,34 +294,34 @@ export function HistoryView({
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-between pt-3 border-t border-[var(--border-subdued)]">
-              <span className="text-[11px] text-[var(--text-secondary)] font-mono">
+            <div className="flex items-center justify-between pt-3.5 border-t border-[var(--border-subdued)]">
+              <span className="text-xs text-[var(--text-secondary)] font-mono">
                 Showing {(safePage - 1) * itemsPerPage + 1}–
                 {Math.min(safePage * itemsPerPage, filteredHistory.length)} of{' '}
                 {filteredHistory.length} items
               </span>
 
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
-                  size="iconSm"
+                  size="icon"
                   disabled={safePage === 1}
                   onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                   aria-label="Previous page"
                 >
-                  <ChevronLeft className="w-3.5 h-3.5" />
+                  <ChevronLeft className="w-4 h-4" />
                 </Button>
-                <span className="text-xs font-mono px-2 text-[var(--text-primary)]">
+                <span className="text-xs sm:text-sm font-mono px-2.5 text-[var(--text-primary)] font-bold">
                   {safePage} / {totalPages}
                 </span>
                 <Button
                   variant="outline"
-                  size="iconSm"
+                  size="icon"
                   disabled={safePage === totalPages}
                   onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                   aria-label="Next page"
                 >
-                  <ChevronRight className="w-3.5 h-3.5" />
+                  <ChevronRight className="w-4 h-4" />
                 </Button>
               </div>
             </div>

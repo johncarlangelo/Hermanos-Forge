@@ -3,7 +3,6 @@ import {
   Scissors,
   Plus,
   Trash2,
-  FolderOpen,
   Loader2,
   CheckCircle,
   AlertCircle,
@@ -12,7 +11,7 @@ import {
   OctagonX,
   Download,
   ListVideo,
-  ClipboardPaste,
+  GripVertical,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -54,6 +53,9 @@ export function MassClipView({
     }
     return [makeClip(), makeClip()];
   });
+
+  const [draggedIndex, setDraggedIndex] = useState(null);
+  const [dragOverIndex, setDragOverIndex] = useState(null);
 
   useEffect(() => {
     localStorage.setItem('mass-clips', JSON.stringify(clips));
@@ -257,56 +259,88 @@ export function MassClipView({
     }
   };
 
-  const handlePasteBatch = async () => {
-    try {
-      const text = await navigator.clipboard.readText();
-      if (!text) return;
-      const lines = text
-        .split(/[\r\n]+/)
-        .map((l) => l.trim())
-        .filter((l) => l.startsWith('http://') || l.startsWith('https://'));
-      if (lines.length === 0) {
-        toast.error('No valid URLs found in clipboard.');
-        return;
-      }
-
-      setClips((prev) => {
-        const existingEmptyIndex = prev.findIndex((c) => !c.url.trim());
-        const newClips = [...prev];
-        lines.forEach((url, i) => {
-          if (i === 0 && existingEmptyIndex !== -1) {
-            newClips[existingEmptyIndex] = { ...newClips[existingEmptyIndex], url };
-          } else {
-            newClips.push({ id: crypto.randomUUID(), url, state: ROW_STATE.IDLE, message: '' });
-          }
-        });
-        return newClips;
-      });
-      toast.success(`Added ${lines.length} URLs from clipboard!`);
-    } catch {
-      toast.error('Failed to read clipboard.');
+  const handleDragStart = (e, index) => {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON' || e.target.closest('button')) {
+      e.preventDefault();
+      return;
     }
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', String(index));
+  };
+
+  const handleDragOver = (e, index) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (dragOverIndex !== index) {
+      setDragOverIndex(index);
+    }
+  };
+
+  const handleDragLeave = () => {
+    // Keep hover active until drag over another element or end
+  };
+
+  const handleDrop = (e, targetIndex) => {
+    e.preventDefault();
+    if (draggedIndex !== null) {
+      if (draggedIndex !== targetIndex) {
+        setClips((prev) => {
+          const updated = [...prev];
+          const [movedItem] = updated.splice(draggedIndex, 1);
+          updated.splice(targetIndex, 0, movedItem);
+          return updated;
+        });
+      }
+      setDraggedIndex(null);
+      setDragOverIndex(null);
+      return;
+    }
+
+    // Handle external URL drag-and-drop from web browsers or other apps
+    const droppedText =
+      e.dataTransfer.getData('text/uri-list') ||
+      e.dataTransfer.getData('text/plain');
+    if (droppedText && droppedText.trim()) {
+      const firstLine = droppedText.trim().split(/\r?\n/)[0].trim();
+      if (firstLine) {
+        setClips((prev) =>
+          prev.map((c, i) =>
+            i === targetIndex
+              ? { ...c, url: firstLine, state: ROW_STATE.IDLE, message: '' }
+              : c
+          )
+        );
+      }
+    }
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
+    setDragOverIndex(null);
   };
 
   const validUrlsCount = clips.filter((c) => c.url.trim()).length;
 
   return (
-    <div className="space-y-4 max-w-4xl mx-auto w-full pb-6">
+    <div className="space-y-6 max-w-4xl mx-auto w-full pb-8">
       {/* Clip Queue Studio Card */}
       <Card className="surface-panel">
-        <CardContent className="space-y-4 p-4 sm:p-5">
+        <CardContent className="space-y-5 p-5 sm:p-6">
           {/* Header */}
-          <div className="space-y-2 pb-3 border-b border-[var(--border-subdued)]">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-8 h-8 rounded-[8px] bg-purple-950/50 border border-purple-800/40 flex items-center justify-center text-accent-neon shadow-sm shrink-0">
-                  <Scissors className="w-4 h-4" />
+          <div className="space-y-2 pb-3.5 border-b border-[var(--border-subdued)]">
+            <div className="flex flex-wrap items-center justify-between gap-3.5">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-9 h-9 rounded-xl bg-purple-950/50 border border-purple-800/40 flex items-center justify-center text-accent-neon shadow-sm shrink-0">
+                  <Scissors className="w-4.5 h-4.5" />
                 </div>
-                <div className="flex items-center gap-2 flex-wrap min-w-0">
-                  <h2 className="text-sm sm:text-base font-bold text-[var(--text-primary)] tracking-tight">
-                    Batch Clip Downloader & Stitcher
+                <div className="flex items-center gap-2.5 flex-wrap min-w-0">
+                  <h2 className="text-base sm:text-lg font-bold text-[var(--text-primary)] tracking-tight font-heading">
+                    Batch Clip Downloader &amp; Stitcher
                   </h2>
-                  <Badge variant="accent" size="sm">
+                  <Badge variant="accent" size="md">
                     {validUrlsCount} {validUrlsCount === 1 ? 'Clip' : 'Clips'} Queued
                   </Badge>
                 </div>
@@ -314,20 +348,11 @@ export function MassClipView({
 
               <div className="flex items-center gap-2 shrink-0">
                 <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={handlePasteBatch}
-                  disabled={isProcessing || isCoolingDown}
-                  title="Paste multiple links from clipboard"
-                >
-                  <ClipboardPaste className="w-3.5 h-3.5" />
-                  <span>Paste Batch</span>
-                </Button>
-                <Button
                   variant="outline"
                   size="sm"
                   onClick={addClip}
                   disabled={isProcessing || isCoolingDown}
+                  className="font-medium text-xs sm:text-sm"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   <span>Add URL</span>
@@ -337,7 +362,7 @@ export function MassClipView({
                   size="sm"
                   onClick={clearAll}
                   disabled={isProcessing || isCoolingDown || validUrlsCount === 0}
-                  className="text-[var(--status-danger)] hover:bg-[var(--status-danger)]/10"
+                  className="text-[var(--status-danger)] hover:bg-[var(--status-danger)]/10 font-medium text-xs sm:text-sm"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                   <span>Clear</span>
@@ -345,117 +370,118 @@ export function MassClipView({
               </div>
             </div>
 
-            <p className="text-xs text-[var(--text-secondary)]">
+            <p className="text-xs sm:text-sm text-[var(--text-secondary)] leading-relaxed">
               Download sequential video clips and merge them automatically using FFmpeg concat.
             </p>
           </div>
 
           {/* Sequential Stitching Mode Explainer */}
-          <div className="p-3 bg-gradient-to-r from-[var(--surface-2)] to-transparent border border-[var(--border-subdued)] rounded-[10px] flex items-center gap-2.5 text-xs text-[var(--text-secondary)]">
-            <ListVideo className="w-4 h-4 text-[var(--accent-primary)] shrink-0" />
+          <div className="p-3.5 bg-gradient-to-r from-[var(--surface-2)] to-transparent border border-[var(--border-subdued)] rounded-xl flex items-center gap-3 text-xs sm:text-sm text-[var(--text-secondary)] leading-relaxed">
+            <ListVideo className="w-5 h-5 text-[var(--accent-primary)] shrink-0" />
             <span>
               Clips are processed in exact order from top to bottom. When stitching is selected, a lossless unified <span className="font-mono text-[var(--text-primary)] font-semibold">.mp4</span> file is generated.
             </span>
           </div>
 
-          {/* Interactive Clip Cards Queue */}
-          <div className="space-y-2.5 max-h-80 overflow-y-auto pr-1 custom-scrollbar">
+          {/* Interactive Clip Cards Queue with Static Left Numbers */}
+          <div className="space-y-3 max-h-96 overflow-y-auto pr-1.5 custom-scrollbar">
             {clips.map((clip, index) => (
-              <div
-                key={clip.id}
-                className={`p-3 rounded-[10px] border transition-all duration-150 ${
-                  clip.state === ROW_STATE.ERROR
-                    ? 'border-rose-500/40 bg-rose-500/5'
-                    : clip.state === ROW_STATE.DONE
-                    ? 'border-emerald-500/40 bg-emerald-500/5'
-                    : clip.state === ROW_STATE.DOWNLOADING
-                    ? 'border-purple-500/50 bg-purple-500/10 shadow-sm shadow-purple-950/40'
-                    : 'border-[var(--border-subdued)] bg-[var(--surface-2)]/80 hover:border-[var(--border-strong)]'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-6 h-6 rounded-full bg-[var(--surface-1)] border border-[var(--border-subdued)] flex items-center justify-center shrink-0">
-                    <span className="font-mono text-[11px] font-bold text-[var(--text-secondary)]">
-                      {index + 1}
-                    </span>
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    <Input
-                      type="text"
-                      size="sm"
-                      value={clip.url}
-                      onChange={(e) => updateClipUrl(clip.id, e.target.value)}
-                      placeholder="Paste YouTube clip or video URL..."
-                      disabled={isProcessing || isCoolingDown}
-                      className="bg-[var(--surface-1)]"
-                    />
-                  </div>
-
-                  <div className="shrink-0">
-                    {renderStatusBadge(clip.state)}
-                  </div>
-
-                  <Button
-                    variant="ghost"
-                    size="iconSm"
-                    onClick={() => removeClipRow(clip.id)}
-                    disabled={isProcessing || isCoolingDown || clips.length <= 1}
-                    aria-label={`Remove clip ${index + 1}`}
-                    title="Remove clip"
-                    className="text-[var(--text-tertiary)] hover:text-rose-400"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </Button>
+              <div key={clip.id} className="flex items-center gap-3">
+                {/* Static Number on the Left - Stays in place */}
+                <div className="w-8 h-8 rounded-full bg-[var(--surface-1)] border border-[var(--border-subdued)] flex items-center justify-center shrink-0 select-none shadow-sm">
+                  <span className="font-mono text-xs sm:text-sm font-bold text-purple-300">
+                    {index + 1}
+                  </span>
                 </div>
 
-                {clip.state === ROW_STATE.ERROR && clip.message && (
-                  <p className="text-[11px] text-rose-400 pl-9 mt-1.5 font-mono">
-                    {clip.message}
-                  </p>
-                )}
+                {/* Draggable Row Card */}
+                <div
+                  draggable={!isProcessing && !isCoolingDown}
+                  onDragStart={(e) => handleDragStart(e, index)}
+                  onDragOver={(e) => handleDragOver(e, index)}
+                  onDragLeave={handleDragLeave}
+                  onDrop={(e) => handleDrop(e, index)}
+                  onDragEnd={handleDragEnd}
+                  className={`flex-1 p-3 sm:p-3.5 rounded-xl border transition-all duration-150 ${
+                    dragOverIndex === index
+                      ? 'border-accent-violet ring-2 ring-accent-violet/40 bg-purple-950/30'
+                      : draggedIndex === index
+                      ? 'opacity-40 border-purple-800/40 bg-obsidian-950'
+                      : clip.state === ROW_STATE.ERROR
+                      ? 'border-rose-500/40 bg-rose-500/5'
+                      : clip.state === ROW_STATE.DONE
+                      ? 'border-emerald-500/40 bg-emerald-500/5'
+                      : clip.state === ROW_STATE.DOWNLOADING
+                      ? 'border-purple-500/50 bg-purple-500/10 shadow-sm shadow-purple-950/40'
+                      : 'border-[var(--border-subdued)] bg-[var(--surface-2)]/80 hover:border-[var(--border-strong)]'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    {/* Drag Handle */}
+                    <div
+                      className={`text-slate-500 hover:text-purple-300 transition shrink-0 ${
+                        isProcessing || isCoolingDown
+                          ? 'opacity-30 cursor-not-allowed'
+                          : 'cursor-grab active:cursor-grabbing'
+                      }`}
+                      title="Drag to reorder"
+                    >
+                      <GripVertical className="w-4 h-4" />
+                    </div>
+
+                    <div
+                      onDragStart={(e) => e.stopPropagation()}
+                      className="flex-1 min-w-0"
+                    >
+                      <Input
+                        type="text"
+                        size="md"
+                        value={clip.url}
+                        onChange={(e) => updateClipUrl(clip.id, e.target.value)}
+                        placeholder="Paste YouTube clip or video URL..."
+                        disabled={isProcessing || isCoolingDown}
+                        className="bg-[var(--surface-1)] font-mono text-xs sm:text-sm"
+                      />
+                    </div>
+
+                    <div className="shrink-0">
+                      {renderStatusBadge(clip.state)}
+                    </div>
+
+                    <div onDragStart={(e) => e.stopPropagation()}>
+                      <Button
+                        variant="ghost"
+                        size="iconSm"
+                        onClick={() => removeClipRow(clip.id)}
+                        disabled={isProcessing || isCoolingDown || clips.length <= 1}
+                        aria-label={`Remove clip ${index + 1}`}
+                        title="Remove clip"
+                        className="text-[var(--text-tertiary)] hover:text-rose-400"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  {clip.state === ROW_STATE.ERROR && clip.message && (
+                    <p className="text-xs text-rose-400 pl-7 mt-2 font-mono">
+                      {clip.message}
+                    </p>
+                  )}
+                </div>
               </div>
             ))}
           </div>
 
-          {/* Destination Directory Strip */}
-          <div className="p-3 bg-[var(--surface-2)]/60 border border-[var(--border-subdued)] rounded-[10px] flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="p-1.5 rounded-[6px] bg-[var(--surface-1)] text-[var(--accent-primary)] border border-[var(--border-subdued)] shrink-0">
-                <FolderOpen className="w-4 h-4" />
-              </div>
-              <div className="min-w-0">
-                <span className="text-[10px] uppercase font-bold text-[var(--text-tertiary)] block">
-                  Output Directory
-                </span>
-                <span
-                  className="font-mono text-xs text-[var(--text-primary)] truncate block font-medium"
-                  title={globalOutputDir || 'Default downloads folder'}
-                >
-                  {globalOutputDir || 'System Default (~/Downloads)'}
-                </span>
-              </div>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onRequestGlobalOutput}
-              disabled={isProcessing || isCoolingDown}
-              className="shrink-0 font-medium"
-            >
-              Browse
-            </Button>
-          </div>
-
           {/* Status Message Line */}
           {globalStatus && (
-            <div className="p-3 rounded-[10px] bg-gradient-to-r from-purple-950/60 to-transparent border border-purple-500/30 flex items-center justify-between text-xs text-purple-200 font-medium shadow-sm">
-              <div className="flex items-center gap-2.5">
+            <div className="p-3.5 rounded-xl bg-gradient-to-r from-purple-950/60 to-transparent border border-purple-500/30 flex items-center justify-between text-xs sm:text-sm text-purple-200 font-medium shadow-sm">
+              <div className="flex items-center gap-3">
                 <Loader2 className="w-4 h-4 text-accent-neon animate-spin" />
                 <span>{globalStatus}</span>
               </div>
               {isCoolingDown && (
-                <span className="text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full bg-purple-950/70 border border-purple-700/50 text-purple-200">
+                <span className="text-xs uppercase tracking-wider font-bold px-2.5 py-0.5 rounded-full bg-purple-950/70 border border-purple-700/50 text-purple-200">
                   Auto-Reset Active
                 </span>
               )}
@@ -463,15 +489,15 @@ export function MassClipView({
           )}
 
           {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row items-center gap-3 pt-2 border-t border-[var(--border-subdued)]">
+          <div className="flex flex-col sm:flex-row items-center gap-3.5 pt-3 border-t border-[var(--border-subdued)]">
             {!isProcessing ? (
               <>
                 <Button
                   variant="secondary"
                   size="lg"
                   onClick={() => startStitching(true)}
-                  disabled={!globalOutputDir || isCoolingDown || validUrlsCount === 0}
-                  className="w-full sm:flex-1 font-semibold"
+                  disabled={isCoolingDown || validUrlsCount === 0}
+                  className="w-full sm:flex-1 font-semibold text-xs sm:text-sm py-3"
                 >
                   <Download className="w-4 h-4" />
                   Download Separate Files ({validUrlsCount})
@@ -480,8 +506,8 @@ export function MassClipView({
                   variant="primary"
                   size="lg"
                   onClick={() => startStitching(false)}
-                  disabled={!globalOutputDir || isCoolingDown || validUrlsCount === 0}
-                  className="w-full sm:flex-[2] font-bold shadow-md"
+                  disabled={isCoolingDown || validUrlsCount === 0}
+                  className="w-full sm:flex-[2] font-bold text-sm sm:text-base py-3 shadow-glow-violet"
                 >
                   <Scissors className="w-4 h-4" />
                   Stitch into Single Video ({validUrlsCount} Clips)
@@ -489,7 +515,7 @@ export function MassClipView({
               </>
             ) : (
               <div className="w-full flex items-center gap-3">
-                <div className="flex-1 flex items-center gap-2.5 p-2.5 rounded-[8px] bg-[var(--surface-2)] text-xs text-[var(--text-secondary)]">
+                <div className="flex-1 flex items-center gap-2.5 p-3 rounded-xl bg-[var(--surface-2)] text-xs sm:text-sm text-[var(--text-secondary)]">
                   <ListVideo className="w-4 h-4 text-[var(--accent-primary)] animate-pulse" />
                   <span>Sequential batch engine running. Completed clips are stored locally.</span>
                 </div>
@@ -497,7 +523,7 @@ export function MassClipView({
                   variant="destructive"
                   size="lg"
                   onClick={() => setShowCancelModal(true)}
-                  className="w-40 font-bold"
+                  className="w-44 font-bold text-sm"
                 >
                   <OctagonX className="w-4 h-4" />
                   Cancel All
@@ -515,20 +541,33 @@ export function MassClipView({
         title="Cancel Stitch Operation?"
         maxWidth="max-w-sm"
       >
-        <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
-          Are you sure you want to stop the current batch download and stitch process?
-          Any clips that have already completed downloading will be kept in your destination folder.
-        </p>
+        <div className="flex items-start gap-3.5">
+          <div className="p-2.5 rounded-lg bg-[var(--status-danger)]/15 text-[var(--status-danger)] shrink-0">
+            <OctagonX className="w-5 h-5" />
+          </div>
+          <div>
+            <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
+              Are you sure you want to stop the current batch download and stitch process?
+              Any clips that have already completed downloading will be kept in your destination folder.
+            </p>
+          </div>
+        </div>
 
         <DialogFooter className="mt-4 -mx-5 -mb-5 px-5">
           <Button
             variant="secondary"
-            size="sm"
+            size="md"
             onClick={() => setShowCancelModal(false)}
+            className="text-xs sm:text-sm font-semibold"
           >
             Keep Going
           </Button>
-          <Button variant="destructive" size="sm" onClick={confirmCancel}>
+          <Button
+            variant="destructive"
+            size="md"
+            onClick={confirmCancel}
+            className="text-xs sm:text-sm font-semibold"
+          >
             Yes, Cancel
           </Button>
         </DialogFooter>

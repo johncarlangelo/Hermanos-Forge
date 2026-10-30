@@ -31,9 +31,9 @@ export function Badge({
   };
 
   const sizes = {
-    sm: 'px-2.5 py-0.5 text-[10px] gap-1.5 rounded-full',
-    md: 'px-2.5 py-0.5 text-[11px] gap-1.5 rounded-full',
-    lg: 'px-3 py-1 text-xs gap-2 rounded-full font-semibold',
+    sm: 'px-2.5 py-0.5 text-xs gap-1.5 rounded-full font-medium',
+    md: 'px-3 py-1 text-xs gap-1.5 rounded-full font-semibold',
+    lg: 'px-3.5 py-1 text-sm gap-2 rounded-full font-semibold',
   };
 
   return (

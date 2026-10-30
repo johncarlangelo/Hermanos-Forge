@@ -63,10 +63,8 @@ For technical architecture, design tokens, active tasks, and decision records, r
   - Obsidian Scale (Tailwind `colors.obsidian`): `obsidian-950` (`#09090C`), `obsidian-900` (`#0E0E13`), `obsidian-850` (`#13131A`), `obsidian-800` (`#181824`), `obsidian-750` (`#1F1F2E`), `obsidian-700` (`#28283D`), `obsidian-600` (`#3D3D5C`)
   - Accent Scale (Tailwind `colors.accent`): `accent-violet` (`#9D4EDD`), `accent-amethyst` (`#B5179E`), `accent-purple` (`#A855F7`), `accent-neon` (`#C084FC`), `accent-cyan` (`#00F0FF`), `accent-glow` (`rgba(157, 78, 221, 0.25)`)
   - Glow Shadows: `shadow-glow-violet`, `shadow-glow-amethyst`, `shadow-glow-cyan`, `shadow-inner-glow`, `shadow-window-frame`
-- **Zero Hardcoded Colors**: Never hardcode hex values (e.g. `#10b981`, `#0f172a`, `#ff4444`) directly in Tailwind utility classes or inline styles. Always resolve through CSS custom variables or configured Tailwind theme tokens (`obsidian-*`, `accent-*`).
-- **Dual-Theme Support**:
-  - Dark mode (`#09090C` canvas, `#0E0E13` surface-1, `#16161F` surface-2) is the fresh-install default.
-  - Light mode (Obsidian Slate Studio: `#F8F7FA` canvas, `#FFFFFF` surface-1, `#F1EFF5` surface-2) is fully supported via the `.light` class / `[data-theme="light"]` on the root element. Ensure all components render with crisp contrast in both modes.
+- **Theme Primacy**:
+  - The application runs strictly on Obsidian Dark UI (`#09090C` canvas, `#0E0E13` surface-1, `#16161F` surface-2). Light mode has been completely removed per user instruction.
 - **Typography & Font Stacks**:
   - Display & Headings (`font-heading`): `Space Grotesk`, sans-serif (`font-heading font-bold tracking-tight`).
   - UI labels, prose, and buttons (`font-sans`): `DM Sans`, `Inter`, ui-sans-serif, system-ui, -apple-system, sans-serif.
@@ -88,7 +86,7 @@ For technical architecture, design tokens, active tasks, and decision records, r
   - `cookie-status`: Current cookie synchronization status string.
   - `cookie-sync-date`: ISO timestamp string of last cookie sync.
   - `mass-clips`: Array of clip configuration objects.
-  - `theme`: Theme preference string (`'dark'` | `'light'`).
+  - `theme`: (Deprecated) The app now runs strictly on Obsidian Dark UI.
 - **Zero Destructive Resets**: Never auto-wipe inputs, queues, or history on timers, animations, or view switches. User work must be preserved.
 - **Strict IPC Contract Preservation**: Never rename, delete, or alter the signature, payload, or event semantics of Electron IPC channels (`window.electronAPI` and `window.stitchAPI`).
 
