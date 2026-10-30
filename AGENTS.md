@@ -146,6 +146,15 @@ For technical architecture, design tokens, active tasks, and decision records, r
   - `refactor:` Code restructuring without functional change
 - Verify that `npm run lint` passes and the backend packages cleanly (`npm run package-backend`) before merging.
 
+### Issue Creation Conventions
+- **Template Conformance**: When creating GitHub issues via `gh issue create`, strictly follow the schemas in `.github/ISSUE_TEMPLATE/`:
+  - `feat`: Follow `feature_request.md` (`## Summary`, `## Problem`, `## Proposed solution`, `## Alternatives considered`, `## Additional context`).
+  - `chore(UX)`: Follow `ux_gap.md` (`## Summary`, `## Current behavior`, `## Suggested change`, `## Why this helps`).
+  - `bug`: Follow `bug_report.md` (`## Summary`, `## Steps to reproduce`, `## Expected behavior`, `## Actual behavior`, `## Environment`, `## Additional context`).
+  - `chore`: Follow `qol_suggestion.md` (`## Summary`, `## Current behavior`, `## Suggested change`, `## Why this helps`).
+- **Assignee**: Always automatically assign newly created issues to the repository owner using `--assignee "@me"`.
+- **Labels**: Tag issues with standard repository priority and category labels (`Mid Prio` / `Low Prio` / `High Prio`, `enhancement`, `bug`, `ux-gap`, `performance`, `nice to have`).
+
 ---
 
 ## 6. Workspace Skills & Design Intelligence
