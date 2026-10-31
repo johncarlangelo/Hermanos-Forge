@@ -45,14 +45,14 @@ export const Input = forwardRef(function Input(
         type={type}
         disabled={disabled}
         className={cn(
-          'w-full bg-[var(--surface-2)] text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] border transition-all duration-150',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]/25 focus-visible:border-[var(--accent-primary)]/80',
+          'w-full bg-[#0b0b10] text-[#f4f4f7] placeholder:text-[#5c5c6e] border transition-all duration-150',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7c3aed]/25 focus-visible:border-[#7c3aed]',
           'disabled:opacity-40 disabled:cursor-not-allowed',
-          'shadow-[inset_0_1px_2px_rgba(0,0,0,0.2)]',
+          'shadow-[inset_0_1px_2px_rgba(0,0,0,0.3)]',
           sizeStyles[size] || sizeStyles.md,
           error
-            ? 'border-[var(--status-danger)] focus-visible:ring-[var(--status-danger)]/25'
-            : 'border-[var(--border-subdued)] hover:border-[var(--border-strong)]',
+            ? 'border-[#ef4444] focus-visible:ring-[#ef4444]/25'
+            : 'border-[#2a2a3a] hover:border-[#3a3a4e]',
           leftPadding[size],
           rightPadding[size],
           className

@@ -11,23 +11,25 @@ export function Badge({
 }) {
   const variants = {
     default:
-      'bg-[var(--surface-2)] text-[var(--text-secondary)] border border-[var(--border-subdued)]',
+      'bg-[#1e1e2a] text-[#b4b4c2] border border-[#2a2a3a]',
+    brand:
+      'bg-[#7c3aed1f] text-[#c4b5fd] border border-[#7c3aed4d] font-semibold',
     accent:
-      'bg-purple-950/70 text-purple-200 border border-purple-700/50 font-semibold',
+      'bg-[#7c3aed1f] text-[#c4b5fd] border border-[#7c3aed4d] font-semibold',
     cyan:
-      'bg-cyan-950/70 text-cyan-300 border border-cyan-800/50 font-semibold',
+      'bg-[#38bdf81f] text-[#7dd3fc] border border-[#38bdf84d] font-semibold',
     rose:
-      'bg-rose-950/70 text-rose-300 border border-rose-800/50 font-semibold',
+      'bg-[#ef44441a] text-[#fca5a5] border border-[#ef444455] font-semibold',
     success:
-      'bg-emerald-950/60 text-emerald-300 border border-emerald-800/40 font-semibold',
+      'bg-[#22c55e14] text-[#86efac] border border-[#22c55e33] font-semibold',
     warning:
-      'bg-amber-950/60 text-amber-300 border border-amber-800/40 font-semibold',
+      'bg-[#fef08a14] text-[#fde047] border border-[#facc1533] font-semibold',
     danger:
-      'bg-rose-950/70 text-rose-300 border border-rose-800/50 font-semibold',
+      'bg-[#ef44441a] text-[#fca5a5] border border-[#ef444455] font-semibold',
     info:
-      'bg-cyan-950/60 text-cyan-300 border border-cyan-800/40 font-semibold',
+      'bg-[#38bdf81f] text-[#7dd3fc] border border-[#38bdf84d] font-semibold',
     outline:
-      'bg-transparent text-[var(--text-secondary)] border border-[var(--border-strong)]',
+      'bg-transparent text-[#b4b4c2] border border-[#2a2a3a]',
   };
 
   const sizes = {

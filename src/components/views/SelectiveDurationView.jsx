@@ -11,9 +11,7 @@ import {
   RotateCcw,
   Sparkles,
   OctagonX,
-  Film,
 } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
@@ -355,7 +353,7 @@ function ClipTimeline({
               value={zoomLevel}
               onChange={(e) => setZoomLevel(parseFloat(e.target.value))}
               aria-label="Timeline zoom level"
-              className="w-20 sm:w-28 h-1.5 bg-obsidian-850 rounded-lg appearance-none cursor-pointer accent-accent-violet border border-purple-900/40"
+              className="w-20 sm:w-28 h-1.5 bg-[#0b0b10] rounded-lg appearance-none cursor-pointer accent-[#7c3aed] border border-[#2a2a3a]"
             />
             <Button
               variant="outline"
@@ -802,55 +800,65 @@ export function SelectiveDurationView({
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto w-full pb-8">
-      {/* URL & Inspection Card */}
-      <Card className="surface-panel">
-        <CardContent className="space-y-6 p-6 sm:p-7">
-          <div className="flex items-center justify-between pb-3.5 border-b border-[var(--border-subdued)]">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-purple-950/50 border border-purple-800/40 flex items-center justify-center text-accent-neon shadow-sm">
-                <Film className="w-4.5 h-4.5" />
-              </div>
-              <div>
-                <h2 className="text-base sm:text-lg font-bold text-[var(--text-primary)] tracking-tight font-heading">
-                  Selective Duration Downloader
-                </h2>
-                <p className="text-xs sm:text-sm text-[var(--text-secondary)] mt-0.5 leading-relaxed">
-                  Load video timeline and precisely extract designated timecode segments.
-                </p>
-              </div>
-            </div>
+      {/* Subframe Studio Header */}
+      <header className="flex w-full items-start justify-between gap-4">
+        <div className="flex flex-col items-start gap-1">
+          <div className="flex items-center gap-2 text-xs font-mono text-[#7a7a8c]">
+            <span>Clip Studio</span>
+            <span>&gt;</span>
+            <span>Selective Duration Trimmer</span>
           </div>
+          <h1 className="text-2xl font-bold tracking-tight text-[#f4f4f7] font-heading">
+            Selective Duration Downloader
+          </h1>
+          <p className="text-xs sm:text-sm text-[#7a7a8c]">
+            Load video timeline, inspect keyframes, and precisely extract designated timecode segments.
+          </p>
+        </div>
+        <div className="flex items-center gap-2 rounded-full border border-solid border-[#22c55e33] bg-[#22c55e14] px-3 py-1 shrink-0">
+          <div className="flex h-2 w-2 flex-none items-start rounded-full bg-[#22c55e]" />
+          <span className="text-xs font-bold text-[#86efac]">
+            Engine ready
+          </span>
+        </div>
+      </header>
 
-          {/* URL Input */}
-          <div className="flex items-center gap-2.5">
+      {/* URL & Inspection Card */}
+      <section className="flex w-full flex-col items-start gap-5 rounded-xl border border-solid border-[#1e1e2a] bg-[#12121a] px-6 py-6 shadow-lg">
+        <div className="flex w-full flex-col items-start gap-2">
+          <span className="text-xs font-bold uppercase tracking-wider text-[#9a9aac]">
+            Source Video URL
+          </span>
+          <div className="flex items-center gap-2.5 w-full">
             <div className="flex-1">
               <Input
-                size="lg"
+                size="md"
                 type="text"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
-                placeholder="Enter YouTube URL to load timeline..."
+                placeholder="https://youtube.com/watch?v=..."
                 disabled={isFetchingDetails || isDownloading}
-                leftIcon={<Video className="w-4 h-4 text-accent-neon" />}
+                leftIcon={<Video className="w-4 h-4 text-[#a78bfa]" />}
               />
             </div>
             <Button
               variant="primary"
-              size="lg"
+              size="md"
               onClick={handleFetchDetails}
               isLoading={isFetchingDetails}
               disabled={!url || isDownloading}
-              className="font-bold shrink-0 text-sm px-6 h-11"
+              className="font-bold shrink-0 text-xs sm:text-sm px-6 h-9"
             >
-              Fetch Details
+              Load Video
             </Button>
           </div>
+        </div>
 
           {/* Video Metadata & Global Resolution Selector Card */}
           {metadata && (
-            <div className="p-5 bg-[var(--surface-2)]/90 border border-[var(--border-subdued)] rounded-2xl flex flex-col md:flex-row items-start gap-5 shadow-sm">
+            <div className="p-5 bg-[#0b0b10] border border-[#1e1e2a] rounded-xl flex flex-col md:flex-row items-start gap-5 shadow-sm w-full">
               {/* Thumbnail with Fallback */}
-              <div className="w-full md:w-48 aspect-video bg-obsidian-900 rounded-xl overflow-hidden shrink-0 border border-purple-900/40 relative flex items-center justify-center group shadow-sm">
+              <div className="w-full md:w-48 aspect-video bg-[#14141d] rounded-lg overflow-hidden shrink-0 border border-[#2a2a3a] relative flex items-center justify-center group shadow-sm">
                 {getThumbnailUrl() ? (
                   <img
                     src={getThumbnailUrl()}
@@ -861,12 +869,12 @@ export function SelectiveDurationView({
                     }}
                   />
                 ) : (
-                  <div className="flex flex-col items-center justify-center gap-1.5 text-purple-400/50">
-                    <Video className="w-6 h-6 text-purple-400/60" />
+                  <div className="flex flex-col items-center justify-center gap-1.5 text-[#7a7a8c]">
+                    <Video className="w-6 h-6 text-[#a78bfa]" />
                     <span className="text-xs font-mono">No Preview</span>
                   </div>
                 )}
-                <div className="absolute bottom-1.5 right-1.5 bg-black/85 px-2 py-0.5 rounded text-xs font-mono text-purple-200 border border-purple-900/50">
+                <div className="absolute bottom-1.5 right-1.5 bg-black/85 px-2 py-0.5 rounded text-xs font-mono text-[#f4f4f7] border border-[#2a2a3a]">
                   {formatTimeShort(metadata.duration)}
                 </div>
               </div>
@@ -874,11 +882,11 @@ export function SelectiveDurationView({
               {/* Video Details & Quality Select */}
               <div className="flex-1 min-w-0 space-y-3 w-full">
                 <div>
-                  <span className="text-xs font-mono uppercase tracking-wider text-purple-300/80 block mb-0.5 font-semibold">
+                  <span className="text-xs font-bold uppercase tracking-wider text-[#9a9aac] block mb-0.5">
                     Video Title
                   </span>
                   <h3
-                    className="text-sm sm:text-base font-bold text-[var(--text-primary)] truncate"
+                    className="text-sm sm:text-base font-bold text-[#f4f4f7] truncate"
                     title={metadata.title}
                   >
                     {metadata.title}
@@ -887,18 +895,18 @@ export function SelectiveDurationView({
 
                 <div className="grid grid-cols-2 gap-4 text-xs sm:text-sm">
                   <div>
-                    <span className="text-xs font-mono uppercase tracking-wider text-purple-300/80 block mb-0.5 font-semibold">
+                    <span className="text-xs font-bold uppercase tracking-wider text-[#9a9aac] block mb-0.5">
                       Duration
                     </span>
-                    <span className="font-mono text-sm font-semibold text-[var(--text-primary)]">
+                    <span className="font-mono text-sm font-semibold text-[#f4f4f7]">
                       {formatTime(metadata.duration)}
                     </span>
                   </div>
                   <div>
-                    <span className="text-xs font-mono uppercase tracking-wider text-purple-300/80 block mb-0.5 font-semibold">
+                    <span className="text-xs font-bold uppercase tracking-wider text-[#9a9aac] block mb-0.5">
                       Platform
                     </span>
-                    <span className="font-sans text-sm font-semibold text-accent-neon truncate block">
+                    <span className="font-sans text-sm font-semibold text-[#a78bfa] truncate block">
                       {metadata.uploader || metadata.channel || metadata.extractor_key || 'YouTube'}
                     </span>
                   </div>
@@ -906,7 +914,7 @@ export function SelectiveDurationView({
 
                 {/* Target Resolution / Quality Selector */}
                 <div className="pt-1 max-w-xs">
-                  <label className="block text-xs font-mono uppercase tracking-wider text-purple-300/80 mb-1.5 font-semibold">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-[#9a9aac] mb-1.5">
                     Output Resolution
                   </label>
                   <Select
@@ -920,27 +928,25 @@ export function SelectiveDurationView({
               </div>
             </div>
           )}
-        </CardContent>
-      </Card>
+      </section>
 
       {/* Segments Section */}
       {metadata && (
-        <Card className="surface-panel">
-          <CardContent className="space-y-6 p-6 sm:p-7">
-            <div className="flex items-center justify-between pb-3.5 border-b border-[var(--border-subdued)]">
-              <div>
-                <h3 className="text-sm sm:text-base font-bold text-[var(--text-primary)] tracking-tight font-heading">
-                  Timeline Trimming Segments ({clips.length})
-                </h3>
-                <p className="text-xs sm:text-sm text-[var(--text-secondary)] mt-1">
-                  Drag the start/end handles on the ruler or enter exact timecodes below.
-                </p>
-              </div>
-
-              <Badge variant="accent" size="md">
-                {clips.filter((c) => !c.isExcluded).length} Active
-              </Badge>
+        <section className="flex w-full flex-col items-start gap-5 rounded-xl border border-solid border-[#1e1e2a] bg-[#12121a] px-6 py-6 shadow-lg">
+          <div className="flex items-center justify-between pb-3.5 border-b border-[#1e1e2a] w-full">
+            <div>
+              <h3 className="text-sm sm:text-base font-bold text-[#f4f4f7] tracking-tight font-heading">
+                Timeline Trimming Segments ({clips.length})
+              </h3>
+              <p className="text-xs text-[#7a7a8c] mt-0.5">
+                Drag the start/end handles on the ruler or enter exact timecodes below.
+              </p>
             </div>
+
+            <Badge variant="brand" size="sm">
+              {clips.filter((c) => !c.isExcluded).length} Active
+            </Badge>
+          </div>
 
             {/* List of timelines */}
             <div className="space-y-4">
@@ -1030,15 +1036,14 @@ export function SelectiveDurationView({
                   size="lg"
                   onClick={handleDownloadAll}
                   disabled={isDownloading || clips.filter((c) => !c.isExcluded).length === 0}
-                  className="font-bold text-sm sm:text-base px-8 py-3.5 shadow-glow-violet"
+                  className="font-bold text-sm sm:text-base px-8 py-3 shadow-md shadow-violet-950/40"
                 >
                   <Download className="w-4 h-4" />
                   Download Selected Clips ({clips.filter((c) => !c.isExcluded).length})
                 </Button>
               )}
             </div>
-          </CardContent>
-        </Card>
+        </section>
       )}
 
       {/* Cancel Modal */}

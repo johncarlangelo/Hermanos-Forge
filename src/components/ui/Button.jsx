@@ -22,17 +22,17 @@ export const Button = forwardRef(function Button(
 
   const variants = {
     primary:
-      'bg-gradient-to-r from-accent-violet via-accent-purple to-accent-amethyst hover:brightness-110 text-white shadow-glow-violet border border-purple-400/30 before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/35 before:to-transparent',
+      'bg-[#7c3aed] hover:bg-[#6d28d9] active:bg-[#5b21b6] text-white shadow-md shadow-violet-950/40 border border-[#7c3aed4d]',
     secondary:
-      'bg-[var(--surface-2)] hover:bg-[var(--surface-hover)] text-[var(--text-primary)] border border-[var(--border-subdued)] hover:border-purple-600/50 shadow-sm before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/10 before:to-transparent',
+      'bg-[#14141d] hover:bg-[#1e1e2a] active:bg-[#14141d] text-[#d4d4de] border border-[#2a2a3a]',
     outline:
-      'bg-transparent hover:bg-purple-950/30 text-[var(--text-primary)] border border-[var(--border-strong)] hover:border-purple-500/50',
+      'bg-transparent hover:bg-[#ffffff0a] text-[#d4d4de] border border-[#2a2a3a]',
     ghost:
-      'bg-transparent hover:bg-purple-950/30 text-[var(--text-secondary)] hover:text-[var(--text-primary)]',
+      'bg-transparent hover:bg-[#ffffff0f] text-[#b4b4c2] hover:text-[#f4f4f7]',
     destructive:
-      'bg-gradient-to-b from-rose-600 to-rose-700 hover:from-rose-500 hover:to-rose-600 text-white shadow-sm border border-rose-500/30',
+      'bg-transparent hover:bg-[#ef44441a] text-[#ef4444] border border-[#ef444455]',
     accentMuted:
-      'bg-[var(--accent-muted)] hover:bg-[var(--accent-primary)]/20 text-[var(--accent-neon)] border border-purple-700/50',
+      'bg-[#7c3aed1f] hover:bg-[#7c3aed33] text-[#c4b5fd] border border-[#7c3aed4d]',
   };
 
   const sizes = {

@@ -53,24 +53,24 @@ export function Dialog({
             aria-modal="true"
             aria-labelledby={title ? 'dialog-title' : undefined}
             className={cn(
-              'relative w-full bg-[var(--surface-1)] border border-[var(--border-subdued)] rounded-[8px] shadow-2xl z-10 overflow-hidden flex flex-col max-h-[90vh]',
+              'relative w-full bg-[#12121a] border border-[#1e1e2a] rounded-xl shadow-2xl z-10 overflow-hidden flex flex-col max-h-[90vh]',
               maxWidth,
               className
             )}
           >
             {(title || showCloseButton) && (
-              <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-[var(--border-subdued)]">
+              <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-[#1e1e2a]">
                 <div>
                   {title && (
                     <h3
                       id="dialog-title"
-                      className="text-sm font-semibold text-[var(--text-primary)]"
+                      className="text-sm font-semibold text-[#f4f4f7]"
                     >
                       {title}
                     </h3>
                   )}
                   {description && (
-                    <p className="text-xs text-[var(--text-secondary)] mt-0.5">
+                    <p className="text-xs text-[#7a7a8c] mt-0.5">
                       {description}
                     </p>
                   )}
@@ -80,7 +80,7 @@ export function Dialog({
                     type="button"
                     onClick={onClose}
                     aria-label="Close dialog"
-                    className="p-1 rounded-[4px] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)] transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--focus-ring)]"
+                    className="p-1 rounded-md text-[#7a7a8c] hover:text-[#f4f4f7] hover:bg-[#ffffff0f] transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#7c3aed]"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -88,7 +88,7 @@ export function Dialog({
               </div>
             )}
 
-            <div className="p-5 overflow-y-auto flex-1 text-xs text-[var(--text-primary)]">
+            <div className="p-5 overflow-y-auto flex-1 text-xs text-[#f4f4f7]">
               {children}
             </div>
           </motion.div>
@@ -102,7 +102,7 @@ export function DialogFooter({ className, children }) {
   return (
     <div
       className={cn(
-        'flex items-center justify-end gap-2 px-5 py-3 border-t border-[var(--border-subdued)] bg-[var(--surface-1)]',
+        'flex items-center justify-end gap-2 px-5 py-3 border-t border-[#1e1e2a] bg-[#0f0f16]',
         className
       )}
     >

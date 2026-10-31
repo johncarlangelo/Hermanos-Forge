@@ -10,10 +10,8 @@ import {
   Clock,
   OctagonX,
   Download,
-  ListVideo,
   GripVertical,
 } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
@@ -323,216 +321,278 @@ export function MassClipView({
   };
 
   const validUrlsCount = clips.filter((c) => c.url.trim()).length;
+  const readyCount = clips.filter((c) => c.state === ROW_STATE.DONE).length;
+  const downloadingCount = clips.filter((c) => c.state === ROW_STATE.DOWNLOADING).length;
+  const queuedCount = clips.filter((c) => c.state === ROW_STATE.QUEUED).length;
+  const errorCount = clips.filter((c) => c.state === ROW_STATE.ERROR).length;
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto w-full pb-8">
-      {/* Clip Queue Studio Card */}
-      <Card className="surface-panel">
-        <CardContent className="space-y-5 p-5 sm:p-6">
-          {/* Header */}
-          <div className="space-y-2 pb-3.5 border-b border-[var(--border-subdued)]">
-            <div className="flex flex-wrap items-center justify-between gap-3.5">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="w-9 h-9 rounded-xl bg-purple-950/50 border border-purple-800/40 flex items-center justify-center text-accent-neon shadow-sm shrink-0">
-                  <Scissors className="w-4.5 h-4.5" />
-                </div>
-                <div className="flex items-center gap-2.5 flex-wrap min-w-0">
-                  <h2 className="text-base sm:text-lg font-bold text-[var(--text-primary)] tracking-tight font-heading">
-                    Batch Clip Downloader &amp; Stitcher
-                  </h2>
-                  <Badge variant="accent" size="md">
-                    {validUrlsCount} {validUrlsCount === 1 ? 'Clip' : 'Clips'} Queued
-                  </Badge>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 shrink-0">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={addClip}
-                  disabled={isProcessing || isCoolingDown}
-                  className="font-medium text-xs sm:text-sm"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Add URL</span>
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={clearAll}
-                  disabled={isProcessing || isCoolingDown || validUrlsCount === 0}
-                  className="text-[var(--status-danger)] hover:bg-[var(--status-danger)]/10 font-medium text-xs sm:text-sm"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  <span>Clear</span>
-                </Button>
-              </div>
-            </div>
-
-            <p className="text-xs sm:text-sm text-[var(--text-secondary)] leading-relaxed">
-              Download sequential video clips and merge them automatically using FFmpeg concat.
-            </p>
+      {/* Subframe Studio Header */}
+      <header className="flex w-full items-start justify-between gap-4">
+        <div className="flex flex-col items-start gap-1">
+          <div className="flex items-center gap-2 text-xs font-mono text-[#7a7a8c]">
+            <span>Studio</span>
+            <span>&gt;</span>
+            <span>Batch Tools</span>
           </div>
+          <h1 className="text-2xl font-bold tracking-tight text-[#f4f4f7] font-heading">
+            Mass Clip Stitcher
+          </h1>
+          <p className="text-xs sm:text-sm text-[#7a7a8c]">
+            Queue sequential media links, download them concurrently, and stitch into a single compilation.
+          </p>
+        </div>
+        <div className="flex items-center gap-2 rounded-full border border-solid border-[#22c55e33] bg-[#22c55e14] px-3 py-1 shrink-0">
+          <div className="flex h-2 w-2 flex-none items-start rounded-full bg-[#22c55e]" />
+          <span className="text-xs font-bold text-[#86efac]">
+            Engine ready
+          </span>
+        </div>
+      </header>
 
-          {/* Sequential Stitching Mode Explainer */}
-          <div className="p-3.5 bg-gradient-to-r from-[var(--surface-2)] to-transparent border border-[var(--border-subdued)] rounded-xl flex items-center gap-3 text-xs sm:text-sm text-[var(--text-secondary)] leading-relaxed">
-            <ListVideo className="w-5 h-5 text-[var(--accent-primary)] shrink-0" />
-            <span>
-              Clips are processed in exact order from top to bottom. When stitching is selected, a lossless unified <span className="font-mono text-[var(--text-primary)] font-semibold">.mp4</span> file is generated.
+      {/* Main Clip Queue Panel */}
+      <section className="flex w-full flex-col items-start gap-5 rounded-xl border border-solid border-[#1e1e2a] bg-[#12121a] px-6 py-6 shadow-lg">
+        {/* Queue Header & Actions */}
+        <div className="flex flex-wrap items-center justify-between gap-3 w-full pb-3 border-b border-[#1e1e2a]">
+          <div className="flex items-center gap-3 flex-wrap">
+            <span className="text-sm font-bold text-[#f4f4f7] font-heading">
+              Clip Queue
             </span>
-          </div>
-
-          {/* Interactive Clip Cards Queue with Static Left Numbers */}
-          <div className="space-y-3 max-h-96 overflow-y-auto pr-1.5 custom-scrollbar">
-            {clips.map((clip, index) => (
-              <div key={clip.id} className="flex items-center gap-3">
-                {/* Static Number on the Left - Stays in place */}
-                <div className="w-8 h-8 rounded-full bg-[var(--surface-1)] border border-[var(--border-subdued)] flex items-center justify-center shrink-0 select-none shadow-sm">
-                  <span className="font-mono text-xs sm:text-sm font-bold text-purple-300">
-                    {index + 1}
-                  </span>
-                </div>
-
-                {/* Draggable Row Card */}
-                <div
-                  draggable={!isProcessing && !isCoolingDown}
-                  onDragStart={(e) => handleDragStart(e, index)}
-                  onDragOver={(e) => handleDragOver(e, index)}
-                  onDragLeave={handleDragLeave}
-                  onDrop={(e) => handleDrop(e, index)}
-                  onDragEnd={handleDragEnd}
-                  className={`flex-1 p-3 sm:p-3.5 rounded-xl border transition-all duration-150 ${
-                    dragOverIndex === index
-                      ? 'border-accent-violet ring-2 ring-accent-violet/40 bg-purple-950/30'
-                      : draggedIndex === index
-                      ? 'opacity-40 border-purple-800/40 bg-obsidian-950'
-                      : clip.state === ROW_STATE.ERROR
-                      ? 'border-rose-500/40 bg-rose-500/5'
-                      : clip.state === ROW_STATE.DONE
-                      ? 'border-emerald-500/40 bg-emerald-500/5'
-                      : clip.state === ROW_STATE.DOWNLOADING
-                      ? 'border-purple-500/50 bg-purple-500/10 shadow-sm shadow-purple-950/40'
-                      : 'border-[var(--border-subdued)] bg-[var(--surface-2)]/80 hover:border-[var(--border-strong)]'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    {/* Drag Handle */}
-                    <div
-                      className={`text-slate-500 hover:text-purple-300 transition shrink-0 ${
-                        isProcessing || isCoolingDown
-                          ? 'opacity-30 cursor-not-allowed'
-                          : 'cursor-grab active:cursor-grabbing'
-                      }`}
-                      title="Drag to reorder"
-                    >
-                      <GripVertical className="w-4 h-4" />
-                    </div>
-
-                    <div
-                      onDragStart={(e) => e.stopPropagation()}
-                      className="flex-1 min-w-0"
-                    >
-                      <Input
-                        type="text"
-                        size="md"
-                        value={clip.url}
-                        onChange={(e) => updateClipUrl(clip.id, e.target.value)}
-                        placeholder="Paste YouTube clip or video URL..."
-                        disabled={isProcessing || isCoolingDown}
-                        className="bg-[var(--surface-1)] font-mono text-xs sm:text-sm"
-                      />
-                    </div>
-
-                    <div className="shrink-0">
-                      {renderStatusBadge(clip.state)}
-                    </div>
-
-                    <div onDragStart={(e) => e.stopPropagation()}>
-                      <Button
-                        variant="ghost"
-                        size="iconSm"
-                        onClick={() => removeClipRow(clip.id)}
-                        disabled={isProcessing || isCoolingDown || clips.length <= 1}
-                        aria-label={`Remove clip ${index + 1}`}
-                        title="Remove clip"
-                        className="text-[var(--text-tertiary)] hover:text-rose-400"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </Button>
-                    </div>
-                  </div>
-
-                  {clip.state === ROW_STATE.ERROR && clip.message && (
-                    <p className="text-xs text-rose-400 pl-7 mt-2 font-mono">
-                      {clip.message}
-                    </p>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Status Message Line */}
-          {globalStatus && (
-            <div className="p-3.5 rounded-xl bg-gradient-to-r from-purple-950/60 to-transparent border border-purple-500/30 flex items-center justify-between text-xs sm:text-sm text-purple-200 font-medium shadow-sm">
-              <div className="flex items-center gap-3">
-                <Loader2 className="w-4 h-4 text-accent-neon animate-spin" />
-                <span>{globalStatus}</span>
-              </div>
-              {isCoolingDown && (
-                <span className="text-xs uppercase tracking-wider font-bold px-2.5 py-0.5 rounded-full bg-purple-950/70 border border-purple-700/50 text-purple-200">
-                  Auto-Reset Active
-                </span>
-              )}
-            </div>
-          )}
-
-          {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row items-center gap-3.5 pt-3 border-t border-[var(--border-subdued)]">
-            {!isProcessing ? (
-              <>
-                <Button
-                  variant="secondary"
-                  size="lg"
-                  onClick={() => startStitching(true)}
-                  disabled={isCoolingDown || validUrlsCount === 0}
-                  className="w-full sm:flex-1 font-semibold text-xs sm:text-sm py-3"
-                >
-                  <Download className="w-4 h-4" />
-                  Download Separate Files ({validUrlsCount})
-                </Button>
-                <Button
-                  variant="primary"
-                  size="lg"
-                  onClick={() => startStitching(false)}
-                  disabled={isCoolingDown || validUrlsCount === 0}
-                  className="w-full sm:flex-[2] font-bold text-sm sm:text-base py-3 shadow-glow-violet"
-                >
-                  <Scissors className="w-4 h-4" />
-                  Stitch into Single Video ({validUrlsCount} Clips)
-                </Button>
-              </>
-            ) : (
-              <div className="w-full flex items-center gap-3">
-                <div className="flex-1 flex items-center gap-2.5 p-3 rounded-xl bg-[var(--surface-2)] text-xs sm:text-sm text-[var(--text-secondary)]">
-                  <ListVideo className="w-4 h-4 text-[var(--accent-primary)] animate-pulse" />
-                  <span>Sequential batch engine running. Completed clips are stored locally.</span>
-                </div>
-                <Button
-                  variant="destructive"
-                  size="lg"
-                  onClick={() => setShowCancelModal(true)}
-                  className="w-44 font-bold text-sm"
-                >
-                  <OctagonX className="w-4 h-4" />
-                  Cancel All
-                </Button>
-              </div>
+            <Badge variant="brand" size="sm">
+              {validUrlsCount} {validUrlsCount === 1 ? 'Clip' : 'Clips'}
+            </Badge>
+            {readyCount > 0 && (
+              <span className="flex items-center gap-1.5 text-xs text-[#86efac] font-medium">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#22c55e]" />
+                {readyCount} ready
+              </span>
+            )}
+            {downloadingCount > 0 && (
+              <span className="flex items-center gap-1.5 text-xs text-[#c4b5fd] font-medium">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#8b5cf6]" />
+                {downloadingCount} processing
+              </span>
+            )}
+            {queuedCount > 0 && (
+              <span className="flex items-center gap-1.5 text-xs text-[#9a9aac] font-medium">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#5c5c6e]" />
+                {queuedCount} queued
+              </span>
+            )}
+            {errorCount > 0 && (
+              <span className="flex items-center gap-1.5 text-xs text-[#fca5a5] font-medium">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#ef4444]" />
+                {errorCount} error
+              </span>
             )}
           </div>
-        </CardContent>
-      </Card>
+
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={addClip}
+              disabled={isProcessing || isCoolingDown}
+              className="text-xs font-bold"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Add Clip</span>
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={clearAll}
+              disabled={isProcessing || isCoolingDown || validUrlsCount === 0}
+              className="text-[#ef4444] hover:bg-[#ef44441a] text-xs font-bold"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Clear</span>
+            </Button>
+          </div>
+        </div>
+
+        {/* Clip Cards List */}
+        <div className="space-y-3 w-full max-h-96 overflow-y-auto pr-1">
+          {clips.map((clip, index) => (
+            <div key={clip.id} className="flex items-center gap-3">
+              {/* Sequence Number */}
+              <div className="w-8 h-8 rounded-lg bg-[#0b0b10] border border-[#1e1e2a] flex items-center justify-center shrink-0 select-none shadow-sm">
+                <span className="font-mono text-xs font-bold text-[#a78bfa]">
+                  {String(index + 1).padStart(2, '0')}
+                </span>
+              </div>
+
+              {/* Draggable Row Card */}
+              <div
+                draggable={!isProcessing && !isCoolingDown}
+                onDragStart={(e) => handleDragStart(e, index)}
+                onDragOver={(e) => handleDragOver(e, index)}
+                onDragLeave={handleDragLeave}
+                onDrop={(e) => handleDrop(e, index)}
+                onDragEnd={handleDragEnd}
+                className={`flex-1 p-3 rounded-lg border transition duration-150 ${
+                  dragOverIndex === index
+                    ? 'border-[#7c3aed] ring-2 ring-[#7c3aed]/40 bg-[#7c3aed14]'
+                    : draggedIndex === index
+                    ? 'opacity-40 border-[#2a2a3a] bg-[#0b0b10]'
+                    : clip.state === ROW_STATE.ERROR
+                    ? 'border-[#ef444455] bg-[#ef444414]'
+                    : clip.state === ROW_STATE.DONE
+                    ? 'border-[#22c55e44] bg-[#22c55e14]'
+                    : clip.state === ROW_STATE.DOWNLOADING
+                    ? 'border-[#7c3aed4d] bg-[#7c3aed14]'
+                    : 'border-[#1e1e2a] bg-[#0f0f16] hover:border-[#2a2a3a]'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`text-[#5c5c6e] hover:text-[#a78bfa] transition shrink-0 ${
+                      isProcessing || isCoolingDown
+                        ? 'opacity-30 cursor-not-allowed'
+                        : 'cursor-grab active:cursor-grabbing'
+                    }`}
+                    title="Drag to reorder"
+                  >
+                    <GripVertical className="w-4 h-4" />
+                  </div>
+
+                  <div
+                    onDragStart={(e) => e.stopPropagation()}
+                    className="flex-1 min-w-0"
+                  >
+                    <Input
+                      size="sm"
+                      type="text"
+                      value={clip.url}
+                      onChange={(e) => updateClipUrl(clip.id, e.target.value)}
+                      placeholder="https://youtube.com/watch?v=..."
+                      disabled={isProcessing || isCoolingDown}
+                      className="font-mono text-xs sm:text-sm bg-[#0b0b10] border-[#2a2a3a]"
+                    />
+                  </div>
+
+                  <div className="shrink-0">
+                    {renderStatusBadge(clip.state)}
+                  </div>
+
+                  <div onDragStart={(e) => e.stopPropagation()}>
+                    <Button
+                      variant="ghost"
+                      size="iconSm"
+                      onClick={() => removeClipRow(clip.id)}
+                      disabled={isProcessing || isCoolingDown || clips.length <= 1}
+                      aria-label={`Remove clip ${index + 1}`}
+                      title="Remove clip"
+                      className="text-[#7a7a8c] hover:text-[#ef4444] hover:bg-[#ef44441a]"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+                </div>
+
+                {clip.state === ROW_STATE.ERROR && clip.message && (
+                  <p className="text-xs text-[#ef4444] pl-7 mt-1.5 font-mono">
+                    {clip.message}
+                  </p>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Subframe Sequence Preview Bar */}
+        {validUrlsCount > 0 && (
+          <div className="w-full space-y-1.5 p-3 rounded-lg bg-[#0b0b10] border border-[#1e1e2a]">
+            <div className="flex items-center justify-between text-xs">
+              <span className="font-bold text-[#9a9aac] uppercase tracking-wider text-[11px]">
+                Sequence Preview
+              </span>
+              <span className="font-mono text-[#a78bfa] text-xs font-semibold">
+                {validUrlsCount} {validUrlsCount === 1 ? 'part' : 'parts'}
+              </span>
+            </div>
+            <div className="flex h-2.5 w-full rounded overflow-hidden gap-0.5 bg-[#14141d]">
+              {clips.filter((c) => c.url.trim()).map((c, i, arr) => {
+                const colors = ['bg-[#7c3aed]', 'bg-[#8b5cf6]', 'bg-[#a78bfa]', 'bg-[#c4b5fd]', 'bg-[#38bdf8]'];
+                const color =
+                  c.state === ROW_STATE.DONE
+                    ? 'bg-[#22c55e]'
+                    : c.state === ROW_STATE.ERROR
+                    ? 'bg-[#ef4444]'
+                    : colors[i % colors.length];
+                return (
+                  <div
+                    key={c.id}
+                    style={{ width: `${100 / arr.length}%` }}
+                    className={`h-full ${color} transition-all duration-300`}
+                    title={`Clip ${i + 1}: ${c.url}`}
+                  />
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Global Status Message */}
+        {globalStatus && (
+          <div className="w-full p-3.5 rounded-lg bg-[#0b0b10] border border-[#7c3aed4d] flex items-center justify-between text-xs sm:text-sm text-[#ede9fe] font-medium shadow-sm">
+            <div className="flex items-center gap-2.5">
+              <Loader2 className="w-4 h-4 text-[#a78bfa] animate-spin" />
+              <span>{globalStatus}</span>
+            </div>
+            {isCoolingDown && (
+              <span className="text-xs uppercase tracking-wider font-bold px-2 py-0.5 rounded-full bg-[#7c3aed26] border border-[#7c3aed4d] text-[#c4b5fd]">
+                Reset in 5s
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Execution Actions */}
+        <div className="flex flex-col sm:flex-row items-center gap-3.5 pt-3 border-t border-[#1e1e2a] w-full">
+          {!isProcessing ? (
+            <>
+              <Button
+                variant="secondary"
+                size="lg"
+                onClick={() => startStitching(true)}
+                disabled={isCoolingDown || validUrlsCount === 0}
+                className="w-full sm:flex-1 font-bold text-xs sm:text-sm py-2.5"
+              >
+                <Download className="w-4 h-4" />
+                Download Separate Files ({validUrlsCount})
+              </Button>
+              <Button
+                variant="primary"
+                size="lg"
+                onClick={() => startStitching(false)}
+                disabled={isCoolingDown || validUrlsCount === 0}
+                className="w-full sm:flex-[2] font-bold text-sm py-2.5 shadow-md shadow-violet-950/40"
+              >
+                <Scissors className="w-4 h-4" />
+                Stitch into Single Video ({validUrlsCount} Clips)
+              </Button>
+            </>
+          ) : (
+            <div className="w-full flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5 text-xs text-[#7a7a8c]">
+                <Loader2 className="w-4 h-4 text-[#a78bfa] animate-spin" />
+                <span>Processing batch sequence...</span>
+              </div>
+              <Button
+                variant="destructive"
+                size="md"
+                onClick={() => setShowCancelModal(true)}
+                className="font-bold text-xs"
+              >
+                <OctagonX className="w-4 h-4" />
+                Cancel All
+              </Button>
+            </div>
+          )}
+        </div>
+      </section>
 
       {/* Cancel Confirmation Modal */}
       <Dialog

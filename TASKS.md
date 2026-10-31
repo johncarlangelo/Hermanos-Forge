@@ -8,6 +8,7 @@ This document tracks active engineering priorities, open GitHub issues, near-ter
 
 | Priority | Task | Target Branch | Status | Description |
 |---|---|---|---|---|
+| **P0** | Subframe MCP Redesign & Workspace Synthesis | `test/subframe-mcp` | In Review | Full redesign using Subframe MCP server: Studio Downloader, Mass Clip Stitcher, Selective Duration Trimmer, telemetry rows, shared component primitives, and Subframe Studio v2.0 design tokens. |
 | **P0** | UI/UX Redesign — Obsidian Forge Media Studio Overhaul | `dev` | Completed | Full visual overhaul from mockup (commit `b885179`): cyber-luminescent violet/amethyst palette, Space Grotesk/DM Sans typography, command-bar spotlight URL input, quick chips, batch paste in MassClipView, frameless TitleBar, and bottom status strip. |
 | **P0** | Design System & Agent Documentation Sync | `dev` | Completed | Updated `DESIGN.md`, `AGENTS.md`, `ARCHITECTURE.md`, `TASKS.md`, `PROGRESS.md`, and `DECISIONS.md` to reflect the active Obsidian Forge Media Studio design language. |
 | **P0** | Video Quality Fetch & 403 Bypass | `bug-fix/video-quality-fetch` | In Review | Switch YouTube player client to `['web_embedded', 'web']` to resolve 403 Forbidden errors when extracting formats. Verify format list rendering in UI and open PR to `dev`. |

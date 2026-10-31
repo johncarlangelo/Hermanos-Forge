@@ -55,16 +55,15 @@ For technical architecture, design tokens, active tasks, and decision records, r
 
 ### Design System & Visual Token Compliance
 - **Token Discipline**: All styling must use the *Obsidian Forge Media Studio* design tokens defined in [src/index.css](file:///d:/Comsci%20things/Python/Quick%20Tools%20Project/Hermanos%20Forge/src/index.css) and [DESIGN.md](file:///d:/Comsci%20things/Python/Quick%20Tools%20Project/Hermanos%20Forge/DESIGN.md):
-  - Surfaces: `var(--bg-base)`, `var(--surface-1)`, `var(--surface-2)`, `var(--surface-hover)`
-  - Borders: `var(--border-subdued)`, `var(--border-strong)`
-  - Text: `var(--text-primary)`, `var(--text-secondary)`, `var(--text-tertiary)`
-  - Accents: `var(--accent-primary)` (violet `#9D4EDD`), `var(--accent-hover)` (`#8B3DD0`), `var(--accent-muted)`, `var(--accent-neon)` (`#C084FC`), `var(--accent-cyan)` (`#00F0FF`)
-  - Status: `var(--status-success)` (`#10B981`), `var(--status-warning)` (`#F59E0B`), `var(--status-danger)` (`#EF4444`), `var(--status-info)` (`#00F0FF`)
-  - Obsidian Scale (Tailwind `colors.obsidian`): `obsidian-950` (`#09090C`), `obsidian-900` (`#0E0E13`), `obsidian-850` (`#13131A`), `obsidian-800` (`#181824`), `obsidian-750` (`#1F1F2E`), `obsidian-700` (`#28283D`), `obsidian-600` (`#3D3D5C`)
-  - Accent Scale (Tailwind `colors.accent`): `accent-violet` (`#9D4EDD`), `accent-amethyst` (`#B5179E`), `accent-purple` (`#A855F7`), `accent-neon` (`#C084FC`), `accent-cyan` (`#00F0FF`), `accent-glow` (`rgba(157, 78, 221, 0.25)`)
-  - Glow Shadows: `shadow-glow-violet`, `shadow-glow-amethyst`, `shadow-glow-cyan`, `shadow-inner-glow`, `shadow-window-frame`
+  - Surfaces: `var(--bg-base)` (`#0B0B10`), `var(--surface-1)` (`#0F0F16`), `var(--surface-2)` (`#12121A`), `var(--surface-hover)` (`#1E1E2A`)
+  - Borders: `var(--border-subdued)` (`#1E1E2A`), `var(--border-strong)` (`#2A2A3A`)
+  - Text: `var(--text-primary)` (`#F4F4F7`), `var(--text-secondary)` (`#B4B4C2`), `var(--text-tertiary)` (`#7A7A8C`)
+  - Accents: `var(--accent-primary)` (violet `#7C3AED`), `var(--accent-hover)` (`#6D28D9`), `var(--accent-muted)`, `var(--accent-neon)` (`#A78BFA`), `var(--accent-cyan)` (`#38BDF8`)
+  - Status: `var(--status-success)` (`#22C55E`), `var(--status-warning)` (`#FACC15`), `var(--status-danger)` (`#EF4444`), `var(--status-info)` (`#38BDF8`)
+  - Obsidian Scale (Tailwind `colors.obsidian`): `obsidian-950` (`#0B0B10`), `obsidian-900` (`#0F0F16`), `obsidian-850` (`#12121A`), `obsidian-800` (`#14141D`), `obsidian-750` (`#1E1E2A`), `obsidian-700` (`#2A2A3A`), `obsidian-600` (`#3A3A4E`)
+  - Accent Scale (Tailwind `colors.accent`): `accent-violet` (`#7C3AED`), `accent-amethyst` (`#C4B5FD`), `accent-purple` (`#8B5CF6`), `accent-neon` (`#A78BFA`), `accent-cyan` (`#38BDF8`), `accent-glow` (`rgba(124, 58, 237, 0.25)`)
 - **Theme Primacy**:
-  - The application runs strictly on Obsidian Dark UI (`#09090C` canvas, `#0E0E13` surface-1, `#16161F` surface-2). Light mode has been completely removed per user instruction.
+  - The application runs strictly on Obsidian Subframe Dark UI (`#0B0B10` canvas, `#0F0F16` sidebar, `#12121A` surface-2). Light mode has been completely removed per user instruction.
 - **Typography & Font Stacks**:
   - Display & Headings (`font-heading`): `Space Grotesk`, sans-serif (`font-heading font-bold tracking-tight`).
   - UI labels, prose, and buttons (`font-sans`): `DM Sans`, `Inter`, ui-sans-serif, system-ui, -apple-system, sans-serif.

@@ -26,23 +26,23 @@ export default {
         statusDanger: 'var(--status-danger)',
         statusInfo: 'var(--status-info)',
 
-        // Obsidian Forge Color Hierarchy
+        // Obsidian Subframe Studio Color Hierarchy
         obsidian: {
-          950: '#09090c',
-          900: '#0e0e13',
-          850: '#13131a',
-          800: '#181824',
-          750: '#1f1f2e',
-          700: '#28283d',
-          600: '#3d3d5c',
+          950: '#0b0b10',
+          900: '#0f0f16',
+          850: '#12121a',
+          800: '#14141d',
+          750: '#1e1e2a',
+          700: '#2a2a3a',
+          600: '#3a3a4e',
         },
         accent: {
-          violet: '#9d4edd',
-          amethyst: '#b5179e',
-          purple: '#a855f7',
-          neon: '#c084fc',
-          cyan: '#00f0ff',
-          glow: 'rgba(157, 78, 221, 0.25)',
+          violet: '#7c3aed',
+          amethyst: '#c4b5fd',
+          purple: '#8b5cf6',
+          neon: '#a78bfa',
+          cyan: '#38bdf8',
+          glow: 'rgba(124, 58, 237, 0.25)',
         },
 
         // Backward compatibility mappings
@@ -58,11 +58,11 @@ export default {
         mono: ['JetBrains Mono', 'Consolas', 'Menlo', 'monospace'],
       },
       boxShadow: {
-        'glow-violet': '0 0 25px -4px rgba(157, 78, 221, 0.45)',
-        'glow-amethyst': '0 0 20px -3px rgba(181, 23, 158, 0.4)',
-        'glow-cyan': '0 0 20px -3px rgba(0, 240, 255, 0.35)',
+        'glow-violet': '0 0 25px -4px rgba(124, 58, 237, 0.45)',
+        'glow-amethyst': '0 0 20px -3px rgba(196, 181, 253, 0.4)',
+        'glow-cyan': '0 0 20px -3px rgba(56, 189, 248, 0.35)',
         'inner-glow': 'inset 0 1px 1px 0 rgba(255, 255, 255, 0.08), inset 0 -1px 1px 0 rgba(0, 0, 0, 0.4)',
-        'window-frame': '0 25px 65px -15px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(168, 85, 247, 0.18)',
+        'window-frame': '0 25px 65px -15px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(124, 58, 237, 0.18)',
       },
       borderRadius: {
         xs: '4px',

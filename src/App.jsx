@@ -13,6 +13,7 @@ import toast, { Toaster } from 'react-hot-toast';
 
 import { TitleBar } from '@/components/ui/TitleBar';
 import { Tooltip } from '@/components/ui/Tooltip';
+import { Button } from '@/components/ui/Button';
 import { SingleDownloaderView } from '@/components/views/SingleDownloaderView';
 import { MassClipView } from '@/components/views/MassClipView';
 import { SelectiveDurationView } from '@/components/views/SelectiveDurationView';
@@ -650,28 +651,25 @@ export default function App() {
   ];
 
   return (
-    <div className="h-screen w-screen flex flex-col bg-[var(--bg-base)] text-[var(--text-primary)] overflow-hidden font-sans select-none relative noise-overlay">
-      {/* Top ambient lighting accent */}
-      <div className="absolute inset-x-0 top-0 h-44 ambient-glow-purple pointer-events-none z-0" />
-
+    <div className="h-screen w-screen flex flex-col bg-[#0b0b10] text-[#f4f4f7] overflow-hidden font-sans select-none relative">
       {/* Title Bar */}
       <TitleBar />
 
       {/* Main Desktop Shell */}
       <div className="flex-1 flex overflow-hidden relative z-10">
-        {/* Obsidian Navigation Sidebar */}
+        {/* Subframe Navigation Sidebar */}
         <aside
           className={`${
             isSidebarCollapsed ? 'w-16' : 'w-60 sm:w-64'
-          } bg-obsidian-950/85 border-r border-purple-900/25 flex flex-col justify-between shrink-0 p-3 backdrop-blur-md select-none z-10 relative transition-all duration-200 ease-in-out`}
+          } bg-[#0f0f16] border-r border-[#1e1e2a] flex flex-col justify-between shrink-0 p-3 select-none z-10 relative transition-all duration-200 ease-in-out`}
           data-purpose="workspace-navigation"
         >
           {/* Top: Nav Destination Links */}
-          <div className="space-y-3">
+          <div className="space-y-4">
             <div className={`flex items-center ${isSidebarCollapsed ? 'justify-center' : 'justify-between px-2'} pt-1`}>
               {!isSidebarCollapsed && (
-                <span className="text-xs font-mono uppercase tracking-wider text-purple-300/80 font-semibold truncate">
-                  Workspaces
+                <span className="text-xs font-mono uppercase tracking-wider text-[#5c5c6e] font-semibold truncate">
+                  Workspace
                 </span>
               )}
               {isSidebarCollapsed ? (
@@ -679,7 +677,7 @@ export default function App() {
                   <button
                     type="button"
                     onClick={toggleSidebar}
-                    className="p-1.5 rounded-lg text-purple-300 hover:text-white hover:bg-purple-950/40 transition cursor-pointer"
+                    className="p-1.5 rounded-lg text-[#a78bfa] hover:text-white hover:bg-[#ffffff0f] transition cursor-pointer"
                     aria-label="Expand Sidebar (Ctrl+B)"
                   >
                     <PanelLeftOpen className="w-4 h-4" />
@@ -689,16 +687,16 @@ export default function App() {
                 <button
                   type="button"
                   onClick={toggleSidebar}
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-purple-200 hover:bg-purple-950/40 transition cursor-pointer"
+                  className="p-1.5 rounded-lg text-[#7a7a8c] hover:text-[#f4f4f7] hover:bg-[#ffffff0f] transition cursor-pointer"
                   title="Collapse Sidebar (Ctrl+B)"
                   aria-label="Collapse Sidebar (Ctrl+B)"
                 >
-                  <PanelLeftClose className="w-4 h-4 text-slate-400" />
+                  <PanelLeftClose className="w-4 h-4" />
                 </button>
               )}
             </div>
 
-            <nav aria-label="Main Workspaces Navigation" className="space-y-1.5">
+            <nav aria-label="Main Workspaces Navigation" className="space-y-1">
               {primaryNavItems.map((item) => {
                 const isActive = activeTab === item.id;
                 const buttonContent = (
@@ -707,25 +705,25 @@ export default function App() {
                     onClick={() => setActiveTab(item.id)}
                     aria-label={item.label}
                     className={`group flex items-center ${
-                      isSidebarCollapsed ? 'w-10 h-10 justify-center p-0' : 'w-full justify-between px-3.5 py-3'
-                    } rounded-xl font-medium text-sm transition duration-150 cursor-pointer relative ${
+                      isSidebarCollapsed ? 'w-10 h-10 justify-center p-0' : 'w-full justify-between px-3 py-2.5'
+                    } rounded-md font-medium text-xs sm:text-sm transition duration-150 cursor-pointer relative ${
                       isActive
-                        ? 'bg-gradient-to-r from-accent-violet/25 via-purple-600/15 to-transparent border border-purple-500/40 text-purple-200 shadow-sm shadow-purple-950/50'
-                        : 'border border-transparent hover:bg-purple-950/30 hover:border-purple-800/30 text-slate-400 hover:text-purple-200'
+                        ? 'border border-[#7c3aed4d] bg-[#7c3aed1f] text-[#ede9fe] shadow-sm'
+                        : 'border border-transparent hover:bg-[#ffffff0a] text-[#b4b4c2] hover:text-[#f4f4f7]'
                     }`}
                   >
                     <div className={`flex items-center ${isSidebarCollapsed ? 'justify-center' : 'gap-3'} truncate`}>
                       <div
-                        className={`p-1.5 rounded-lg transition shrink-0 ${
+                        className={`transition shrink-0 ${
                           isActive
-                            ? 'bg-accent-violet/25 text-accent-neon shadow-sm shadow-purple-900/30'
-                            : 'bg-obsidian-850 text-slate-400 group-hover:text-purple-300'
+                            ? 'text-[#a78bfa]'
+                            : 'text-[#7a7a8c] group-hover:text-[#b4b4c2]'
                         }`}
                       >
                         {item.icon}
                       </div>
                       {!isSidebarCollapsed && (
-                        <span className={`truncate tracking-tight ${isActive ? 'text-white font-medium' : ''}`}>
+                        <span className={`truncate tracking-tight ${isActive ? 'text-[#ede9fe] font-semibold' : ''}`}>
                           {item.label}
                         </span>
                       )}
@@ -733,9 +731,9 @@ export default function App() {
 
                     {!isSidebarCollapsed && (
                       isActive ? (
-                        <span className="w-1.5 h-1.5 rounded-full bg-accent-neon shadow-glow-violet shrink-0" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#a78bfa] shadow-[0_0_8px_#a78bfa] shrink-0" />
                       ) : item.badge !== undefined ? (
-                        <span className="font-mono text-xs uppercase px-2 py-0.5 rounded shrink-0 text-purple-400/80 bg-purple-950/50 border border-purple-800/40">
+                        <span className="font-mono text-[11px] uppercase px-1.5 py-0.5 rounded shrink-0 text-[#9a9aac] bg-[#1e1e2a] border border-[#2a2a3a]">
                           {item.badge}
                         </span>
                       ) : null
@@ -759,7 +757,7 @@ export default function App() {
           </div>
 
           {/* Navigation Lower Utilities: Side-by-side History & Settings above Output Folder */}
-          <div className="space-y-3 pt-3 border-t border-purple-900/30">
+          <div className="space-y-3 pt-3 border-t border-[#1e1e2a]">
             {isSidebarCollapsed ? (
               /* Collapsible Icon-Only Lower Utilities with Tooltips */
               <div className="space-y-1.5 flex flex-col items-center">
@@ -769,37 +767,39 @@ export default function App() {
                   position="right"
                   delay={100}
                 >
-                  <button
-                    type="button"
+                  <Button
+                    variant={activeTab === 'history' ? 'accentMuted' : 'secondary'}
+                    size="icon"
                     onClick={() => setActiveTab('history')}
                     aria-label="Download History"
-                    className={`w-10 h-10 flex items-center justify-center rounded-xl font-medium text-xs transition duration-150 cursor-pointer relative ${
+                    className={`w-10 h-10 rounded-lg relative ${
                       activeTab === 'history'
-                        ? 'bg-accent-violet/25 border border-purple-500/40 text-purple-200 shadow-sm shadow-purple-950/50'
-                        : 'border border-purple-900/20 bg-obsidian-900/60 hover:bg-purple-950/30 hover:border-purple-800/30 text-slate-400 hover:text-purple-200'
+                        ? 'bg-[#7c3aed1f] border border-[#7c3aed4d] text-[#ede9fe]'
+                        : 'border border-[#1e1e2a] bg-[#14141d] hover:bg-[#1e1e2a] text-[#7a7a8c] hover:text-[#f4f4f7]'
                     }`}
                   >
-                    <Clock className="w-4 h-4 text-purple-300" />
+                    <Clock className="w-4 h-4 text-[#a78bfa]" />
                     {history.length > 0 && (
-                      <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-accent-neon shadow-glow-violet" />
+                      <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#a78bfa]" />
                     )}
-                  </button>
+                  </Button>
                 </Tooltip>
 
                 {/* Settings */}
                 <Tooltip content="Settings" position="right" delay={100}>
-                  <button
-                    type="button"
+                  <Button
+                    variant={activeTab === 'settings' ? 'accentMuted' : 'secondary'}
+                    size="icon"
                     onClick={() => setActiveTab('settings')}
                     aria-label="Settings"
-                    className={`w-10 h-10 flex items-center justify-center rounded-xl font-medium text-xs transition duration-150 cursor-pointer ${
+                    className={`w-10 h-10 rounded-lg ${
                       activeTab === 'settings'
-                        ? 'bg-accent-violet/25 border border-purple-500/40 text-purple-200 shadow-sm shadow-purple-950/50'
-                        : 'border border-purple-900/20 bg-obsidian-900/60 hover:bg-purple-950/30 hover:border-purple-800/30 text-slate-400 hover:text-purple-200'
+                        ? 'bg-[#7c3aed1f] border border-[#7c3aed4d] text-[#ede9fe]'
+                        : 'border border-[#1e1e2a] bg-[#14141d] hover:bg-[#1e1e2a] text-[#7a7a8c] hover:text-[#f4f4f7]'
                     }`}
                   >
-                    <Settings className="w-4 h-4 text-purple-300" />
-                  </button>
+                    <Settings className="w-4 h-4 text-[#a78bfa]" />
+                  </Button>
                 </Tooltip>
 
                 {/* Output Folder Icon Button */}
@@ -808,14 +808,15 @@ export default function App() {
                   position="right"
                   delay={100}
                 >
-                  <button
-                    type="button"
+                  <Button
+                    variant="secondary"
+                    size="icon"
                     onClick={() => setShowOutputFolderModal(true)}
-                    className="w-10 h-10 flex items-center justify-center rounded-xl bg-obsidian-900/90 border border-purple-900/30 hover:border-purple-700/50 text-accent-neon hover:bg-purple-950/40 transition cursor-pointer"
+                    className="w-10 h-10 rounded-lg bg-[#14141d] border border-[#1e1e2a] hover:border-[#2a2a3a] text-[#a78bfa] hover:bg-[#1e1e2a]"
                     aria-label="Change Output Folder"
                   >
                     <FolderOpen className="w-4 h-4" />
-                  </button>
+                  </Button>
                 </Tooltip>
               </div>
             ) : (
@@ -823,75 +824,63 @@ export default function App() {
               <>
                 <div className="grid grid-cols-2 gap-2" data-purpose="history-and-settings-row">
                   {/* Download History Button */}
-                  <button
-                    type="button"
+                  <Button
+                    variant={activeTab === 'history' ? 'accentMuted' : 'secondary'}
+                    size="sm"
                     onClick={() => setActiveTab('history')}
                     aria-label="Download History"
-                    className={`group flex items-center justify-center gap-2 py-2.5 px-2.5 rounded-xl font-medium text-xs sm:text-sm transition duration-150 cursor-pointer ${
+                    className={`w-full justify-center gap-2 ${
                       activeTab === 'history'
-                        ? 'bg-gradient-to-r from-accent-violet/25 via-purple-600/15 to-transparent border border-purple-500/40 text-purple-200 shadow-sm shadow-purple-950/50'
-                        : 'border border-purple-900/20 bg-obsidian-900/60 hover:bg-purple-950/30 hover:border-purple-800/30 text-slate-400 hover:text-purple-200'
+                        ? 'border border-[#7c3aed4d] bg-[#7c3aed1f] text-[#ede9fe]'
+                        : 'border border-[#1e1e2a] bg-[#14141d] hover:bg-[#1e1e2a] text-[#b4b4c2] hover:text-[#f4f4f7]'
                     }`}
                   >
-                    <div
-                      className={`p-1 rounded-md transition shrink-0 ${
-                        activeTab === 'history'
-                          ? 'bg-accent-violet/25 text-accent-neon shadow-sm shadow-purple-900/30'
-                          : 'bg-obsidian-850 text-slate-400 group-hover:text-purple-300'
-                      }`}
-                    >
-                      <Clock className="w-3.5 h-3.5" />
-                    </div>
-                    <span className={`truncate tracking-tight ${activeTab === 'history' ? 'text-white font-medium' : ''}`}>
+                    <Clock className="w-3.5 h-3.5 text-[#a78bfa]" />
+                    <span className={`truncate tracking-tight ${activeTab === 'history' ? 'text-[#ede9fe] font-semibold' : ''}`}>
                       History
                     </span>
-                  </button>
+                  </Button>
 
                   {/* Settings Button */}
-                  <button
-                    type="button"
+                  <Button
+                    variant={activeTab === 'settings' ? 'accentMuted' : 'secondary'}
+                    size="sm"
                     onClick={() => setActiveTab('settings')}
                     aria-label="Settings"
-                    className={`group flex items-center justify-center gap-2 py-2.5 px-2.5 rounded-xl font-medium text-xs sm:text-sm transition duration-150 cursor-pointer ${
+                    className={`w-full justify-center gap-2 ${
                       activeTab === 'settings'
-                        ? 'bg-gradient-to-r from-accent-violet/25 via-purple-600/15 to-transparent border border-purple-500/40 text-purple-200 shadow-sm shadow-purple-950/50'
-                        : 'border border-purple-900/20 bg-obsidian-900/60 hover:bg-purple-950/30 hover:border-purple-800/30 text-slate-400 hover:text-purple-200'
+                        ? 'border border-[#7c3aed4d] bg-[#7c3aed1f] text-[#ede9fe]'
+                        : 'border border-[#1e1e2a] bg-[#14141d] hover:bg-[#1e1e2a] text-[#b4b4c2] hover:text-[#f4f4f7]'
                     }`}
                   >
-                    <div
-                      className={`p-1 rounded-md transition shrink-0 ${
-                        activeTab === 'settings'
-                          ? 'bg-accent-violet/25 text-accent-neon shadow-sm shadow-purple-900/30'
-                          : 'bg-obsidian-850 text-slate-400 group-hover:text-purple-300'
-                      }`}
-                    >
-                      <Settings className="w-3.5 h-3.5" />
-                    </div>
-                    <span className={`truncate tracking-tight ${activeTab === 'settings' ? 'text-white font-medium' : ''}`}>
+                    <Settings className="w-3.5 h-3.5 text-[#a78bfa]" />
+                    <span className={`truncate tracking-tight ${activeTab === 'settings' ? 'text-[#ede9fe] font-semibold' : ''}`}>
                       Settings
                     </span>
-                  </button>
+                  </Button>
                 </div>
 
                 {/* Output Destination Box */}
                 <div
                   onClick={() => setShowOutputFolderModal(true)}
-                  className="bg-obsidian-900/90 border border-purple-900/30 hover:border-purple-700/50 rounded-xl p-3.5 shadow-inner cursor-pointer transition group"
+                  className="bg-[#14141d] border border-[#1e1e2a] hover:border-[#2a2a3a] rounded-lg p-3 cursor-pointer transition group"
                   title={globalOutputDir || 'Default downloads folder'}
                 >
-                  <div className="flex items-center justify-between text-xs mb-1.5">
-                    <span className="flex items-center gap-1.5 text-slate-300 font-semibold truncate">
-                      <FolderOpen className="w-3.5 h-3.5 text-accent-neon shrink-0" />
-                      <span>Output Folder</span>
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#5c5c6e] block mb-1.5">
+                    Output Folder
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <FolderOpen className="w-3.5 h-3.5 text-[#a78bfa] shrink-0" />
+                    <span className="whitespace-nowrap text-xs text-[#d4d4de] grow truncate font-mono">
+                      {globalOutputDir ? globalOutputDir.split(/[/\\]/).pop() : 'System Default'}
                     </span>
-                    <span className="font-mono text-accent-neon text-xs shrink-0 opacity-80 group-hover:opacity-100 font-medium">
-                      Change
-                    </span>
+                    <div className="flex h-5 items-center rounded border border-[#2a2a3a] px-1.5 hover:bg-[#ffffff0f] transition">
+                      <span className="text-[10px] font-bold text-[#c4b5fd]">
+                        Change
+                      </span>
+                    </div>
                   </div>
-                  <div className="font-mono text-xs text-slate-200 truncate select-all">
-                    {globalOutputDir ? globalOutputDir.split(/[/\\]/).pop() : 'System Default'}
-                  </div>
-                  <div className="text-xs text-purple-400/70 font-mono truncate mt-1">
+                  <div className="text-[11px] text-[#5c5c6e] font-mono truncate mt-1">
                     {globalOutputDir || 'Downloads'}
                   </div>
                 </div>
@@ -901,7 +890,7 @@ export default function App() {
         </aside>
 
         {/* Main Workspace Area (Preserved views in DOM to retain state across tab switching) */}
-        <main className="flex-1 overflow-y-auto p-5 sm:p-7 lg:p-8 custom-scrollbar bg-[var(--bg-base)] studio-ambient-bg relative">
+        <main className="flex-1 overflow-y-auto p-5 sm:p-7 lg:p-8 custom-scrollbar bg-[#0b0b10] relative">
           <div className={activeTab === 'download' ? 'block' : 'hidden'}>
             <SingleDownloaderView
               url={url}
@@ -1014,10 +1003,15 @@ export default function App() {
 
       {/* Persistent Bottom Status Strip */}
       <footer
-        className="h-8 bg-obsidian-950/90 border-t border-purple-900/30 px-4 flex items-center justify-center text-xs font-mono text-purple-400/70 select-none relative z-10 shrink-0"
+        className="h-7 bg-[#0b0b10] border-t border-[#1e1e2a] px-4 flex items-center justify-between text-xs font-mono text-[#5c5c6e] select-none relative z-10 shrink-0"
         data-purpose="window-bottom-status-strip"
       >
-        <span>© Hermanos 2026 - For Hermanos. By Hermanos</span>
+        <span>Media Engine: yt-dlp core</span>
+        <span>© Hermanos 2026 — Studio Edition</span>
+        <span className="flex items-center gap-1.5 text-[#22c55e]">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#22c55e]" />
+          Ready
+        </span>
       </footer>
 
       {/* Global Overlays & Modals */}

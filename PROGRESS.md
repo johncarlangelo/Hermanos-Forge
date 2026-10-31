@@ -17,6 +17,13 @@ This document chronicles historical releases, merged capabilities, active sprint
 ## 2. Release & Milestone History
 
 ### [Unreleased] `v1.1.0` / `v1.1.0-pro` — Obsidian Forge Media Studio UI Redesign & Architecture Modernization
+- **Subframe Studio Redesign (Branch `test/subframe-mcp`)**:
+  - Synthesized designs directly with the newly connected Subframe MCP server across Project `d45f34a03785` and Canvas `3a8dc8e7-ed58-4ccc-bfe1-5e68e69840dd`.
+  - Upgraded design tokens to Subframe Studio v2.0: obsidian canvas (`#0b0b10`), sidebar (`#0f0f16`), panels (`#12121a`), elevated cards (`#14141d`), hairline borders (`#1e1e2a`, `#2a2a3a`), and electric violet accents (`#7c3aed`, `#8b5cf6`, `#c4b5fd`).
+  - Single Downloader: Command bar with `Input` primitive, adaptive `Enter ↵` shortcut hint, format switches, live telemetry indicators (speed, ETA, stream container), and clipboard-copyable status log.
+  - Mass Clip Stitcher: Sequence queue cards with two-digit sequence indexing, batch status pills (ready, processing, queued, error), proportional sequence timeline preview, and drag-and-drop ordering.
+  - Selective Duration: Timeline trimmer with Subframe styling, timecode input wells, and tokenized metadata inspectors.
+  - Strict preservation of all Electron IPC channels (`window.electronAPI`, `window.stitchAPI`) and working backend mechanics.
 - **Obsidian Forge Media Studio Overhaul (Commit `b885179`)**:
   - Upgraded design system to the *Obsidian Forge Media Studio* aesthetic: deep obsidian backgrounds (`#09090C`, `#0E0E13`, `#16161F`), cyber-luminescent violet (`#9D4EDD`), amethyst (`#B5179E`), neon purple (`#C084FC`), and radiant cyan (`#00F0FF`).
   - Added specialized Google Fonts typography: `Space Grotesk` (display & headings), `DM Sans` (body & form UI), and `JetBrains Mono` with `tabular-nums` (durations, bitrates, URLs, and timecodes).

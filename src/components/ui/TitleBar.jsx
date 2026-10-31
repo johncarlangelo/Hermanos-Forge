@@ -42,10 +42,7 @@ export function TitleBar() {
   };
 
   return (
-    <header className="h-11 w-full bg-obsidian-950/85 border-b border-purple-900/25 select-none flex items-center justify-between px-3 sm:px-4 shrink-0 drag-region z-40 relative backdrop-blur-md">
-      {/* Top subtle highlight */}
-      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-purple-400/25 to-transparent pointer-events-none" />
-
+    <header className="h-11 w-full bg-[#0f0f16] border-b border-[#1e1e2a] select-none flex items-center justify-between px-3 sm:px-4 shrink-0 drag-region z-40 relative">
       {/* Branding */}
       <div className="flex items-center gap-3 no-drag-region">
         {/* App Brand Mark & Release Tag */}
@@ -54,28 +51,28 @@ export function TitleBar() {
             src={appIcon}
             alt="Hermanos Forge"
             draggable="false"
-            className="w-6 h-6 rounded-md object-contain shadow-sm select-none"
+            className="w-5 h-5 rounded-md object-contain shadow-sm select-none"
           />
           <div className="flex items-center gap-2">
-            <span className="text-xs sm:text-sm font-semibold text-slate-100 tracking-wide font-sans">
+            <span className="text-xs sm:text-sm font-semibold text-[#f4f4f7] tracking-wide font-sans">
               Hermanos Forge
             </span>
-            <span className="font-mono text-xs text-purple-300 bg-purple-950/70 border border-purple-700/40 px-1.5 py-0.5 rounded">
-              v1.1.0
+            <span className="font-mono text-[11px] text-[#a78bfa] bg-[#7c3aed1f] border border-[#7c3aed4d] px-1.5 py-0.5 rounded">
+              Studio v1.1
             </span>
           </div>
         </div>
       </div>
 
       {/* Center Status Badge */}
-      <div className="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full bg-obsidian-950/90 border border-purple-800/40 shadow-inner drag-region">
+      <div className="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full bg-[#0b0b10] border border-[#1e1e2a] shadow-inner drag-region">
         <span className="relative flex h-2 w-2 shrink-0">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent-violet opacity-75" />
-          <span className="relative inline-flex rounded-full h-2 w-2 bg-accent-neon shadow-glow-violet" />
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#22c55e] opacity-75" />
+          <span className="relative inline-flex rounded-full h-2 w-2 bg-[#22c55e]" />
         </span>
-        <span className="text-xs font-medium text-slate-200">Engine Active</span>
-        <span className="text-purple-400/60 text-xs">•</span>
-        <span className="text-xs font-mono text-purple-300">yt-dlp core</span>
+        <span className="text-xs font-medium text-[#d4d4de]">Engine Ready</span>
+        <span className="text-[#5c5c6e] text-xs">•</span>
+        <span className="text-xs font-mono text-[#a78bfa]">yt-dlp core</span>
       </div>
 
       {/* Window Controls & Quick Actions */}
@@ -84,7 +81,7 @@ export function TitleBar() {
           type="button"
           onClick={handleMinimize}
           aria-label="Minimize"
-          className="h-11 w-11 flex items-center justify-center text-slate-400 hover:text-purple-200 hover:bg-purple-950/40 transition-colors duration-100"
+          className="h-11 w-11 flex items-center justify-center text-[#7a7a8c] hover:text-[#f4f4f7] hover:bg-[#ffffff0f] transition-colors duration-100"
         >
           <Minus className="w-3.5 h-3.5" />
         </button>
@@ -92,7 +89,7 @@ export function TitleBar() {
           type="button"
           onClick={handleMaximize}
           aria-label={isMaximized ? 'Restore' : 'Maximize'}
-          className="h-11 w-11 flex items-center justify-center text-slate-400 hover:text-purple-200 hover:bg-purple-950/40 transition-colors duration-100"
+          className="h-11 w-11 flex items-center justify-center text-[#7a7a8c] hover:text-[#f4f4f7] hover:bg-[#ffffff0f] transition-colors duration-100"
         >
           {isMaximized ? (
             <Copy className="w-3 h-3 rotate-180" />
@@ -104,7 +101,7 @@ export function TitleBar() {
           type="button"
           onClick={handleClose}
           aria-label="Close"
-          className="h-11 w-11 flex items-center justify-center text-slate-400 hover:text-white hover:bg-rose-600 transition-colors duration-100"
+          className="h-11 w-11 flex items-center justify-center text-[#7a7a8c] hover:text-white hover:bg-[#ef4444] transition-colors duration-100"
         >
           <X className="w-3.5 h-3.5" />
         </button>

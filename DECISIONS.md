@@ -17,6 +17,7 @@ This document records key technical, architectural, and design decisions made th
 - [ADR-009: Precision Studio Design System & Modular UI Architecture](#adr-009-precision-studio-design-system--modular-ui-architecture)
 - [ADR-010: Obsidian Forge Media Studio Design Language & Visual Evolution](#adr-010-obsidian-forge-media-studio-design-language--visual-evolution)
 - [ADR-011: Strict Obsidian Dark Theme Primacy & Removal of Light Mode](#adr-011-strict-obsidian-dark-theme-primacy--removal-of-light-mode)
+- [ADR-012: Subframe Studio Redesign & Design System Evolution (v2.0)](#adr-012-subframe-studio-redesign--design-system-evolution-v20)
 
 ---
 
@@ -230,4 +231,35 @@ User feedback confirmed that the application's cybernetic aesthetic, neon accent
 #### Consequences
 - **Positive**: Drastically simplifies styling maintenance, guarantees consistent high-contrast visual fidelity, and aligns with user experience preferences.
 - **Negative**: Users preferring light backgrounds cannot toggle the interface mode.
+
+---
+
+### ADR-012: Subframe Studio Redesign & Design System Evolution (v2.0)
+
+* **Status**: Accepted
+* **Date**: 2026-10-31
+
+#### Context
+A newly integrated Subframe Model Context Protocol (MCP) server was authenticated to design precision production interfaces for Hermanos Forge. The existing Obsidian UI needed to evolve towards Subframe Studio standards with cleaner mathematical spatial geometry, enhanced command-bar interactions, telemetry monitors, and unified component primitives.
+
+#### Decision
+1. Redesign application workspaces based on Subframe Studio Canvas (`3a8dc8e7-ed58-4ccc-bfe1-5e68e69840dd`):
+   - **Studio Downloader Workspace** (`0f8a7eab-12d5-4156-8393-48e13f79443d`): Integrated command bar input (`Input` primitive), adaptive keybinding hints, segmented container format pills, real-time download telemetry metrics (speed, ETA, container stream), and copyable status log console.
+   - **Mass Clip Stitcher Workspace** (`8708ea81-7752-4bcf-9942-1a3b14a741c5`): Sequence cards with two-digit sequence indexing, real-time queue health summary breakdown (ready, processing, queued, error), proportional sequence preview bar, and drag-and-drop ordering.
+   - **Selective Duration Trimmer Workspace** (`9bbf6a39-24cc-4309-b059-0621f7e4ea75`): High-precision timeline ruler with dual draggable start/end handles, timecode displays, and Subframe tokenized metadata inspectors.
+2. Standardize all UI surfaces and borders on Subframe Studio tokens:
+   - Canvas: `#0B0B10` (`bg-base`)
+   - Sidebar: `#0F0F16` (`surface-1`)
+   - Studio Panels & Cards: `#12121A` (`surface-2`)
+   - Elevated Items & Dropdowns: `#14141D` (`surface-3`)
+   - Subdued & Strong Borders: `#1E1E2A` & `#2A2A3A`
+   - Electric Violet Brand Accents: `#7C3AED` & `#8B5CF6`
+3. Enforce strict adherence to "Reuse Over Duplication" in `AGENTS.md`:
+   - Replace raw `<input>` and `<button>` instances with reusable primitives (`Input`, `Button`, `Badge`).
+4. Strict preservation of all Electron IPC channels (`window.electronAPI`, `window.stitchAPI`) and working backend interactions.
+
+#### Consequences
+- **Positive**: Pixel-perfect design system alignment with the Subframe MCP canvas, robust state preservation, clean component encapsulation, and 0 lint/build errors.
+- **Negative**: Requires ongoing token discipline across future workspace additions.
+
 

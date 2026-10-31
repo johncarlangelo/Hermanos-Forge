@@ -1,6 +1,5 @@
 import { useState, useMemo } from 'react';
 import {
-  Clock,
   Trash2,
   FolderOpen,
   Copy,
@@ -14,7 +13,6 @@ import {
   X,
   ExternalLink,
 } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Tabs } from '@/components/ui/Tabs';
@@ -109,42 +107,54 @@ export function HistoryView({
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto w-full pb-8">
-      <Card className="surface-panel">
-        <CardContent className="space-y-5 p-5 sm:p-6">
-          {/* Header */}
-          <div className="space-y-2 pb-3.5 border-b border-[var(--border-subdued)]">
-            <div className="flex flex-wrap items-center justify-between gap-3.5">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="w-9 h-9 rounded-xl bg-purple-950/50 border border-purple-800/40 flex items-center justify-center text-accent-neon shadow-sm shrink-0">
-                  <Clock className="w-4.5 h-4.5" />
-                </div>
-                <div className="flex items-center gap-2.5 flex-wrap min-w-0">
-                  <h2 className="text-base sm:text-lg font-bold text-[var(--text-primary)] tracking-tight font-heading">
-                    Download History &amp; Archive
-                  </h2>
-                  <Badge variant="default" size="md">
-                    {history.length} {history.length === 1 ? 'Record' : 'Records'}
-                  </Badge>
-                </div>
-              </div>
-
-              {history.length > 0 && (
-                <Button
-                  variant="ghost"
-                  size="md"
-                  onClick={onOpenClearModal}
-                  className="text-rose-400 hover:bg-rose-500/10 hover:text-rose-300 font-semibold text-xs sm:text-sm shrink-0"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  <span>Clear Archive</span>
-                </Button>
-              )}
-            </div>
-
-            <p className="text-xs sm:text-sm text-[var(--text-secondary)] leading-relaxed">
-              Review previously processed downloads, open local file destinations, and manage logs.
-            </p>
+      {/* Subframe Studio Header */}
+      <header className="flex w-full items-start justify-between gap-4">
+        <div className="flex flex-col items-start gap-1">
+          <div className="flex items-center gap-2 text-xs font-mono text-[#7a7a8c]">
+            <span>Studio</span>
+            <span>&gt;</span>
+            <span>Archive</span>
           </div>
+          <h1 className="text-2xl font-bold tracking-tight text-[#f4f4f7] font-heading">
+            Download History
+          </h1>
+          <p className="text-xs sm:text-sm text-[#7a7a8c]">
+            Review previously processed downloads, open local file destinations, and manage logs.
+          </p>
+        </div>
+        <div className="flex items-center gap-2 rounded-full border border-solid border-[#22c55e33] bg-[#22c55e14] px-3 py-1 shrink-0">
+          <div className="flex h-2 w-2 flex-none items-start rounded-full bg-[#22c55e]" />
+          <span className="text-xs font-bold text-[#86efac]">
+            Engine ready
+          </span>
+        </div>
+      </header>
+
+      {/* Main Archive Panel */}
+      <section className="flex w-full flex-col items-start gap-5 rounded-xl border border-solid border-[#1e1e2a] bg-[#12121a] px-6 py-6 shadow-lg">
+        {/* Archive Header */}
+        <div className="flex flex-wrap items-center justify-between gap-3 w-full pb-3 border-b border-[#1e1e2a]">
+          <div className="flex items-center gap-2.5">
+            <span className="text-sm font-bold text-[#f4f4f7] font-heading">
+              History Records
+            </span>
+            <Badge variant="brand" size="sm">
+              {history.length} {history.length === 1 ? 'Record' : 'Records'}
+            </Badge>
+          </div>
+
+          {history.length > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onOpenClearModal}
+              className="text-[#ef4444] hover:bg-[#ef44441a] text-xs font-bold shrink-0"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Clear Archive</span>
+            </Button>
+          )}
+        </div>
 
           {/* Subtabs and Search Bar */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
@@ -326,8 +336,7 @@ export function HistoryView({
               </div>
             </div>
           )}
-        </CardContent>
-      </Card>
+      </section>
     </div>
   );
 }

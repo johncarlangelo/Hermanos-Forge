@@ -57,14 +57,14 @@ export function CookieWizardModal({
     >
       <div className="space-y-4">
         {/* Step Indicator */}
-        <div className="flex items-center gap-1.5 pb-2 border-b border-[var(--border-subdued)]">
+        <div className="flex items-center gap-1.5 pb-2 border-b border-[#1e1e2a]">
           {[1, 2, 3, 4, 5].map((s) => (
             <div
               key={s}
               className={`h-1 flex-1 rounded-full transition-colors ${
                 s <= step
-                  ? 'bg-[var(--accent-primary)]'
-                  : 'bg-[var(--surface-hover)]'
+                  ? 'bg-[#7c3aed]'
+                  : 'bg-[#1e1e2a]'
               }`}
             />
           ))}
@@ -73,12 +73,12 @@ export function CookieWizardModal({
         {/* STEP 1: Browser Selection */}
         {step === 1 && (
           <div className="space-y-4">
-            <div className="p-3.5 bg-[var(--surface-2)] border border-[var(--border-subdued)] rounded-xl text-xs sm:text-sm text-[var(--text-secondary)] leading-relaxed">
-              Cookies stay strictly on your local computer (<code className="text-[var(--accent-primary)] font-mono">%AppData%\Hermanos Forge\cookies.txt</code>). They are never transmitted to any external server and are filtered to keep only YouTube and Google session tokens.
+            <div className="p-3.5 bg-[#0b0b10] border border-[#1e1e2a] rounded-xl text-xs sm:text-sm text-[#7a7a8c] leading-relaxed">
+              Cookies stay strictly on your local computer (<code className="text-[#a78bfa] font-mono">%AppData%\Hermanos Forge\cookies.txt</code>). They are never transmitted to any external server and are filtered to keep only YouTube and Google session tokens.
             </div>
 
             <div>
-              <label className="block text-sm font-bold text-[var(--text-primary)] mb-2.5">
+              <label className="block text-xs font-bold uppercase tracking-wider text-[#9a9aac] mb-2.5">
                 Which browser do you normally use for YouTube?
               </label>
               <div className="grid grid-cols-2 gap-2.5">
@@ -89,24 +89,24 @@ export function CookieWizardModal({
                       key={b}
                       type="button"
                       onClick={() => setCookieBrowser(b)}
-                      className={`flex items-center gap-2.5 p-3 rounded-xl border text-xs sm:text-sm font-medium transition-colors text-left ${
+                      className={`flex items-center gap-2.5 p-3 rounded-lg border text-xs sm:text-sm font-medium transition text-left cursor-pointer ${
                         isSelected
-                          ? 'border-[var(--accent-primary)] bg-[var(--accent-muted)] text-[var(--text-primary)]'
-                          : 'border-[var(--border-subdued)] bg-[var(--surface-2)] text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]'
+                          ? 'border-[#7c3aed] bg-[#7c3aed1f] text-[#ede9fe]'
+                          : 'border-[#2a2a3a] bg-[#0b0b10] text-[#b4b4c2] hover:bg-[#14141d] hover:text-[#f4f4f7]'
                       }`}
                     >
                       <div
                         className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${
                           isSelected
-                            ? 'border-[var(--accent-primary)] bg-[var(--accent-primary)]'
-                            : 'border-[var(--border-strong)]'
+                            ? 'border-[#7c3aed] bg-[#7c3aed]'
+                            : 'border-[#3a3a4e]'
                         }`}
                       >
                         {isSelected && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
                       </div>
                       <span>{b}</span>
                       {b === 'Firefox' && (
-                        <span className="ml-auto text-xs text-[var(--accent-primary)] font-bold">
+                        <span className="ml-auto text-xs text-[#a78bfa] font-bold">
                           1-Click
                         </span>
                       )}
@@ -117,7 +117,7 @@ export function CookieWizardModal({
             </div>
 
             {cookieBrowser === 'Firefox' && (
-              <div className="p-3.5 bg-[var(--status-success)]/10 border border-[var(--status-success)]/20 rounded-xl flex items-center gap-2.5 text-xs sm:text-sm text-[var(--status-success)] font-medium">
+              <div className="p-3 bg-[#22c55e14] border border-[#22c55e33] rounded-lg flex items-center gap-2.5 text-xs text-[#86efac] font-medium">
                 <Check className="w-4 h-4 shrink-0" />
                 <span>Firefox cookies can be extracted directly without installing any extension!</span>
               </div>

@@ -4,8 +4,7 @@ export function Card({ className, children, ...props }) {
   return (
     <div
       className={cn(
-        'relative overflow-hidden bg-[var(--surface-1)] border border-[var(--border-subdued)] rounded-[12px] shadow-[0_4px_20px_-2px_rgba(0,0,0,0.25)]',
-        'before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/12 before:to-transparent before:pointer-events-none',
+        'relative overflow-hidden bg-[#12121a] border border-[#1e1e2a] rounded-xl shadow-lg',
         className
       )}
       {...props}
@@ -19,7 +18,7 @@ export function CardHeader({ className, children, ...props }) {
   return (
     <div
       className={cn(
-        'flex items-center justify-between px-4 py-3 border-b border-[var(--border-subdued)]',
+        'flex items-center justify-between px-5 py-4 border-b border-[#1e1e2a]',
         className
       )}
       {...props}
