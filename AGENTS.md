@@ -50,7 +50,16 @@ For technical architecture, design tokens, active tasks, and decision records, r
 ### Pages, Screens & View Decomposition
 - **View Containers**: Screen views live under `src/components/views/` (e.g. `SingleDownloaderView`, `MassClipView`, `SelectiveDurationView`, `HistoryView`, `SettingsView`).
 - **Dialogs & Modals**: Reusable overlays live under `src/components/modals/` (e.g. `CookieWizardModal`, `PlaylistSelectorModal`) and are wrapped in the shared `Dialog` primitive.
-- **Decomposition Rule**: Avoid massive monolith files (e.g. >500 lines). `App.jsx` serves as the application shell and navigation coordinator; specific feature workflows must be extracted into dedicated view containers.
+- **Decomposition Rule**: Avoid massive monolith files (e.g. >500 lines). `App.jsx` serves as the application shell and navigation coordinator; specific feature workflows are extracted into dedicated view containers and studio components.
+
+### Studio Workbench Spatial Architecture
+- **Location**: Specialized workbench components live under `src/components/studio/`:
+  - `ActivityDock.jsx`: Left vertical activity tool dock (`w-16`) housing primary studio tools, utility drawers, cookie auth status, destination directory, and inspector toggle.
+  - `CommandBar.jsx`: Global Spotlight / Command Bar header with `Ctrl+K` hotkey listener, instant clipboard paste button, dynamic stream detection badges, and stream title breadcrumb.
+  - `TimelineRuler.jsx`: Persistent bottom dock studio timeline ruler with calibrated tick marks, interactive In/Out trim handles with verified minimum gap clamping, draggable playhead scrubber, transport controls, and sequence duration tallies.
+  - `InspectorRail.jsx`: Collapsible right panel (`w-80`/`w-84`, toggled via `Ctrl+I`) containing Stream Properties (format toggles, resolution selectors, codec chips, output destination) and Live Engine Telemetry (speed gauges, ETA countdown, transfer progress rings, live console stream, and primary glowing Forge button).
+
+### Form State Preservation & Behavior Compatibility
 - **Form State Preservation**: Each view manages or binds to persistent state. Switching navigation tabs or opening/closing dialogs must **never** wipe form inputs, entered URLs, or active job progress.
 
 ### Design System & Visual Token Compliance

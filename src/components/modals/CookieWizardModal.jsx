@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import {
-  Cookie,
   Check,
   Download,
   Upload,
   AlertTriangle,
   Loader2,
   ExternalLink,
+  ShieldCheck,
 } from 'lucide-react';
 import { Dialog, DialogFooter } from '@/components/ui/Dialog';
 import { Button } from '@/components/ui/Button';
@@ -51,12 +51,12 @@ export function CookieWizardModal({
     <Dialog
       isOpen={isOpen}
       onClose={handleClose}
-      title="Browser Authentication Setup"
+      title="Browser Authentication Wizard"
       description={`Step ${step} of 5 — Authenticate YouTube session for private and age-restricted media`}
       maxWidth="max-w-lg"
     >
       <div className="space-y-4">
-        {/* Step Indicator */}
+        {/* Step Indicator Progress Bar */}
         <div className="flex items-center gap-1.5 pb-2 border-b border-[#1e1e2a]">
           {[1, 2, 3, 4, 5].map((s) => (
             <div
@@ -74,12 +74,12 @@ export function CookieWizardModal({
         {step === 1 && (
           <div className="space-y-4">
             <div className="p-3.5 bg-[#0b0b10] border border-[#1e1e2a] rounded-xl text-xs sm:text-sm text-[#7a7a8c] leading-relaxed">
-              Cookies stay strictly on your local computer (<code className="text-[#a78bfa] font-mono">%AppData%\Hermanos Forge\cookies.txt</code>). They are never transmitted to any external server and are filtered to keep only YouTube and Google session tokens.
+              Cookies stay strictly on your local computer (<code className="text-[#a78bfa] font-mono">%AppData%\Hermanos Forge\cookies.txt</code>). They are never transmitted externally and are filtered to keep only YouTube and Google session tokens.
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-[#9a9aac] mb-2.5">
-                Which browser do you normally use for YouTube?
+              <label className="block text-xs font-bold uppercase tracking-wider text-[#9a9aac] mb-2.5 font-mono">
+                WHICH BROWSER DO YOU REGULARLY USE FOR YOUTUBE?
               </label>
               <div className="grid grid-cols-2 gap-2.5">
                 {browsers.map((b) => {
@@ -89,9 +89,9 @@ export function CookieWizardModal({
                       key={b}
                       type="button"
                       onClick={() => setCookieBrowser(b)}
-                      className={`flex items-center gap-2.5 p-3 rounded-lg border text-xs sm:text-sm font-medium transition text-left cursor-pointer ${
+                      className={`flex items-center gap-2.5 p-3 rounded-xl border text-xs sm:text-sm font-medium transition text-left cursor-pointer ${
                         isSelected
-                          ? 'border-[#7c3aed] bg-[#7c3aed1f] text-[#ede9fe]'
+                          ? 'border-[#7c3aed] bg-[#7c3aed1f] text-[#ede9fe] shadow-sm'
                           : 'border-[#2a2a3a] bg-[#0b0b10] text-[#b4b4c2] hover:bg-[#14141d] hover:text-[#f4f4f7]'
                       }`}
                     >
@@ -106,8 +106,8 @@ export function CookieWizardModal({
                       </div>
                       <span>{b}</span>
                       {b === 'Firefox' && (
-                        <span className="ml-auto text-xs text-[#a78bfa] font-bold">
-                          1-Click
+                        <span className="ml-auto text-[10px] text-[#a78bfa] font-mono font-bold bg-[#7c3aed26] px-1.5 py-0.2 rounded">
+                          Direct
                         </span>
                       )}
                     </button>
@@ -117,9 +117,9 @@ export function CookieWizardModal({
             </div>
 
             {cookieBrowser === 'Firefox' && (
-              <div className="p-3 bg-[#22c55e14] border border-[#22c55e33] rounded-lg flex items-center gap-2.5 text-xs text-[#86efac] font-medium">
+              <div className="p-3 bg-[#22c55e14] border border-[#22c55e33] rounded-xl flex items-center gap-2.5 text-xs text-[#86efac] font-medium">
                 <Check className="w-4 h-4 shrink-0" />
-                <span>Firefox cookies can be extracted directly without installing any extension!</span>
+                <span>Firefox cookies can be extracted directly without installing any browser extensions!</span>
               </div>
             )}
           </div>
@@ -127,21 +127,21 @@ export function CookieWizardModal({
 
         {/* STEP 2: Extension Installation */}
         {step === 2 && (
-          <div className="space-y-4 text-xs sm:text-sm text-[var(--text-secondary)]">
-            <h4 className="font-bold text-base text-[var(--text-primary)]">
+          <div className="space-y-4 text-xs sm:text-sm text-[#b4b4c2]">
+            <h4 className="font-bold text-base text-[#f4f4f7] font-heading">
               Install Netscape Cookies Extension
             </h4>
             <p className="leading-relaxed">
-              Chromium-based browsers (Chrome, Edge, Brave, Opera) encrypt cookie vaults on Windows. To export them safely in open Netscape format, install the lightweight open-source extension below.
+              Chromium-based browsers (Chrome, Edge, Brave, Opera) encrypt cookie databases on Windows. To export them safely in standard Netscape format, install the lightweight open-source extension below.
             </p>
-            <div className="p-5 bg-[var(--surface-2)] border border-[var(--border-subdued)] rounded-xl flex flex-col items-center justify-center gap-3 text-center">
-              <Download className="w-7 h-7 text-[var(--accent-primary)]" />
+            <div className="p-5 bg-[#0b0b10] border border-[#1e1e2a] rounded-xl flex flex-col items-center justify-center gap-3 text-center shadow-inner">
+              <Download className="w-7 h-7 text-[#a78bfa]" />
               <div>
-                <span className="font-bold text-sm sm:text-base text-[var(--text-primary)] block">
+                <span className="font-bold text-sm sm:text-base text-[#f4f4f7] block">
                   Get cookies.txt LOCALLY
                 </span>
-                <span className="text-xs text-[var(--text-secondary)] mt-0.5 block">
-                  Available in the official Chrome Web Store
+                <span className="text-xs text-[#7a7a8c] mt-0.5 block font-mono">
+                  Official Chrome Web Store extension
                 </span>
               </div>
               <Button
@@ -158,34 +158,34 @@ export function CookieWizardModal({
                 Open Extension Store Page
               </Button>
             </div>
-            <p className="text-xs text-[var(--text-tertiary)]">
-              Edge, Brave, and Opera users: allow extensions from other stores when prompted.
+            <p className="text-xs text-[#7a7a8c] font-mono">
+              Note: Edge, Brave, and Opera users should click &quot;Allow extensions from other stores&quot; when prompted.
             </p>
           </div>
         )}
 
         {/* STEP 3: Export Instructions */}
         {step === 3 && (
-          <div className="space-y-4 text-xs sm:text-sm text-[var(--text-secondary)]">
-            <h4 className="font-bold text-base text-[var(--text-primary)]">
+          <div className="space-y-4 text-xs sm:text-sm text-[#b4b4c2]">
+            <h4 className="font-bold text-base text-[#f4f4f7] font-heading">
               Export Cookies from YouTube
             </h4>
-            <ol className="space-y-2.5 list-decimal list-inside leading-relaxed bg-[var(--surface-2)] p-4 rounded-xl border border-[var(--border-subdued)]">
+            <ol className="space-y-2.5 list-decimal list-inside leading-relaxed bg-[#0b0b10] p-4 rounded-xl border border-[#1e1e2a] shadow-inner">
               <li>
-                Navigate to <strong className="text-[var(--text-primary)]">youtube.com</strong> in your browser and confirm you are signed in.
+                Navigate to <strong className="text-[#f4f4f7]">youtube.com</strong> in your browser and confirm you are signed in.
               </li>
               <li>
-                Click the <strong className="text-[var(--text-primary)]">Get cookies.txt</strong> icon in your browser extension toolbar.
+                Click the <strong className="text-[#f4f4f7]">Get cookies.txt</strong> icon in your browser extension toolbar.
               </li>
               <li>
-                Ensure format is set to <strong className="text-[var(--text-primary)]">Netscape</strong>.
+                Ensure format is set to <strong className="text-[#f4f4f7]">Netscape</strong>.
               </li>
               <li>
-                Click the main <strong className="text-[var(--text-primary)]">Export</strong> button. This saves a <code className="text-[var(--accent-primary)] font-mono">cookies.txt</code> file to your Downloads folder.
+                Click the main <strong className="text-[#f4f4f7]">Export</strong> button. This saves a <code className="text-[#a78bfa] font-mono">cookies.txt</code> file to your Downloads folder.
               </li>
             </ol>
-            <div className="p-3 bg-[var(--status-warning)]/10 border border-[var(--status-warning)]/20 rounded-xl flex items-start gap-2.5 text-xs text-[var(--status-warning)]">
-              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+            <div className="p-3 bg-[#fef08a14] border border-[#facc1533] rounded-xl flex items-start gap-2.5 text-xs text-[#fde047]">
+              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-[#facc15]" />
               <span>Do not click &quot;Export All Cookies&quot;. Export only for the active youtube.com tab.</span>
             </div>
           </div>
@@ -205,33 +205,33 @@ export function CookieWizardModal({
                 const res = await onImportCookies(null);
                 if (res) setStep(5);
               }}
-              className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer flex flex-col items-center justify-center transition-colors ${
+              className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer flex flex-col items-center justify-center transition-all ${
                 isDragging
-                  ? 'border-[var(--accent-primary)] bg-[var(--accent-muted)]'
-                  : 'border-[var(--border-strong)] bg-[var(--surface-2)] hover:bg-[var(--surface-hover)]'
+                  ? 'border-[#7c3aed] bg-[#7c3aed1a]'
+                  : 'border-[#2a2a3a] bg-[#0b0b10] hover:bg-[#12121a] hover:border-[#3a3a4e]'
               }`}
             >
               {isSyncingCookies ? (
-                <Loader2 className="w-8 h-8 text-[var(--accent-primary)] animate-spin mb-2" />
+                <Loader2 className="w-8 h-8 text-[#a78bfa] animate-spin mb-2" />
               ) : (
                 <Upload
                   className={`w-8 h-8 mb-2 ${
                     isDragging
-                      ? 'text-[var(--accent-primary)]'
-                      : 'text-[var(--text-secondary)]'
+                      ? 'text-[#a78bfa]'
+                      : 'text-[#7a7a8c]'
                   }`}
                 />
               )}
-              <span className="font-bold text-sm text-[var(--text-primary)] block mb-1">
+              <span className="font-bold text-sm text-[#f4f4f7] block mb-1">
                 Drop your cookies.txt file here
               </span>
-              <span className="text-xs text-[var(--text-secondary)]">
-                or click anywhere inside this box to browse files
+              <span className="text-xs text-[#7a7a8c]">
+                or click anywhere inside this box to browse local files
               </span>
             </div>
 
-            <div className="text-xs text-[var(--text-tertiary)] flex items-start gap-2 leading-relaxed">
-              <Cookie className="w-4 h-4 shrink-0 mt-0.5 text-[var(--accent-primary)]" />
+            <div className="text-xs text-[#7a7a8c] flex items-start gap-2 leading-relaxed">
+              <ShieldCheck className="w-4 h-4 shrink-0 mt-0.5 text-[#22c55e]" />
               <span>
                 Non-YouTube cookies are automatically stripped during import for privacy. You may safely delete the exported cookies.txt file from Downloads afterwards.
               </span>
@@ -242,18 +242,18 @@ export function CookieWizardModal({
         {/* STEP 5: Success Confirmation */}
         {step === 5 && (
           <div className="space-y-4 text-center py-4">
-            <div className="w-12 h-12 rounded-full bg-[var(--status-success)]/15 text-[var(--status-success)] flex items-center justify-center mx-auto">
+            <div className="w-12 h-12 rounded-full bg-[#22c55e14] border border-[#22c55e33] text-[#86efac] flex items-center justify-center mx-auto shadow-sm">
               <Check className="w-6 h-6 stroke-[2.5]" />
             </div>
             <div>
-              <h4 className="text-base font-bold text-[var(--text-primary)]">
+              <h4 className="text-base font-bold text-[#f4f4f7] font-heading">
                 Cookies Synchronized Successfully
               </h4>
-              <p className="text-xs sm:text-sm text-[var(--text-secondary)] mt-1">
+              <p className="text-xs sm:text-sm text-[#7a7a8c] mt-1">
                 Hermanos Forge is now authorized to download age-restricted, unlisted, and private media.
               </p>
             </div>
-            <div className="p-3.5 bg-[var(--surface-2)] border border-[var(--border-subdued)] rounded-xl text-xs text-[var(--text-tertiary)] text-left leading-relaxed">
+            <div className="p-3.5 bg-[#0b0b10] border border-[#1e1e2a] rounded-xl text-xs text-[#7a7a8c] text-left leading-relaxed font-mono">
               Session tokens remain valid for approximately 2 to 4 weeks depending on your browser. If YouTube returns sign-in barriers in the future, simply re-sync from Settings.
             </div>
           </div>
@@ -319,7 +319,7 @@ export function CookieWizardModal({
 
         {step === 5 && (
           <Button variant="primary" size="md" onClick={handleClose} className="text-xs sm:text-sm font-semibold">
-            Finish & Close
+            Finish &amp; Close
           </Button>
         )}
       </DialogFooter>

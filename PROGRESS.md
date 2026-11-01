@@ -17,13 +17,25 @@ This document chronicles historical releases, merged capabilities, active sprint
 ## 2. Release & Milestone History
 
 ### [Unreleased] `v1.1.0` / `v1.1.0-pro` — Obsidian Forge Media Studio UI Redesign & Architecture Modernization
-- **Subframe Studio Redesign (Branch `test/subframe-mcp`)**:
-  - Synthesized designs directly with the newly connected Subframe MCP server across Project `d45f34a03785` and Canvas `3a8dc8e7-ed58-4ccc-bfe1-5e68e69840dd`.
-  - Upgraded design tokens to Subframe Studio v2.0: obsidian canvas (`#0b0b10`), sidebar (`#0f0f16`), panels (`#12121a`), elevated cards (`#14141d`), hairline borders (`#1e1e2a`, `#2a2a3a`), and electric violet accents (`#7c3aed`, `#8b5cf6`, `#c4b5fd`).
-  - Single Downloader: Command bar with `Input` primitive, adaptive `Enter ↵` shortcut hint, format switches, live telemetry indicators (speed, ETA, stream container), and clipboard-copyable status log.
-  - Mass Clip Stitcher: Sequence queue cards with two-digit sequence indexing, batch status pills (ready, processing, queued, error), proportional sequence timeline preview, and drag-and-drop ordering.
-  - Selective Duration: Timeline trimmer with Subframe styling, timecode input wells, and tokenized metadata inspectors.
-  - Strict preservation of all Electron IPC channels (`window.electronAPI`, `window.stitchAPI`) and working backend mechanics.
+- **Studio Workbench 3-Zone Spatial Architecture (Branch `test/subframe-mcp`)**:
+  - Implemented the complete structural departure from the old 5 stacked card tabs into a professional DAW/NLE studio layout:
+    1. **Left Activity Dock (`ActivityDock.jsx`)**: Sleek vertical tool dock (`w-16`) with Forge brand mark, primary studio tools (Media Workbench, Multi-Track Stitcher, Timeline Trimmer), utility drawers (History Ledger, Studio Settings), Cookie Auth status capsule, destination folder picker, and Inspector toggle (`Ctrl+I`).
+    2. **Center Stage (The Studio Canvas)**:
+       - **Header: Global Spotlight / Command Bar (`CommandBar.jsx`)**: `Ctrl+K` hotkey listener, instant clipboard paste button, URL stream detection pills, playlist detection counter, and breadcrumb navigation.
+       - **Main Viewport**: Rich, interactive canvas stage for media cards, batch sequence blocks, visual waveform bed, and history ledger.
+       - **Bottom Dock: Persistent Studio Timeline Ruler (`TimelineRuler.jsx`)**: Interactive start/end trim handles with minimum gap clamping, draggable playhead scrubber, transport scrub controls, zoom scrubbers (`-`, `100%`, `+`), calibrated timecode ticks, and sequence duration tallies.
+    3. **Right Inspector & Telemetry Rail (`InspectorRail.jsx`)**: Collapsible panel (`w-80`/`w-84`, toggled via `Ctrl+I`) housing stream format toggles (MP4 Video / MP3 Master), resolution selectors, live stream codec chips (`H.264`, `AAC 320k`, `60 FPS`), output destination, speed gauges with dynamic level bars, ETA countdown card, dual transfer progress bar, live terminal console stream, and primary glowing "Forge Media Stream" action button.
+  - Retained 100% Electron IPC compatibility (`window.electronAPI`, `window.stitchAPI`), full form state preservation in DOM across tab switches, 0 ESLint errors/warnings, and passing unit test suite (`npm test`).
+- **Subframe Studio Precision Redesign (Branch `test/subframe-mcp`)**:
+  - Full precision DAW studio redesign utilizing Subframe MCP server and motion patterns (`filmstrip-scrubber`, `cue-scrubber`, `tool-call-stack`, `activity-capsule`, `schedule-ripple`, `queue-reorder`, `region-splice`).
+  - TitleBar & Frameless Header: Dynamic studio breadcrumbs (`STUDIO / WORKBENCH / SINGLE STREAM`), live pulse engine diagnostics beacon (`ENGINE ACTIVE • yt-dlp core`), and tactile window controls.
+  - Studio Navigation Sidebar: Fluid active blade indicators, keyboard shortcuts `Ctrl+1` through `Ctrl+5` (`⌘1`–`⌘5` pills), live Cookie Auth Status Dock capsule, and storage path quick trigger.
+  - Single Downloader Workbench: High-density Media Command Bar, live download telemetry HUD (transfer speed meter, ETA countdown, byte tracker, stream container tag), resilient yt-dlp telemetry parsing (`%` and `MiB` size matches), and expandable tool-call terminal log stack.
+  - Mass Clip Stitcher Studio: Proportional visual timeline sequence preview minimap, drag-and-drop and 1-click accessible reordering (`ChevronUp`/`ChevronDown` buttons and `ArrowUp`/`ArrowDown` keyboard controls via `queue-reorder`), per-clip status badges, zero destructive resets (eliminated 5s auto-wipe timer per `AGENTS.md`), and batch health diagnostics (H.264/AAC concat compatibility).
+  - Selective Duration Trimmer: Interactive zoomable timeline ruler (1x–50x), synthetic SVG audio waveform peaks bed (`region-splice`), dual draggable start/end scrubbing handles with pointer capture (`setPointerCapture`) and keyboard arrow nudging, non-clipped floating timecode tooltips, robust multi-format timecode parsing (`h:mm:ss`, `mm:ss`, `ss`), short-video (<5s) boundary support, and bottom "Add Another Segment" button.
+  - Download Ledger & Settings: Tabular archive ledger with search query filter, storage usage summary, and updated cookie authentication wizard dialog.
+  - Automated Unit Test Suite (`scripts/verify_redesign_logic.test.mjs`): 4 comprehensive tests covering timecode parsing, short video trimmer boundaries, status string telemetry extraction, and clip queue reordering logic. Wired to `npm test`.
+  - 100% preservation of Electron IPC channels (`window.electronAPI`, `window.stitchAPI`), form state preservation across tab switches, 0 ESLint errors and 0 warnings, and clean Vite production builds.
 - **Obsidian Forge Media Studio Overhaul (Commit `b885179`)**:
   - Upgraded design system to the *Obsidian Forge Media Studio* aesthetic: deep obsidian backgrounds (`#09090C`, `#0E0E13`, `#16161F`), cyber-luminescent violet (`#9D4EDD`), amethyst (`#B5179E`), neon purple (`#C084FC`), and radiant cyan (`#00F0FF`).
   - Added specialized Google Fonts typography: `Space Grotesk` (display & headings), `DM Sans` (body & form UI), and `JetBrains Mono` with `tabular-nums` (durations, bitrates, URLs, and timecodes).

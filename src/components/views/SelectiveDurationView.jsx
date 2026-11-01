@@ -11,6 +11,9 @@ import {
   RotateCcw,
   Sparkles,
   OctagonX,
+  Clock,
+  Layers,
+  Scissors,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -39,13 +42,23 @@ const formatTimeShort = (seconds) => {
 };
 
 const parseTime = (timeStr) => {
-  const parts = timeStr.split(':');
+  if (!timeStr) return 0;
+  const parts = String(timeStr).trim().split(':').map((p) => parseFloat(p));
+  if (parts.some((n) => isNaN(n))) return 0;
   if (parts.length === 3) {
-    const val = parseInt(parts[0], 10) * 3600 + parseInt(parts[1], 10) * 60 + parseInt(parts[2], 10);
-    return isNaN(val) ? 0 : val;
+    return parts[0] * 3600 + parts[1] * 60 + parts[2];
+  } else if (parts.length === 2) {
+    return parts[0] * 60 + parts[1];
+  } else if (parts.length === 1) {
+    return parts[0];
   }
   return 0;
 };
+
+const PEAKS = Array.from(
+  { length: 140 },
+  (_, i) => 6 + 32 * Math.abs(Math.sin(i * 1.93) * Math.cos(i * 0.19)) * (0.3 + 0.7 * Math.abs(Math.sin(i * 0.075)))
+);
 
 function ClipTimeline({
   clip,
@@ -67,6 +80,7 @@ function ClipTimeline({
   const [isHoveringStart, setIsHoveringStart] = useState(false);
   const [isDraggingEnd, setIsDraggingEnd] = useState(false);
   const [isHoveringEnd, setIsHoveringEnd] = useState(false);
+  const [hoverPosition, setHoverPosition] = useState(null);
 
   const trackRef = useRef(null);
   const containerRef = useRef(null);
@@ -105,19 +119,21 @@ function ClipTimeline({
     setIsEditingStart(false);
     if (clip.isLocked || clip.isExcluded) return;
     let parsed = parseTime(startInput);
+    const minGap = Math.min(1, Math.max(0.1, (metadata?.duration || 60) * 0.01));
     if (parsed >= clip.endTime) {
-      parsed = Math.max(0, clip.endTime - 5);
+      parsed = Math.max(0, clip.endTime - minGap);
       toast.error('Start time must be before end time.');
     }
-    updateClip(clip.id, { startTime: parsed });
+    updateClip(clip.id, { startTime: Math.max(0, Math.min(parsed, metadata?.duration || 0)) });
   };
 
   const handleEndInputBlur = () => {
     setIsEditingEnd(false);
     if (clip.isLocked || clip.isExcluded) return;
     let parsed = parseTime(endInput);
+    const minGap = Math.min(1, Math.max(0.1, (metadata?.duration || 60) * 0.01));
     if (parsed <= clip.startTime) {
-      parsed = Math.min(metadata.duration, clip.startTime + 5);
+      parsed = Math.min(metadata.duration, clip.startTime + minGap);
       toast.error('End time must be after start time.');
     } else if (parsed > metadata.duration) {
       parsed = metadata.duration;
@@ -129,29 +145,45 @@ function ClipTimeline({
     if (clip.isLocked || clip.isExcluded) return;
     e.stopPropagation();
     e.preventDefault();
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      /* ignore */
+    }
+
+    const startX = e.clientX;
+    const initialStart = clip.startTime;
+    const initialEnd = clip.endTime;
+    const initialTime = isStart ? initialStart : initialEnd;
+    const minGap = Math.min(1, Math.max(0.1, (metadata?.duration || 60) * 0.01));
 
     if (isStart) setIsDraggingStart(true);
     else setIsDraggingEnd(true);
 
-    const startX = e.clientX;
-    const initialTime = isStart ? clip.startTime : clip.endTime;
-
     const handlePointerMove = (moveEvent) => {
-      if (!trackRef.current || !metadata) return;
+      if (!trackRef.current || !metadata || !metadata.duration) return;
       const trackWidth = trackRef.current.offsetWidth;
+      if (!trackWidth) return;
       const deltaX = moveEvent.clientX - startX;
       const timeDelta = (deltaX / trackWidth) * metadata.duration;
 
       if (isStart) {
-        const newTime = Math.max(0, Math.min(initialTime + timeDelta, clip.endTime - 5));
+        const newTime = Math.max(0, Math.min(initialTime + timeDelta, initialEnd - minGap));
         updateClip(clip.id, { startTime: newTime });
       } else {
-        const newTime = Math.min(metadata.duration, Math.max(initialTime + timeDelta, clip.startTime + 5));
+        const newTime = Math.min(metadata.duration, Math.max(initialTime + timeDelta, initialStart + minGap));
         updateClip(clip.id, { endTime: newTime });
       }
     };
 
-    const handlePointerUp = () => {
+    const handlePointerUp = (upEvent) => {
+      try {
+        if (e.currentTarget.hasPointerCapture(upEvent.pointerId)) {
+          e.currentTarget.releasePointerCapture(upEvent.pointerId);
+        }
+      } catch {
+        /* ignore */
+      }
       if (isStart) setIsDraggingStart(false);
       else setIsDraggingEnd(false);
       window.removeEventListener('pointermove', handlePointerMove);
@@ -162,34 +194,77 @@ function ClipTimeline({
     window.addEventListener('pointerup', handlePointerUp);
   };
 
+  const handleThumbKeyDown = (e, isStart) => {
+    if (clip.isLocked || clip.isExcluded || !metadata) return;
+    if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) {
+      e.preventDefault();
+      const step = e.shiftKey ? 5 : e.altKey ? 0.2 : 1;
+      const minGap = Math.min(1, Math.max(0.1, metadata.duration * 0.01));
+      if (isStart) {
+        let newStart = clip.startTime;
+        if (e.key === 'Home') newStart = 0;
+        else if (e.key === 'End') newStart = clip.endTime - minGap;
+        else newStart += (e.key === 'ArrowRight' ? step : -step);
+        newStart = Math.max(0, Math.min(newStart, clip.endTime - minGap));
+        updateClip(clip.id, { startTime: newStart });
+      } else {
+        let newEnd = clip.endTime;
+        if (e.key === 'Home') newEnd = clip.startTime + minGap;
+        else if (e.key === 'End') newEnd = metadata.duration;
+        else newEnd += (e.key === 'ArrowRight' ? step : -step);
+        newEnd = Math.min(metadata.duration, Math.max(newEnd, clip.startTime + minGap));
+        updateClip(clip.id, { endTime: newEnd });
+      }
+    }
+  };
+
   const handleRangePointerDown = (e) => {
     if (clip.isLocked || clip.isExcluded) return;
     e.stopPropagation();
     e.preventDefault();
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      /* ignore */
+    }
 
     const startX = e.clientX;
     const initialStart = clip.startTime;
     const initialEnd = clip.endTime;
+    const duration = initialEnd - initialStart;
 
     const handlePointerMove = (moveEvent) => {
-      if (!trackRef.current || !metadata) return;
+      if (!trackRef.current || !metadata || !metadata.duration) return;
       const trackWidth = trackRef.current.offsetWidth;
+      if (!trackWidth) return;
       const deltaX = moveEvent.clientX - startX;
-      let timeDelta = (deltaX / trackWidth) * metadata.duration;
+      const timeDelta = (deltaX / trackWidth) * metadata.duration;
 
-      if (initialStart + timeDelta < 0) {
-        timeDelta = -initialStart;
-      } else if (initialEnd + timeDelta > metadata.duration) {
-        timeDelta = metadata.duration - initialEnd;
+      let newStart = initialStart + timeDelta;
+      let newEnd = initialEnd + timeDelta;
+
+      if (newStart < 0) {
+        newStart = 0;
+        newEnd = duration;
+      } else if (newEnd > metadata.duration) {
+        newEnd = metadata.duration;
+        newStart = Math.max(0, metadata.duration - duration);
       }
 
       updateClip(clip.id, {
-        startTime: initialStart + timeDelta,
-        endTime: initialEnd + timeDelta,
+        startTime: Math.max(0, newStart),
+        endTime: Math.min(metadata.duration, newEnd),
       });
     };
 
-    const handlePointerUp = () => {
+    const handlePointerUp = (upEvent) => {
+      try {
+        if (e.currentTarget.hasPointerCapture(upEvent.pointerId)) {
+          e.currentTarget.releasePointerCapture(upEvent.pointerId);
+        }
+      } catch {
+        /* ignore */
+      }
       window.removeEventListener('pointermove', handlePointerMove);
       window.removeEventListener('pointerup', handlePointerUp);
     };
@@ -213,26 +288,26 @@ function ClipTimeline({
 
   return (
     <div
-      className={`p-5 rounded-xl border transition-colors ${
+      className={`p-5 rounded-2xl border transition-all surface-panel ${
         clip.isExcluded
-          ? 'bg-[var(--surface-2)]/40 border-[var(--border-subdued)] opacity-60'
-          : 'bg-[var(--surface-2)] border-[var(--border-subdued)]'
+          ? 'bg-[#12121a]/40 border-[#1e1e2a] opacity-50'
+          : 'bg-[#12121a] border-[#1e1e2a] shadow-lg'
       }`}
     >
       {/* Clip Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3.5 border-b border-[var(--border-subdued)]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3.5 border-b border-[#1e1e2a]">
         <div className="flex items-center gap-3 flex-wrap">
-          <Badge variant="accent" size="md">
+          <Badge variant="brand" size="md">
             Segment #{index + 1}
           </Badge>
 
           <Input
             type="text"
-            placeholder="Clip Title (optional)"
+            placeholder="Segment Title (e.g. Intro Scene)"
             value={clip.title}
             onChange={(e) => updateClip(clip.id, { title: e.target.value })}
             disabled={clip.isLocked || clip.isExcluded || isDownloadingQueue}
-            className="h-9 text-xs sm:text-sm w-52 bg-[var(--surface-1)]"
+            className="h-8 text-xs sm:text-sm w-56 bg-[#0b0b10] border-[#2a2a3a]"
           />
 
           <Button
@@ -240,12 +315,12 @@ function ClipTimeline({
             size="iconSm"
             onClick={() => updateClip(clip.id, { isLocked: !clip.isLocked })}
             disabled={clip.isExcluded || isDownloadingQueue}
-            title={clip.isLocked ? 'Unlock Timeline' : 'Lock Timeline (Prevents accidental edits)'}
+            title={clip.isLocked ? 'Unlock Timeline' : 'Lock Timeline (Prevents accidental changes)'}
           >
-            {clip.isLocked ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
+            {clip.isLocked ? <Lock className="w-3.5 h-3.5 text-[#a78bfa]" /> : <Unlock className="w-3.5 h-3.5" />}
           </Button>
 
-          <label className="flex items-center gap-2 cursor-pointer text-xs sm:text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] select-none">
+          <label className="flex items-center gap-2 cursor-pointer text-xs text-[#b4b4c2] hover:text-[#f4f4f7] select-none">
             <input
               type="checkbox"
               checked={clip.isExcluded}
@@ -256,8 +331,8 @@ function ClipTimeline({
             <div
               className={`w-4 h-4 rounded-[4px] border flex items-center justify-center transition-colors ${
                 clip.isExcluded
-                  ? 'bg-[var(--accent-primary)] border-[var(--accent-primary)] text-white'
-                  : 'border-[var(--border-strong)] bg-[var(--surface-1)]'
+                  ? 'bg-[#7c3aed] border-[#7c3aed] text-white'
+                  : 'border-[#2a2a3a] bg-[#0b0b10]'
               }`}
             >
               {clip.isExcluded && <Check className="w-2.5 h-2.5 stroke-[3]" />}
@@ -266,10 +341,12 @@ function ClipTimeline({
           </label>
         </div>
 
-        <div className="flex items-center gap-2.5">
-          <span className="font-mono text-xs sm:text-sm text-[var(--text-secondary)]">
-            Duration: <strong className="text-[var(--text-primary)]">{formatTime(clipDuration)}</strong>
-          </span>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#0b0b10] border border-[#1e1e2a] text-xs font-mono">
+            <Clock className="w-3 h-3 text-[#a78bfa]" />
+            <span className="text-[#7a7a8c]">LENGTH:</span>
+            <span className="font-bold text-[#f4f4f7]">{formatTime(clipDuration)}</span>
+          </div>
 
           {totalClips > 1 && (
             <Button
@@ -277,7 +354,7 @@ function ClipTimeline({
               size="iconSm"
               onClick={() => removeClip(clip.id)}
               disabled={isDownloadingQueue}
-              className="text-[var(--status-danger)] hover:bg-[var(--status-danger)]/10"
+              className="text-[#7a7a8c] hover:text-[#ef4444] hover:bg-[#ef44441a]"
               title="Remove Segment"
             >
               <Trash2 className="w-3.5 h-3.5" />
@@ -286,62 +363,68 @@ function ClipTimeline({
         </div>
       </div>
 
-      {/* Inline Download Status */}
+      {/* Inline Download Status Badge */}
       {(clip.status !== 'idle' || clip.message) && (
         <div
-          className={`my-3 p-3 rounded-lg border text-xs sm:text-sm flex items-center justify-between gap-2.5 ${
+          className={`my-3 p-3 rounded-xl border text-xs sm:text-sm flex items-center justify-between gap-2.5 ${
             clip.status === 'downloading'
-              ? 'bg-[var(--accent-muted)] border-[var(--accent-primary)]/30 text-[var(--accent-primary)]'
+              ? 'bg-[#7c3aed1a] border-[#7c3aed4d] text-[#c4b5fd]'
               : clip.status === 'done'
-              ? 'bg-[var(--status-success)]/10 border-[var(--status-success)]/20 text-[var(--status-success)]'
+              ? 'bg-[#22c55e14] border-[#22c55e33] text-[#86efac]'
               : clip.status === 'error'
-              ? 'bg-[var(--status-danger)]/10 border-[var(--status-danger)]/20 text-[var(--status-danger)]'
-              : 'bg-[var(--surface-1)] text-[var(--text-secondary)]'
+              ? 'bg-[#ef44441a] border-[#ef444455] text-[#fca5a5]'
+              : 'bg-[#0b0b10] border-[#1e1e2a] text-[#b4b4c2]'
           }`}
         >
-          <div className="flex items-center gap-2 min-w-0">
+          <div className="flex items-center gap-2 min-w-0 font-mono">
             {clip.status === 'downloading' && (
-              <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" />
+              <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0 text-[#a78bfa]" />
             )}
-            <span className="truncate">{clip.message || 'Queued...'}</span>
+            <span className="truncate">{clip.message || 'Queued in buffer...'}</span>
           </div>
           <div className="flex items-center gap-2 shrink-0">
             {clip.status === 'downloading' && (
-              <span className="font-mono font-bold">{(clip.progress || 0).toFixed(1)}%</span>
+              <span className="font-mono font-bold text-[#f4f4f7]">{(clip.progress || 0).toFixed(1)}%</span>
             )}
             {clip.status === 'error' && handleRetryClip && (
               <Button
                 variant="destructive"
                 size="sm"
                 onClick={() => handleRetryClip(clip)}
-                className="h-7 text-xs px-2.5"
+                className="h-7 text-xs px-2.5 font-semibold"
               >
-                Retry
+                Retry Segment
               </Button>
             )}
           </div>
         </div>
       )}
 
-      {/* Timeline Visual Track */}
+      {/* Timeline Visual Track (Filmstrip & Scrubber Style) */}
       <div
-        className={`mt-3 ${
+        className={`mt-4 ${
           clip.isLocked || clip.isExcluded ? 'opacity-40 pointer-events-none' : ''
         }`}
       >
-        <div className="flex items-center justify-between mb-2.5">
-          <span className="text-xs font-bold text-[var(--text-primary)] uppercase tracking-wider">
-            Interactive Timeline Trimmer
-          </span>
+        <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
-            <span className="text-xs text-[var(--text-secondary)] font-mono mr-1">
+            <span className="text-[11px] font-bold text-[#f4f4f7] uppercase tracking-wider font-mono">
+              PRECISION SCRUBBER TRACK
+            </span>
+            <span className="text-[10px] font-mono text-[#a78bfa] bg-[#7c3aed1a] px-1.5 py-0.2 rounded border border-[#7c3aed33]">
+              {formatTime(clip.startTime)} - {formatTime(clip.endTime)}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-[#7a7a8c] font-mono mr-1">
               Zoom: {zoomLevel.toFixed(1)}x
             </span>
             <Button
               variant="outline"
               size="iconSm"
               onClick={() => setZoomLevel((prev) => Math.max(1, prev - 0.5))}
-              title="Zoom out timeline"
+              title="Zoom out"
             >
               -
             </Button>
@@ -359,7 +442,7 @@ function ClipTimeline({
               variant="outline"
               size="iconSm"
               onClick={() => setZoomLevel((prev) => Math.min(50, prev + 0.5))}
-              title="Zoom in timeline"
+              title="Zoom in"
             >
               +
             </Button>
@@ -369,26 +452,54 @@ function ClipTimeline({
               onClick={() => setZoomLevel(1)}
               title="Reset Zoom"
             >
-              <RotateCcw className="w-3 h-3" />
+              <RotateCcw className="w-3 h-3 text-[#7a7a8c]" />
             </Button>
           </div>
         </div>
 
-        {/* Viewport */}
+        {/* Viewport & Scrubber Track */}
         <div
           ref={containerRef}
-          className="w-full h-24 pt-6 pb-2 bg-[var(--surface-1)] rounded-lg border border-[var(--border-subdued)] overflow-x-auto overflow-y-hidden relative timeline-scrollbar select-none"
+          className="w-full h-28 pt-8 pb-3 bg-[#0b0b10] rounded-xl border border-[#1e1e2a] overflow-x-auto overflow-y-hidden relative timeline-scrollbar select-none shadow-inner"
         >
           <div
             ref={trackRef}
-            className="h-full relative bg-[var(--surface-2)]/60"
+            onPointerMove={(e) => {
+              if (!trackRef.current || !metadata) return;
+              const r = trackRef.current.getBoundingClientRect();
+              const hoverSeconds = Math.max(0, Math.min(metadata.duration, ((e.clientX - r.left) / r.width) * metadata.duration));
+              setHoverPosition(hoverSeconds);
+            }}
+            onPointerLeave={() => setHoverPosition(null)}
+            className="h-full relative bg-[#12121a]/80"
             style={{ width: `${zoomLevel * 100}%` }}
           >
+            {/* Synthetic Waveform Bed (Subframe region-splice blueprint) */}
+            <div className="absolute inset-x-0 bottom-1 top-2 opacity-25 overflow-hidden pointer-events-none">
+              <svg viewBox="0 0 420 50" preserveAspectRatio="none" className="w-full h-full">
+                {PEAKS.map((h, i) => (
+                  <path
+                    key={i}
+                    d={`M${i * 3 + 1.5} ${25 - h / 2}v${h}`}
+                    stroke="#a78bfa"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                  />
+                ))}
+              </svg>
+            </div>
+
+            {/* Filmstrip Ticks Pattern */}
+            <div className="absolute inset-0 pointer-events-none select-none opacity-40">
+              <div className="absolute inset-x-0 top-0 h-2 border-b border-dashed border-[#2a2a3a]" />
+              <div className="absolute inset-x-0 bottom-0 h-2 border-t border-dashed border-[#2a2a3a]" />
+            </div>
+
             {/* Major Ticks */}
             <div className="absolute inset-0 pointer-events-none select-none">
               <div className="absolute top-0 bottom-0 left-0 flex flex-col items-start justify-end pb-1 pl-1">
-                <div className="w-px h-2.5 bg-[var(--border-strong)] mb-0.5" />
-                <span className="text-xs text-[var(--text-secondary)] font-mono opacity-80 whitespace-nowrap">
+                <div className="w-px h-3 bg-[#3a3a4e] mb-0.5" />
+                <span className="text-[10px] text-[#7a7a8c] font-mono opacity-80 whitespace-nowrap">
                   00:00:00
                 </span>
               </div>
@@ -399,82 +510,123 @@ function ClipTimeline({
                   className="absolute top-0 bottom-0 flex flex-col items-center justify-end pb-1"
                   style={{ left: `${(t / metadata.duration) * 100}%` }}
                 >
-                  <div className="w-px h-2.5 bg-[var(--border-strong)] mb-0.5" />
-                  <span className="text-xs text-[var(--text-secondary)] font-mono opacity-80 whitespace-nowrap -ml-2.5">
+                  <div className="w-px h-3 bg-[#3a3a4e] mb-0.5" />
+                  <span className="text-[10px] text-[#7a7a8c] font-mono opacity-80 whitespace-nowrap -ml-2.5">
                     {formatTimeShort(t)}
                   </span>
                 </div>
               ))}
 
               <div className="absolute top-0 bottom-0 right-0 flex flex-col items-end justify-end pb-1 pr-1">
-                <div className="w-px h-2.5 bg-[var(--border-strong)] mb-0.5 mr-2" />
-                <span className="text-xs text-[var(--text-secondary)] font-mono opacity-80 whitespace-nowrap">
+                <div className="w-px h-3 bg-[#3a3a4e] mb-0.5 mr-2" />
+                <span className="text-[10px] text-[#7a7a8c] font-mono opacity-80 whitespace-nowrap">
                   {formatTime(metadata.duration)}
                 </span>
               </div>
             </div>
 
-            {/* Draggable Highlighted Range */}
+            {/* Floating Cursor Hover Time Tooltip (Subframe cue-scrubber style) */}
+            {hoverPosition !== null && (
+              <div
+                className="absolute top-0 bottom-0 pointer-events-none z-30"
+                style={{ left: `${(hoverPosition / metadata.duration) * 100}%` }}
+              >
+                <div className="w-px h-full bg-[#38bdf8] opacity-80" />
+                <div className="absolute -top-7 left-1/2 -translate-x-1/2 bg-[#1e1e2a] text-[#38bdf8] border border-[#38bdf84d] text-[10px] font-mono px-1.5 py-0.2 rounded shadow whitespace-nowrap">
+                  {formatTime(hoverPosition)}
+                </div>
+              </div>
+            )}
+
+            {/* Draggable Highlighted Range with Active Glowing Waveform */}
             <div
               onPointerDown={handleRangePointerDown}
-              className="absolute top-0 bottom-0 bg-[var(--accent-primary)]/20 border-y-2 border-[var(--accent-primary)]/70 cursor-grab active:cursor-grabbing z-10 transition-colors hover:bg-[var(--accent-primary)]/30"
+              className="absolute top-0 bottom-0 bg-[#7c3aed]/25 border-y-2 border-[#7c3aed] cursor-grab active:cursor-grabbing z-10 transition-colors hover:bg-[#7c3aed]/35 overflow-hidden"
               style={{
                 left: `${(clip.startTime / metadata.duration) * 100}%`,
                 right: `${100 - (clip.endTime / metadata.duration) * 100}%`,
               }}
-            />
+            >
+              <div className="absolute inset-0 opacity-40 pointer-events-none">
+                <svg viewBox="0 0 420 50" preserveAspectRatio="none" className="w-full h-full">
+                  {PEAKS.map((h, i) => (
+                    <path
+                      key={i}
+                      d={`M${i * 3 + 1.5} ${25 - h / 2}v${h}`}
+                      stroke="#c4b5fd"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
+                  ))}
+                </svg>
+              </div>
+            </div>
 
             {/* Start Thumb Handle */}
             <div
+              role="slider"
+              tabIndex={0}
+              aria-label="Segment start timecode"
+              aria-valuenow={clip.startTime}
+              aria-valuemin={0}
+              aria-valuemax={clip.endTime}
               onPointerDown={(e) => handleThumbPointerDown(e, true)}
+              onKeyDown={(e) => handleThumbKeyDown(e, true)}
               onMouseEnter={() => setIsHoveringStart(true)}
               onMouseLeave={() => setIsHoveringStart(false)}
-              className="absolute top-0 bottom-0 w-4 -ml-2 cursor-ew-resize flex flex-col items-center justify-center z-20 group"
+              className="absolute top-0 bottom-0 w-6 -ml-3 cursor-ew-resize flex flex-col items-center justify-center z-20 group focus:outline-none"
               style={{ left: `${(clip.startTime / metadata.duration) * 100}%` }}
             >
               <div
-                className={`absolute -top-6 ${
+                className={`absolute -top-7 ${
                   clip.startTime < metadata.duration * 0.05
                     ? 'left-0'
                     : 'left-1/2 -translate-x-1/2'
-                } bg-[var(--surface-1)] border border-[var(--border-strong)] text-[var(--text-primary)] text-xs font-mono px-2 py-0.5 rounded shadow pointer-events-none whitespace-nowrap ${
+                } bg-[#0b0b10] border border-[#7c3aed] text-[#ede9fe] text-[10px] font-mono px-2 py-0.5 rounded shadow-lg pointer-events-none whitespace-nowrap transition-opacity ${
                   isDraggingStart || isHoveringStart ? 'opacity-100' : 'opacity-0'
                 }`}
               >
-                {formatTime(clip.startTime)}
+                START: {formatTime(clip.startTime)}
               </div>
-              <div className="w-1 h-12 bg-white rounded-full border border-black/30 group-hover:bg-[var(--accent-primary)] transition-colors" />
+              <div className="w-1.5 h-12 bg-white rounded-full border border-black/40 group-hover:bg-[#a78bfa] group-focus:bg-[#a78bfa] shadow-[0_0_8px_#7c3aed] transition-colors" />
             </div>
 
             {/* End Thumb Handle */}
             <div
+              role="slider"
+              tabIndex={0}
+              aria-label="Segment end timecode"
+              aria-valuenow={clip.endTime}
+              aria-valuemin={clip.startTime}
+              aria-valuemax={metadata.duration}
               onPointerDown={(e) => handleThumbPointerDown(e, false)}
+              onKeyDown={(e) => handleThumbKeyDown(e, false)}
               onMouseEnter={() => setIsHoveringEnd(true)}
               onMouseLeave={() => setIsHoveringEnd(false)}
-              className="absolute top-0 bottom-0 w-4 -ml-2 cursor-ew-resize flex flex-col items-center justify-center z-20 group"
+              className="absolute top-0 bottom-0 w-6 -ml-3 cursor-ew-resize flex flex-col items-center justify-center z-20 group focus:outline-none"
               style={{ left: `${(clip.endTime / metadata.duration) * 100}%` }}
             >
               <div
-                className={`absolute -top-6 ${
+                className={`absolute -top-7 ${
                   clip.endTime > metadata.duration * 0.95
                     ? 'right-0'
                     : 'left-1/2 -translate-x-1/2'
-                } bg-[var(--surface-1)] border border-[var(--border-strong)] text-[var(--text-primary)] text-xs font-mono px-2 py-0.5 rounded shadow pointer-events-none whitespace-nowrap ${
+                } bg-[#0b0b10] border border-[#7c3aed] text-[#ede9fe] text-[10px] font-mono px-2 py-0.5 rounded shadow-lg pointer-events-none whitespace-nowrap transition-opacity ${
                   isDraggingEnd || isHoveringEnd ? 'opacity-100' : 'opacity-0'
                 }`}
               >
-                {formatTime(clip.endTime)}
+                END: {formatTime(clip.endTime)}
               </div>
-              <div className="w-1 h-12 bg-white rounded-full border border-black/30 group-hover:bg-[var(--accent-primary)] transition-colors" />
+              <div className="w-1.5 h-12 bg-white rounded-full border border-black/40 group-hover:bg-[#a78bfa] group-focus:bg-[#a78bfa] shadow-[0_0_8px_#7c3aed] transition-colors" />
             </div>
           </div>
         </div>
 
-        {/* Start / End Monospace Inputs */}
+        {/* Start / End Monospace Inputs Deck */}
         <div className="grid grid-cols-2 gap-4 mt-3.5">
-          <div>
-            <label className="block text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-1.5">
-              Start Timestamp (hh:mm:ss)
+          <div className="p-3 rounded-xl bg-[#0b0b10] border border-[#1e1e2a]">
+            <label className="block text-[10px] font-bold text-[#9a9aac] uppercase tracking-wider mb-1 font-mono">
+              START TIMECODE (hh:mm:ss or mm:ss)
             </label>
             <Input
               type="text"
@@ -482,13 +634,16 @@ function ClipTimeline({
               onFocus={handleStartInputFocus}
               onChange={handleStartInputChange}
               onBlur={handleStartInputBlur}
-              className="font-mono text-center text-xs sm:text-sm h-9 tracking-wider bg-[var(--surface-1)]"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') e.currentTarget.blur();
+              }}
+              className="font-mono text-center text-xs sm:text-sm h-8 tracking-wider bg-[#12121a] border-[#2a2a3a]"
               disabled={clip.isLocked || clip.isExcluded || isDownloadingQueue}
             />
           </div>
-          <div>
-            <label className="block text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-1.5">
-              End Timestamp (hh:mm:ss)
+          <div className="p-3 rounded-xl bg-[#0b0b10] border border-[#1e1e2a]">
+            <label className="block text-[10px] font-bold text-[#9a9aac] uppercase tracking-wider mb-1 font-mono">
+              END TIMECODE (hh:mm:ss or mm:ss)
             </label>
             <Input
               type="text"
@@ -496,7 +651,10 @@ function ClipTimeline({
               onFocus={handleEndInputFocus}
               onChange={handleEndInputChange}
               onBlur={handleEndInputBlur}
-              className="font-mono text-center text-xs sm:text-sm h-9 tracking-wider bg-[var(--surface-1)]"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') e.currentTarget.blur();
+              }}
+              className="font-mono text-center text-xs sm:text-sm h-8 tracking-wider bg-[#12121a] border-[#2a2a3a]"
               disabled={clip.isLocked || clip.isExcluded || isDownloadingQueue}
             />
           </div>
@@ -510,6 +668,11 @@ export function SelectiveDurationView({
   globalOutputDir,
   onRequestGlobalOutput,
   onDownloadSuccess,
+  onTimingChange,
+  onClipsCountChange,
+  onProcessingChange,
+  onStatusChange,
+  onRegisterActions,
 }) {
   const [url, setUrl] = useState('');
   const [isFetchingDetails, setIsFetchingDetails] = useState(false);
@@ -523,6 +686,26 @@ export function SelectiveDurationView({
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [lastTargetDir, setLastTargetDir] = useState(null);
   const downloadCancelRef = useRef(false);
+
+  useEffect(() => {
+    onProcessingChange?.(isDownloading);
+  }, [isDownloading, onProcessingChange]);
+
+  useEffect(() => {
+    onStatusChange?.(downloadStatus);
+  }, [downloadStatus, onStatusChange]);
+
+  useEffect(() => {
+    onClipsCountChange?.(clips.filter((c) => !c.isExcluded).length);
+    if (clips.length > 0 && metadata?.duration) {
+      const first = clips[0];
+      onTimingChange?.({
+        duration: metadata.duration,
+        startTime: first.startTime,
+        endTime: first.endTime,
+      });
+    }
+  }, [clips, metadata, onClipsCountChange, onTimingChange]);
 
   useEffect(() => {
     if (!window.electronAPI) return;
@@ -757,6 +940,31 @@ export function SelectiveDurationView({
     }
   };
 
+  const handleDownloadAllRef = useRef(handleDownloadAll);
+  useEffect(() => {
+    handleDownloadAllRef.current = handleDownloadAll;
+  });
+
+  useEffect(() => {
+    onRegisterActions?.({
+      triggerDownload: () => handleDownloadAllRef.current(),
+      triggerCancel: () => setShowCancelModal(true),
+      setTrimRange: (startTime, endTime) => {
+        setClips((prev) =>
+          prev.map((c, i) =>
+            i === 0 && !c.isLocked && !c.isExcluded
+              ? {
+                  ...c,
+                  startTime: Math.max(0, startTime),
+                  endTime: Math.max(startTime + 0.1, endTime),
+                }
+              : c
+          )
+        );
+      },
+    });
+  }, [onRegisterActions]);
+
   const getThumbnailUrl = () => {
     if (metadata?.thumbnail) return metadata.thumbnail;
     if (metadata?.id) return `https://img.youtube.com/vi/${metadata.id}/mqdefault.jpg`;
@@ -775,9 +983,9 @@ export function SelectiveDurationView({
           value: String(f.height),
           label: `${f.resolution || `${f.height}p`}${
             f.height >= 2160
-              ? ' (4K)'
+              ? ' (4K UHD)'
               : f.height >= 1440
-              ? ' (2K)'
+              ? ' (2K QHD)'
               : f.height >= 1080
               ? ' (Full HD)'
               : f.height >= 720
@@ -785,12 +993,12 @@ export function SelectiveDurationView({
               : ''
           }`,
         }));
-      return [{ value: '', label: 'Best Available (Auto)' }, ...dynamic];
+      return [{ value: '', label: 'Best Available (Auto Probe)' }, ...dynamic];
     }
     return [
-      { value: '', label: 'Best Available (Auto)' },
-      { value: '2160', label: '2160p (4K)' },
-      { value: '1440', label: '1440p (2K)' },
+      { value: '', label: 'Best Available (Auto Probe)' },
+      { value: '2160', label: '2160p (4K UHD)' },
+      { value: '1440', label: '1440p (2K QHD)' },
       { value: '1080', label: '1080p Full HD' },
       { value: '720', label: '720p HD' },
       { value: '480', label: '480p SD' },
@@ -800,34 +1008,42 @@ export function SelectiveDurationView({
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto w-full pb-8">
-      {/* Subframe Studio Header */}
+      {/* Studio Header HUD */}
       <header className="flex w-full items-start justify-between gap-4">
         <div className="flex flex-col items-start gap-1">
           <div className="flex items-center gap-2 text-xs font-mono text-[#7a7a8c]">
-            <span>Clip Studio</span>
+            <span>STUDIO</span>
             <span>&gt;</span>
-            <span>Selective Duration Trimmer</span>
+            <span className="text-[#a78bfa]">TIMELINE</span>
+            <span>&gt;</span>
+            <span className="text-[#f4f4f7]">KEYFRAME TRIMMER</span>
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-[#f4f4f7] font-heading">
-            Selective Duration Downloader
+            Selective Duration Trimmer
           </h1>
           <p className="text-xs sm:text-sm text-[#7a7a8c]">
-            Load video timeline, inspect keyframes, and precisely extract designated timecode segments.
+            Load stream keyframes, adjust dual scrubbing handles on the interactive timeline ruler, and download precise segments.
           </p>
         </div>
-        <div className="flex items-center gap-2 rounded-full border border-solid border-[#22c55e33] bg-[#22c55e14] px-3 py-1 shrink-0">
-          <div className="flex h-2 w-2 flex-none items-start rounded-full bg-[#22c55e]" />
-          <span className="text-xs font-bold text-[#86efac]">
-            Engine ready
-          </span>
+
+        <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-2 rounded-full border border-[#22c55e33] bg-[#22c55e14] px-3 py-1 shadow-sm">
+            <span className="relative flex h-2 w-2 shrink-0">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#22c55e] opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-[#22c55e]" />
+            </span>
+            <span className="text-xs font-bold text-[#86efac]">
+              Engine Ready
+            </span>
+          </div>
         </div>
       </header>
 
-      {/* URL & Inspection Card */}
-      <section className="flex w-full flex-col items-start gap-5 rounded-xl border border-solid border-[#1e1e2a] bg-[#12121a] px-6 py-6 shadow-lg">
+      {/* URL & Stream Inspection Command Deck */}
+      <section className="flex w-full flex-col items-start gap-5 rounded-2xl border border-[#1e1e2a] bg-[#12121a] p-6 shadow-xl surface-panel">
         <div className="flex w-full flex-col items-start gap-2">
-          <span className="text-xs font-bold uppercase tracking-wider text-[#9a9aac]">
-            Source Video URL
+          <span className="text-[10px] font-bold uppercase tracking-wider text-[#9a9aac] font-mono">
+            SOURCE VIDEO STREAM URL
           </span>
           <div className="flex items-center gap-2.5 w-full">
             <div className="flex-1">
@@ -839,6 +1055,7 @@ export function SelectiveDurationView({
                 placeholder="https://youtube.com/watch?v=..."
                 disabled={isFetchingDetails || isDownloading}
                 leftIcon={<Video className="w-4 h-4 text-[#a78bfa]" />}
+                className="font-mono bg-[#0b0b10] border-[#2a2a3a]"
               />
             </div>
             <Button
@@ -847,206 +1064,210 @@ export function SelectiveDurationView({
               onClick={handleFetchDetails}
               isLoading={isFetchingDetails}
               disabled={!url || isDownloading}
-              className="font-bold shrink-0 text-xs sm:text-sm px-6 h-9"
+              className="font-bold shrink-0 text-xs sm:text-sm px-6 h-9 shadow-md shadow-violet-950/40"
             >
-              Load Video
+              <Scissors className="w-4 h-4" />
+              <span>Load Video</span>
             </Button>
           </div>
         </div>
 
-          {/* Video Metadata & Global Resolution Selector Card */}
-          {metadata && (
-            <div className="p-5 bg-[#0b0b10] border border-[#1e1e2a] rounded-xl flex flex-col md:flex-row items-start gap-5 shadow-sm w-full">
-              {/* Thumbnail with Fallback */}
-              <div className="w-full md:w-48 aspect-video bg-[#14141d] rounded-lg overflow-hidden shrink-0 border border-[#2a2a3a] relative flex items-center justify-center group shadow-sm">
-                {getThumbnailUrl() ? (
-                  <img
-                    src={getThumbnailUrl()}
-                    alt={metadata.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    onError={(e) => {
-                      e.currentTarget.style.display = 'none';
-                    }}
-                  />
-                ) : (
-                  <div className="flex flex-col items-center justify-center gap-1.5 text-[#7a7a8c]">
-                    <Video className="w-6 h-6 text-[#a78bfa]" />
-                    <span className="text-xs font-mono">No Preview</span>
-                  </div>
-                )}
-                <div className="absolute bottom-1.5 right-1.5 bg-black/85 px-2 py-0.5 rounded text-xs font-mono text-[#f4f4f7] border border-[#2a2a3a]">
-                  {formatTimeShort(metadata.duration)}
+        {/* Video Metadata & Global Resolution Selector Card */}
+        {metadata && (
+          <div className="p-5 bg-[#0b0b10] border border-[#1e1e2a] rounded-xl flex flex-col md:flex-row items-start gap-5 shadow-inner w-full">
+            {/* Thumbnail with Fallback */}
+            <div className="w-full md:w-48 aspect-video bg-[#14141d] rounded-lg overflow-hidden shrink-0 border border-[#2a2a3a] relative flex items-center justify-center group shadow-md">
+              {getThumbnailUrl() ? (
+                <img
+                  src={getThumbnailUrl()}
+                  alt={metadata.title}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
+              ) : (
+                <div className="flex flex-col items-center justify-center gap-1.5 text-[#7a7a8c]">
+                  <Video className="w-6 h-6 text-[#a78bfa]" />
+                  <span className="text-xs font-mono">No Preview</span>
                 </div>
-              </div>
-
-              {/* Video Details & Quality Select */}
-              <div className="flex-1 min-w-0 space-y-3 w-full">
-                <div>
-                  <span className="text-xs font-bold uppercase tracking-wider text-[#9a9aac] block mb-0.5">
-                    Video Title
-                  </span>
-                  <h3
-                    className="text-sm sm:text-base font-bold text-[#f4f4f7] truncate"
-                    title={metadata.title}
-                  >
-                    {metadata.title}
-                  </h3>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4 text-xs sm:text-sm">
-                  <div>
-                    <span className="text-xs font-bold uppercase tracking-wider text-[#9a9aac] block mb-0.5">
-                      Duration
-                    </span>
-                    <span className="font-mono text-sm font-semibold text-[#f4f4f7]">
-                      {formatTime(metadata.duration)}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-xs font-bold uppercase tracking-wider text-[#9a9aac] block mb-0.5">
-                      Platform
-                    </span>
-                    <span className="font-sans text-sm font-semibold text-[#a78bfa] truncate block">
-                      {metadata.uploader || metadata.channel || metadata.extractor_key || 'YouTube'}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Target Resolution / Quality Selector */}
-                <div className="pt-1 max-w-xs">
-                  <label className="block text-xs font-bold uppercase tracking-wider text-[#9a9aac] mb-1.5">
-                    Output Resolution
-                  </label>
-                  <Select
-                    options={formatOptions}
-                    value={selectedFormat}
-                    onChange={setSelectedFormat}
-                    disabled={isDownloading}
-                    placeholder="Best Available (Auto)"
-                  />
-                </div>
+              )}
+              <div className="absolute bottom-1.5 right-1.5 bg-black/85 px-2 py-0.5 rounded text-xs font-mono text-[#f4f4f7] border border-[#2a2a3a]">
+                {formatTimeShort(metadata.duration)}
               </div>
             </div>
-          )}
+
+            {/* Video Details & Quality Select */}
+            <div className="flex-1 min-w-0 space-y-3 w-full">
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[#9a9aac] block mb-0.5 font-mono">
+                  STREAM TITLE
+                </span>
+                <h3
+                  className="text-sm sm:text-base font-bold text-[#f4f4f7] truncate"
+                  title={metadata.title}
+                >
+                  {metadata.title}
+                </h3>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 text-xs sm:text-sm">
+                <div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#9a9aac] block mb-0.5 font-mono">
+                    STREAM DURATION
+                  </span>
+                  <span className="font-mono text-sm font-semibold text-[#f4f4f7]">
+                    {formatTime(metadata.duration)}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#9a9aac] block mb-0.5 font-mono">
+                    PUBLISHER
+                  </span>
+                  <span className="font-sans text-sm font-semibold text-[#a78bfa] truncate block">
+                    {metadata.uploader || metadata.channel || metadata.extractor_key || 'YouTube'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Target Resolution / Quality Selector */}
+              <div className="pt-1 max-w-xs">
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-[#9a9aac] mb-1.5 font-mono">
+                  TARGET EXPORT RESOLUTION
+                </label>
+                <Select
+                  options={formatOptions}
+                  value={selectedFormat}
+                  onChange={setSelectedFormat}
+                  disabled={isDownloading}
+                  placeholder="Best Available (Auto Probe)"
+                />
+              </div>
+            </div>
+          </div>
+        )}
       </section>
 
-      {/* Segments Section */}
+      {/* Segments Studio Section */}
       {metadata && (
-        <section className="flex w-full flex-col items-start gap-5 rounded-xl border border-solid border-[#1e1e2a] bg-[#12121a] px-6 py-6 shadow-lg">
+        <section className="flex w-full flex-col items-start gap-5 rounded-2xl border border-[#1e1e2a] bg-[#12121a] p-6 shadow-xl surface-panel">
           <div className="flex items-center justify-between pb-3.5 border-b border-[#1e1e2a] w-full">
             <div>
-              <h3 className="text-sm sm:text-base font-bold text-[#f4f4f7] tracking-tight font-heading">
-                Timeline Trimming Segments ({clips.length})
-              </h3>
+              <div className="flex items-center gap-2">
+                <Layers className="w-4 h-4 text-[#a78bfa]" />
+                <h3 className="text-sm sm:text-base font-bold text-[#f4f4f7] tracking-tight font-heading">
+                  Timeline Trimming Segments ({clips.length})
+                </h3>
+              </div>
               <p className="text-xs text-[#7a7a8c] mt-0.5">
                 Drag the start/end handles on the ruler or enter exact timecodes below.
               </p>
             </div>
 
             <Badge variant="brand" size="sm">
-              {clips.filter((c) => !c.isExcluded).length} Active
+              {clips.filter((c) => !c.isExcluded).length} Active Segments
             </Badge>
           </div>
 
-            {/* List of timelines */}
-            <div className="space-y-4">
-              {clips.map((clip, index) => (
-                <ClipTimeline
-                  key={clip.id}
-                  clip={clip}
-                  metadata={metadata}
-                  updateClip={updateClip}
-                  removeClip={removeClip}
-                  index={index}
-                  totalClips={clips.length}
-                  isDownloadingQueue={isDownloading}
-                  handleRetryClip={handleRetryClip}
-                />
-              ))}
-            </div>
+          {/* List of segment timelines */}
+          <div className="space-y-4 w-full">
+            {clips.map((clip, index) => (
+              <ClipTimeline
+                key={clip.id}
+                clip={clip}
+                metadata={metadata}
+                updateClip={updateClip}
+                removeClip={removeClip}
+                index={index}
+                totalClips={clips.length}
+                isDownloadingQueue={isDownloading}
+                handleRetryClip={handleRetryClip}
+              />
+            ))}
+          </div>
 
-            {/* Add Another Segment Button positioned at the bottom of the segment list */}
-            <div className="pt-1">
-              <Button
-                variant="outline"
-                size="md"
-                onClick={addClip}
+          {/* Add Another Segment Button (Positioned at bottom of segments list as requested) */}
+          <div className="w-full pt-1">
+            <Button
+              variant="outline"
+              size="md"
+              onClick={addClip}
+              disabled={isDownloading}
+              className="w-full py-3.5 border-dashed border-[#2a2a3a] hover:border-[#7c3aed] hover:bg-[#7c3aed14] text-[#f4f4f7] font-semibold text-sm transition-all flex items-center justify-center gap-2.5 rounded-xl cursor-pointer"
+            >
+              <Plus className="w-4 h-4 text-[#a78bfa]" />
+              <span>Add Another Segment</span>
+            </Button>
+          </div>
+
+          {/* Frame-Accurate Cutting Switch */}
+          <div className="w-full pt-2">
+            <label className="flex items-center gap-3 p-3.5 bg-[#0b0b10] rounded-xl border border-[#1e1e2a] cursor-pointer select-none transition-colors hover:border-[#2a2a3a]">
+              <input
+                type="checkbox"
+                checked={preciseCut}
+                onChange={(e) => setPreciseCut(e.target.checked)}
                 disabled={isDownloading}
-                className="w-full py-3.5 border-dashed border-[var(--border-strong)] hover:border-[var(--accent-primary)] hover:bg-[var(--surface-hover)] text-[var(--text-primary)] font-semibold text-sm sm:text-base transition-all flex items-center justify-center gap-2.5 rounded-xl cursor-pointer"
+                className="sr-only"
+              />
+              <div
+                className={`w-4 h-4 rounded-[4px] border flex items-center justify-center transition-colors shrink-0 ${
+                  preciseCut
+                    ? 'bg-[#7c3aed] border-[#7c3aed] text-white'
+                    : 'border-[#2a2a3a] bg-[#12121a]'
+                }`}
               >
-                <Plus className="w-4 h-4 text-[var(--accent-primary)]" />
-                <span>Add Another Segment</span>
-              </Button>
-            </div>
-
-            {/* Trimming Options */}
-            <div className="pt-2">
-              <label className="flex items-center gap-3 p-3.5 bg-[var(--surface-2)] rounded-xl border border-[var(--border-subdued)] cursor-pointer select-none transition-colors hover:border-[var(--border-strong)]">
-                <input
-                  type="checkbox"
-                  checked={preciseCut}
-                  onChange={(e) => setPreciseCut(e.target.checked)}
-                  disabled={isDownloading}
-                  className="sr-only"
-                />
-                <div
-                  className={`w-4 h-4 rounded-[4px] border flex items-center justify-center transition-colors shrink-0 ${
-                    preciseCut
-                      ? 'bg-[var(--accent-primary)] border-[var(--accent-primary)] text-white'
-                      : 'border-[var(--border-strong)] bg-[var(--surface-1)]'
-                  }`}
-                >
-                  {preciseCut && <Check className="w-3 h-3 stroke-[3]" />}
-                </div>
-                <div>
-                  <span className="text-xs sm:text-sm font-semibold text-[var(--text-primary)] flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-[var(--accent-primary)]" />
-                    Frame-Accurate Cutting (Re-encode)
-                  </span>
-                  <span className="text-xs text-[var(--text-secondary)] block mt-0.5">
-                    Enables precise split boundaries without keyframe drift.
-                  </span>
-                </div>
-              </label>
-            </div>
-
-            {/* Download Status Message */}
-            {downloadStatus && (
-              <div className="p-3 rounded-lg bg-[var(--accent-muted)] border border-[var(--accent-primary)]/30 text-xs sm:text-sm text-[var(--accent-primary)] font-medium flex items-center gap-2.5">
-                <Loader2 className="w-4 h-4 animate-spin shrink-0" />
-                <span>{downloadStatus}</span>
+                {preciseCut && <Check className="w-3 h-3 stroke-[3]" />}
               </div>
-            )}
+              <div>
+                <span className="text-xs sm:text-sm font-semibold text-[#f4f4f7] flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-[#a78bfa]" />
+                  Frame-Accurate Cutting (FFmpeg Re-encoding)
+                </span>
+                <span className="text-xs text-[#7a7a8c] block mt-0.5">
+                  Re-encodes boundaries for perfect frame alignment without keyframe stutter.
+                </span>
+              </div>
+            </label>
+          </div>
 
-            {/* Action Buttons */}
-            <div className="flex justify-end gap-3.5 pt-2">
-              {isDownloading ? (
-                <Button
-                  variant="destructive"
-                  size="lg"
-                  onClick={() => setShowCancelModal(true)}
-                  className="font-semibold text-sm px-6"
-                >
-                  <OctagonX className="w-4 h-4" />
-                  Cancel Trimming
-                </Button>
-              ) : (
-                <Button
-                  variant="primary"
-                  size="lg"
-                  onClick={handleDownloadAll}
-                  disabled={isDownloading || clips.filter((c) => !c.isExcluded).length === 0}
-                  className="font-bold text-sm sm:text-base px-8 py-3 shadow-md shadow-violet-950/40"
-                >
-                  <Download className="w-4 h-4" />
-                  Download Selected Clips ({clips.filter((c) => !c.isExcluded).length})
-                </Button>
-              )}
+          {/* Download Status Message */}
+          {downloadStatus && (
+            <div className="w-full p-3.5 rounded-xl bg-[#0b0b10] border border-[#7c3aed4d] text-xs sm:text-sm text-[#ede9fe] font-mono flex items-center gap-2.5 shadow-sm">
+              <Loader2 className="w-4 h-4 text-[#a78bfa] animate-spin shrink-0" />
+              <span>{downloadStatus}</span>
             </div>
+          )}
+
+          {/* Action Execution Dock */}
+          <div className="flex justify-end gap-3.5 pt-3 border-t border-[#1e1e2a] w-full">
+            {isDownloading ? (
+              <Button
+                variant="destructive"
+                size="lg"
+                onClick={() => setShowCancelModal(true)}
+                className="font-semibold text-sm px-6"
+              >
+                <OctagonX className="w-4 h-4" />
+                <span>Cancel Trimming</span>
+              </Button>
+            ) : (
+              <Button
+                variant="primary"
+                size="lg"
+                onClick={handleDownloadAll}
+                disabled={isDownloading || clips.filter((c) => !c.isExcluded).length === 0}
+                className="font-bold text-sm px-8 py-3 shadow-lg shadow-violet-950/50"
+              >
+                <Download className="w-4 h-4" />
+                <span>Download Selected Clips ({clips.filter((c) => !c.isExcluded).length})</span>
+              </Button>
+            )}
+          </div>
         </section>
       )}
 
-      {/* Cancel Modal */}
+      {/* Cancel Confirmation Modal */}
       <Dialog
         isOpen={showCancelModal}
         onClose={() => setShowCancelModal(false)}

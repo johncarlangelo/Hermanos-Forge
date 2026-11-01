@@ -1,19 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import {
-  Download,
-  Scissors,
-  Film,
-  Clock,
-  Settings,
-  FolderOpen,
-  PanelLeftClose,
-  PanelLeftOpen,
-} from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 
 import { TitleBar } from '@/components/ui/TitleBar';
-import { Tooltip } from '@/components/ui/Tooltip';
-import { Button } from '@/components/ui/Button';
+import { ActivityDock } from '@/components/studio/ActivityDock';
+import { CommandBar } from '@/components/studio/CommandBar';
+import { TimelineRuler } from '@/components/studio/TimelineRuler';
+import { InspectorRail } from '@/components/studio/InspectorRail';
+
 import { SingleDownloaderView } from '@/components/views/SingleDownloaderView';
 import { MassClipView } from '@/components/views/MassClipView';
 import { SelectiveDurationView } from '@/components/views/SelectiveDurationView';
@@ -36,37 +29,60 @@ export default function App() {
     document.documentElement.classList.add('dark');
   }, []);
 
-  // Collapsible Sidebar State
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
+  // Collapsible Studio Inspector Rail State
+  const [isInspectorOpen, setIsInspectorOpen] = useState(() => {
     try {
-      return localStorage.getItem('sidebar-collapsed') === 'true';
+      return localStorage.getItem('inspector-open') !== 'false';
     } catch {
-      return false;
+      return true;
     }
   });
 
-  const toggleSidebar = useCallback(() => {
-    setIsSidebarCollapsed((prev) => {
+  const toggleInspector = useCallback(() => {
+    setIsInspectorOpen((prev) => {
       const next = !prev;
       try {
-        localStorage.setItem('sidebar-collapsed', String(next));
+        localStorage.setItem('inspector-open', String(next));
       } catch (err) {
-        console.debug('Failed to persist sidebar collapsed state:', err);
+        console.debug('Failed to persist inspector state:', err);
       }
       return next;
     });
   }, []);
 
+  // Persistent Studio Timeline State
+  const [timelineDuration, setTimelineDuration] = useState(180);
+  const [timelineStart, setTimelineStart] = useState(0);
+  const [timelineEnd, setTimelineEnd] = useState(180);
+  const [timelineCurrent, setTimelineCurrent] = useState(0);
+
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if ((e.ctrlKey || e.metaKey) && (e.key === 'b' || e.key === 'B')) {
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'i' || e.key === 'I' || e.key === 'b' || e.key === 'B')) {
         e.preventDefault();
-        toggleSidebar();
+        toggleInspector();
+      } else if (e.ctrlKey || e.metaKey) {
+        if (e.key === '1') {
+          e.preventDefault();
+          setActiveTab('download');
+        } else if (e.key === '2') {
+          e.preventDefault();
+          setActiveTab('mass-clip');
+        } else if (e.key === '3') {
+          e.preventDefault();
+          setActiveTab('selective');
+        } else if (e.key === '4') {
+          e.preventDefault();
+          setActiveTab('history');
+        } else if (e.key === '5') {
+          e.preventDefault();
+          setActiveTab('settings');
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [toggleSidebar]);
+  }, [toggleInspector]);
 
   // Persisted Output Directory
   const [globalOutputDir, setGlobalOutputDir] = useState(() => {
@@ -229,6 +245,25 @@ export default function App() {
   const [singleVideoMetadata, setSingleVideoMetadata] = useState(null);
   const downloadCancelRef = useRef(false);
 
+  // Multi-Track Stitcher Studio State
+  const [massClips, setMassClips] = useState(() => {
+    try {
+      const saved = localStorage.getItem('mass-clips');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [isMassProcessing, setIsMassProcessing] = useState(false);
+  const [massStatus, setMassStatus] = useState('');
+  const massActionsRef = useRef(null);
+
+  // Keyframe Trimmer Studio State
+  const [trimmerClipsCount, setTrimmerClipsCount] = useState(0);
+  const [isTrimmerDownloading, setIsTrimmerDownloading] = useState(false);
+  const [trimmerStatus, setTrimmerStatus] = useState('');
+  const trimmerActionsRef = useRef(null);
+
   // System Diagnostics State
   const [isRefreshingStatus, setIsRefreshingStatus] = useState(false);
   const [systemStatus, setSystemStatus] = useState({
@@ -380,6 +415,12 @@ export default function App() {
                 title: inspectResult.title,
                 id: inspectResult.id,
               });
+              if (inspectResult.duration && inspectResult.duration > 0) {
+                setTimelineDuration(inspectResult.duration);
+                setTimelineEnd(inspectResult.duration);
+                setTimelineStart(0);
+                setTimelineCurrent(0);
+              }
             }
           }
         } catch (err) {
@@ -631,374 +672,249 @@ export default function App() {
     toast.error('Download canceled.', { icon: '🛑' });
   };
 
-  const primaryNavItems = [
-    {
-      id: 'download',
-      label: 'Single Media',
-      icon: <Download className="w-4 h-4" />,
-    },
-    {
-      id: 'mass-clip',
-      label: 'Mass Clip Stitcher',
-      icon: <Scissors className="w-4 h-4" />,
-      badge: 'Batch',
-    },
-    {
-      id: 'selective',
-      label: 'Selective Trimming',
-      icon: <Film className="w-4 h-4" />,
-    },
-  ];
-
   return (
     <div className="h-screen w-screen flex flex-col bg-[#0b0b10] text-[#f4f4f7] overflow-hidden font-sans select-none relative">
-      {/* Title Bar */}
-      <TitleBar />
+      {/* Title Bar with Dynamic Breadcrumb */}
+      <TitleBar activeTab={activeTab} />
 
-      {/* Main Desktop Shell */}
+      {/* Main Studio Workbench Shell (3-Zone Spatial Architecture) */}
       <div className="flex-1 flex overflow-hidden relative z-10">
-        {/* Subframe Navigation Sidebar */}
-        <aside
-          className={`${
-            isSidebarCollapsed ? 'w-16' : 'w-60 sm:w-64'
-          } bg-[#0f0f16] border-r border-[#1e1e2a] flex flex-col justify-between shrink-0 p-3 select-none z-10 relative transition-all duration-200 ease-in-out`}
-          data-purpose="workspace-navigation"
-        >
-          {/* Top: Nav Destination Links */}
-          <div className="space-y-4">
-            <div className={`flex items-center ${isSidebarCollapsed ? 'justify-center' : 'justify-between px-2'} pt-1`}>
-              {!isSidebarCollapsed && (
-                <span className="text-xs font-mono uppercase tracking-wider text-[#5c5c6e] font-semibold truncate">
-                  Workspace
-                </span>
-              )}
-              {isSidebarCollapsed ? (
-                <Tooltip content="Expand Sidebar (Ctrl+B)" position="right" delay={100}>
-                  <button
-                    type="button"
-                    onClick={toggleSidebar}
-                    className="p-1.5 rounded-lg text-[#a78bfa] hover:text-white hover:bg-[#ffffff0f] transition cursor-pointer"
-                    aria-label="Expand Sidebar (Ctrl+B)"
-                  >
-                    <PanelLeftOpen className="w-4 h-4" />
-                  </button>
-                </Tooltip>
-              ) : (
-                <button
-                  type="button"
-                  onClick={toggleSidebar}
-                  className="p-1.5 rounded-lg text-[#7a7a8c] hover:text-[#f4f4f7] hover:bg-[#ffffff0f] transition cursor-pointer"
-                  title="Collapse Sidebar (Ctrl+B)"
-                  aria-label="Collapse Sidebar (Ctrl+B)"
-                >
-                  <PanelLeftClose className="w-4 h-4" />
-                </button>
-              )}
+        {/* 1. Left Activity Dock (Sleek Vertical Tool Dock) */}
+        <ActivityDock
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          historyCount={history.length}
+          cookieBrowser={cookieBrowser}
+          cookieStatus={cookieStatus}
+          onOpenCookieWizard={() => setShowCookieWizard(true)}
+          globalOutputDir={globalOutputDir}
+          onOpenOutputModal={() => setShowOutputFolderModal(true)}
+          isInspectorOpen={isInspectorOpen}
+          onToggleInspector={toggleInspector}
+        />
+
+        {/* 2. Center Stage (The Studio Canvas) */}
+        <div className="flex-1 flex flex-col h-full min-w-0 overflow-hidden bg-[#0b0b10] relative">
+          {/* Header: Global Spotlight / Command Bar */}
+          <CommandBar
+            url={url}
+            setUrl={handleUrlChange}
+            isDownloading={isDownloading}
+            isInspecting={isInspecting}
+            urlError={urlError}
+            singleVideoMetadata={singleVideoMetadata}
+            playlistEntries={playlistEntries}
+            onOpenPlaylistModal={() => setShowPlaylistModal(true)}
+            onDownload={handleSingleDownload}
+            activeTab={activeTab}
+            onOpenCookieWizard={() => setShowCookieWizard(true)}
+            onAddTrack={(trackUrl) => {
+              massActionsRef.current?.addClipWithUrl(trackUrl);
+              toast.success('Track added to stitch sequence!');
+            }}
+          />
+
+          {/* Main Viewport: Rich Interactive Canvas */}
+          <main className="flex-1 min-h-0 overflow-y-auto p-5 sm:p-7 custom-scrollbar bg-[#0b0b10] relative">
+            <div className={activeTab === 'download' ? 'block' : 'hidden'}>
+              <SingleDownloaderView
+                url={url}
+                setUrl={handleUrlChange}
+                downloadType={downloadType}
+                setDownloadType={setDownloadType}
+                selectedQuality={selectedQuality}
+                setSelectedQuality={setSelectedQuality}
+                formats={formats}
+                isFetchingFormats={isFetchingFormats}
+                isInspecting={isInspecting}
+                urlError={urlError}
+                singleVideoMetadata={singleVideoMetadata}
+                playlistEntries={playlistEntries}
+                selectedPlaylistVideos={selectedPlaylistVideos}
+                isDownloading={isDownloading}
+                progress={singleProgress}
+                status={singleStatus}
+                playlistDownloadQueue={playlistDownloadQueue}
+                onDownload={handleSingleDownload}
+                onConvertLocal={handleConvertLocal}
+                onCancelClick={() => setShowCancelConfirmModal(true)}
+                onOpenPlaylistModal={() => setShowPlaylistModal(true)}
+                onOpenCookieWizard={() => setShowCookieWizard(true)}
+                onNavigateTab={setActiveTab}
+              />
             </div>
 
-            <nav aria-label="Main Workspaces Navigation" className="space-y-1">
-              {primaryNavItems.map((item) => {
-                const isActive = activeTab === item.id;
-                const buttonContent = (
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab(item.id)}
-                    aria-label={item.label}
-                    className={`group flex items-center ${
-                      isSidebarCollapsed ? 'w-10 h-10 justify-center p-0' : 'w-full justify-between px-3 py-2.5'
-                    } rounded-md font-medium text-xs sm:text-sm transition duration-150 cursor-pointer relative ${
-                      isActive
-                        ? 'border border-[#7c3aed4d] bg-[#7c3aed1f] text-[#ede9fe] shadow-sm'
-                        : 'border border-transparent hover:bg-[#ffffff0a] text-[#b4b4c2] hover:text-[#f4f4f7]'
-                    }`}
-                  >
-                    <div className={`flex items-center ${isSidebarCollapsed ? 'justify-center' : 'gap-3'} truncate`}>
-                      <div
-                        className={`transition shrink-0 ${
-                          isActive
-                            ? 'text-[#a78bfa]'
-                            : 'text-[#7a7a8c] group-hover:text-[#b4b4c2]'
-                        }`}
-                      >
-                        {item.icon}
-                      </div>
-                      {!isSidebarCollapsed && (
-                        <span className={`truncate tracking-tight ${isActive ? 'text-[#ede9fe] font-semibold' : ''}`}>
-                          {item.label}
-                        </span>
-                      )}
-                    </div>
-
-                    {!isSidebarCollapsed && (
-                      isActive ? (
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#a78bfa] shadow-[0_0_8px_#a78bfa] shrink-0" />
-                      ) : item.badge !== undefined ? (
-                        <span className="font-mono text-[11px] uppercase px-1.5 py-0.5 rounded shrink-0 text-[#9a9aac] bg-[#1e1e2a] border border-[#2a2a3a]">
-                          {item.badge}
-                        </span>
-                      ) : null
-                    )}
-                  </button>
-                );
-
-                return isSidebarCollapsed ? (
-                  <div key={item.id} className="flex justify-center">
-                    <Tooltip content={item.label} position="right" delay={100}>
-                      {buttonContent}
-                    </Tooltip>
-                  </div>
-                ) : (
-                  <div key={item.id}>
-                    {buttonContent}
-                  </div>
-                );
-              })}
-            </nav>
-          </div>
-
-          {/* Navigation Lower Utilities: Side-by-side History & Settings above Output Folder */}
-          <div className="space-y-3 pt-3 border-t border-[#1e1e2a]">
-            {isSidebarCollapsed ? (
-              /* Collapsible Icon-Only Lower Utilities with Tooltips */
-              <div className="space-y-1.5 flex flex-col items-center">
-                {/* Download History */}
-                <Tooltip
-                  content={`Download History${history.length > 0 ? ` (${history.length})` : ''}`}
-                  position="right"
-                  delay={100}
-                >
-                  <Button
-                    variant={activeTab === 'history' ? 'accentMuted' : 'secondary'}
-                    size="icon"
-                    onClick={() => setActiveTab('history')}
-                    aria-label="Download History"
-                    className={`w-10 h-10 rounded-lg relative ${
-                      activeTab === 'history'
-                        ? 'bg-[#7c3aed1f] border border-[#7c3aed4d] text-[#ede9fe]'
-                        : 'border border-[#1e1e2a] bg-[#14141d] hover:bg-[#1e1e2a] text-[#7a7a8c] hover:text-[#f4f4f7]'
-                    }`}
-                  >
-                    <Clock className="w-4 h-4 text-[#a78bfa]" />
-                    {history.length > 0 && (
-                      <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#a78bfa]" />
-                    )}
-                  </Button>
-                </Tooltip>
-
-                {/* Settings */}
-                <Tooltip content="Settings" position="right" delay={100}>
-                  <Button
-                    variant={activeTab === 'settings' ? 'accentMuted' : 'secondary'}
-                    size="icon"
-                    onClick={() => setActiveTab('settings')}
-                    aria-label="Settings"
-                    className={`w-10 h-10 rounded-lg ${
-                      activeTab === 'settings'
-                        ? 'bg-[#7c3aed1f] border border-[#7c3aed4d] text-[#ede9fe]'
-                        : 'border border-[#1e1e2a] bg-[#14141d] hover:bg-[#1e1e2a] text-[#7a7a8c] hover:text-[#f4f4f7]'
-                    }`}
-                  >
-                    <Settings className="w-4 h-4 text-[#a78bfa]" />
-                  </Button>
-                </Tooltip>
-
-                {/* Output Folder Icon Button */}
-                <Tooltip
-                  content={`Output: ${globalOutputDir ? globalOutputDir.split(/[/\\]/).pop() : 'Default'}`}
-                  position="right"
-                  delay={100}
-                >
-                  <Button
-                    variant="secondary"
-                    size="icon"
-                    onClick={() => setShowOutputFolderModal(true)}
-                    className="w-10 h-10 rounded-lg bg-[#14141d] border border-[#1e1e2a] hover:border-[#2a2a3a] text-[#a78bfa] hover:bg-[#1e1e2a]"
-                    aria-label="Change Output Folder"
-                  >
-                    <FolderOpen className="w-4 h-4" />
-                  </Button>
-                </Tooltip>
-              </div>
-            ) : (
-              /* Expanded Mode: Side-by-Side History & Settings, then Output Folder Card */
-              <>
-                <div className="grid grid-cols-2 gap-2" data-purpose="history-and-settings-row">
-                  {/* Download History Button */}
-                  <Button
-                    variant={activeTab === 'history' ? 'accentMuted' : 'secondary'}
-                    size="sm"
-                    onClick={() => setActiveTab('history')}
-                    aria-label="Download History"
-                    className={`w-full justify-center gap-2 ${
-                      activeTab === 'history'
-                        ? 'border border-[#7c3aed4d] bg-[#7c3aed1f] text-[#ede9fe]'
-                        : 'border border-[#1e1e2a] bg-[#14141d] hover:bg-[#1e1e2a] text-[#b4b4c2] hover:text-[#f4f4f7]'
-                    }`}
-                  >
-                    <Clock className="w-3.5 h-3.5 text-[#a78bfa]" />
-                    <span className={`truncate tracking-tight ${activeTab === 'history' ? 'text-[#ede9fe] font-semibold' : ''}`}>
-                      History
-                    </span>
-                  </Button>
-
-                  {/* Settings Button */}
-                  <Button
-                    variant={activeTab === 'settings' ? 'accentMuted' : 'secondary'}
-                    size="sm"
-                    onClick={() => setActiveTab('settings')}
-                    aria-label="Settings"
-                    className={`w-full justify-center gap-2 ${
-                      activeTab === 'settings'
-                        ? 'border border-[#7c3aed4d] bg-[#7c3aed1f] text-[#ede9fe]'
-                        : 'border border-[#1e1e2a] bg-[#14141d] hover:bg-[#1e1e2a] text-[#b4b4c2] hover:text-[#f4f4f7]'
-                    }`}
-                  >
-                    <Settings className="w-3.5 h-3.5 text-[#a78bfa]" />
-                    <span className={`truncate tracking-tight ${activeTab === 'settings' ? 'text-[#ede9fe] font-semibold' : ''}`}>
-                      Settings
-                    </span>
-                  </Button>
-                </div>
-
-                {/* Output Destination Box */}
-                <div
-                  onClick={() => setShowOutputFolderModal(true)}
-                  className="bg-[#14141d] border border-[#1e1e2a] hover:border-[#2a2a3a] rounded-lg p-3 cursor-pointer transition group"
-                  title={globalOutputDir || 'Default downloads folder'}
-                >
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#5c5c6e] block mb-1.5">
-                    Output Folder
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <FolderOpen className="w-3.5 h-3.5 text-[#a78bfa] shrink-0" />
-                    <span className="whitespace-nowrap text-xs text-[#d4d4de] grow truncate font-mono">
-                      {globalOutputDir ? globalOutputDir.split(/[/\\]/).pop() : 'System Default'}
-                    </span>
-                    <div className="flex h-5 items-center rounded border border-[#2a2a3a] px-1.5 hover:bg-[#ffffff0f] transition">
-                      <span className="text-[10px] font-bold text-[#c4b5fd]">
-                        Change
-                      </span>
-                    </div>
-                  </div>
-                  <div className="text-[11px] text-[#5c5c6e] font-mono truncate mt-1">
-                    {globalOutputDir || 'Downloads'}
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-        </aside>
-
-        {/* Main Workspace Area (Preserved views in DOM to retain state across tab switching) */}
-        <main className="flex-1 overflow-y-auto p-5 sm:p-7 lg:p-8 custom-scrollbar bg-[#0b0b10] relative">
-          <div className={activeTab === 'download' ? 'block' : 'hidden'}>
-            <SingleDownloaderView
-              url={url}
-              setUrl={handleUrlChange}
-              downloadType={downloadType}
-              setDownloadType={setDownloadType}
-              selectedQuality={selectedQuality}
-              setSelectedQuality={setSelectedQuality}
-              formats={formats}
-              isFetchingFormats={isFetchingFormats}
-              isInspecting={isInspecting}
-              urlError={urlError}
-              singleVideoMetadata={singleVideoMetadata}
-              playlistEntries={playlistEntries}
-              selectedPlaylistVideos={selectedPlaylistVideos}
-              isDownloading={isDownloading}
-              progress={singleProgress}
-              status={singleStatus}
-              playlistDownloadQueue={playlistDownloadQueue}
-              onDownload={handleSingleDownload}
-              onConvertLocal={handleConvertLocal}
-              onCancelClick={() => setShowCancelConfirmModal(true)}
-              onOpenPlaylistModal={() => setShowPlaylistModal(true)}
-              onOpenCookieWizard={() => setShowCookieWizard(true)}
-            />
-          </div>
-
-          <div className={activeTab === 'mass-clip' ? 'block' : 'hidden'}>
-            <MassClipView
-              globalOutputDir={globalOutputDir}
-              onRequestGlobalOutput={handleSelectOutputDir}
-              onStitchSuccess={(filepath, clips) => {
-                const validClips = clips.filter((c) => c.url.trim());
-                if (validClips.length > 0) {
-                  const newItems = validClips.map((c, i) => {
-                    let clipTitle = filepath.split(/[/\\]/).pop() + ` (Clip ${i + 1})`;
-                    let clipFilepath = filepath;
-                    if (c.state === 'done' && c.message) {
-                      const parts = c.message.split('::');
-                      if (parts.length === 2) {
-                        clipTitle = parts[0];
-                        clipFilepath = parts[1];
+            <div className={activeTab === 'mass-clip' ? 'block' : 'hidden'}>
+              <MassClipView
+                globalOutputDir={globalOutputDir}
+                onRequestGlobalOutput={handleSelectOutputDir}
+                onClipsChange={setMassClips}
+                onProcessingChange={setIsMassProcessing}
+                onStatusChange={setMassStatus}
+                onRegisterActions={(actions) => {
+                  massActionsRef.current = actions;
+                }}
+                onStitchSuccess={(filepath, clips) => {
+                  const validClips = clips.filter((c) => c.url.trim());
+                  if (validClips.length > 0) {
+                    const newItems = validClips.map((c, i) => {
+                      let clipTitle = filepath.split(/[/\\]/).pop() + ` (Clip ${i + 1})`;
+                      let clipFilepath = filepath;
+                      if (c.state === 'done' && c.message) {
+                        const parts = c.message.split('::');
+                        if (parts.length === 2) {
+                          clipTitle = parts[0];
+                          clipFilepath = parts[1];
+                        }
                       }
-                    }
-                    return {
-                      id: Date.now() + i,
-                      url: c.url.trim(),
-                      filename: clipTitle,
-                      filepath: clipFilepath,
+                      return {
+                        id: Date.now() + i,
+                        url: c.url.trim(),
+                        filename: clipTitle,
+                        filepath: clipFilepath,
+                        type: 'stitch',
+                        date: new Date().toLocaleString(),
+                      };
+                    });
+                    setHistory((prev) => [...newItems.reverse(), ...prev]);
+                  } else {
+                    addHistoryItem({
+                      id: Date.now(),
+                      url: 'Multiple clips',
+                      filename: filepath.split(/[/\\]/).pop(),
+                      filepath,
                       type: 'stitch',
                       date: new Date().toLocaleString(),
-                    };
-                  });
-                  setHistory((prev) => [...newItems.reverse(), ...prev]);
-                } else {
+                    });
+                  }
+                }}
+              />
+            </div>
+
+            <div className={activeTab === 'selective' ? 'block' : 'hidden'}>
+              <SelectiveDurationView
+                globalOutputDir={globalOutputDir}
+                onRequestGlobalOutput={handleSelectOutputDir}
+                onTimingChange={({ duration, startTime, endTime }) => {
+                  setTimelineDuration(duration);
+                  setTimelineStart(startTime);
+                  setTimelineEnd(endTime);
+                }}
+                onClipsCountChange={setTrimmerClipsCount}
+                onProcessingChange={setIsTrimmerDownloading}
+                onStatusChange={setTrimmerStatus}
+                onRegisterActions={(actions) => {
+                  trimmerActionsRef.current = actions;
+                }}
+                onDownloadSuccess={(filepath, start, end, videoUrl, videoTitle) => {
                   addHistoryItem({
                     id: Date.now(),
-                    url: 'Multiple clips',
-                    filename: filepath.split(/[/\\]/).pop(),
+                    url: videoUrl,
+                    filename: videoTitle || (filepath ? filepath.split(/[/\\]/).pop() : 'Segment'),
+                    durationTimestamp: `${start} - ${end}`,
                     filepath,
-                    type: 'stitch',
+                    type: 'clip',
                     date: new Date().toLocaleString(),
                   });
-                }
-              }}
-            />
-          </div>
+                }}
+              />
+            </div>
 
-          <div className={activeTab === 'selective' ? 'block' : 'hidden'}>
-            <SelectiveDurationView
-              globalOutputDir={globalOutputDir}
-              onRequestGlobalOutput={handleSelectOutputDir}
-              onDownloadSuccess={(filepath, start, end, videoUrl, videoTitle) => {
-                addHistoryItem({
-                  id: Date.now(),
-                  url: videoUrl,
-                  filename: videoTitle || (filepath ? filepath.split(/[/\\]/).pop() : 'Segment'),
-                  durationTimestamp: `${start} - ${end}`,
-                  filepath,
-                  type: 'clip',
-                  date: new Date().toLocaleString(),
-                });
-              }}
-            />
-          </div>
+            <div className={activeTab === 'history' ? 'block' : 'hidden'}>
+              <HistoryView
+                history={history}
+                onDeleteHistoryItem={deleteHistoryItem}
+                onOpenClearModal={() => setShowClearHistoryModal(true)}
+              />
+            </div>
 
-          <div className={activeTab === 'history' ? 'block' : 'hidden'}>
-            <HistoryView
-              history={history}
-              onDeleteHistoryItem={deleteHistoryItem}
-              onOpenClearModal={() => setShowClearHistoryModal(true)}
-            />
-          </div>
+            <div className={activeTab === 'settings' ? 'block' : 'hidden'}>
+              <SettingsView
+                globalOutputDir={globalOutputDir}
+                onSelectOutputDir={handleSelectOutputDir}
+                cookieBrowser={cookieBrowser}
+                cookieStatus={cookieStatus}
+                cookieSyncDate={cookieSyncDate}
+                onOpenCookieWizard={() => setShowCookieWizard(true)}
+                systemStatus={systemStatus}
+                isRefreshingStatus={isRefreshingStatus}
+                onRefreshStatus={refreshSystemStatus}
+              />
+            </div>
+          </main>
 
-          <div className={activeTab === 'settings' ? 'block' : 'hidden'}>
-            <SettingsView
-              globalOutputDir={globalOutputDir}
-              onSelectOutputDir={handleSelectOutputDir}
-              cookieBrowser={cookieBrowser}
-              cookieStatus={cookieStatus}
-              cookieSyncDate={cookieSyncDate}
-              onOpenCookieWizard={() => setShowCookieWizard(true)}
-              systemStatus={systemStatus}
-              isRefreshingStatus={isRefreshingStatus}
-              onRefreshStatus={refreshSystemStatus}
-            />
-          </div>
-        </main>
+          {/* Bottom Dock: Persistent Studio Timeline Ruler */}
+          <TimelineRuler
+            duration={timelineDuration}
+            startTime={timelineStart}
+            setStartTime={(val) => {
+              setTimelineStart(val);
+              if (activeTab === 'selective') {
+                trimmerActionsRef.current?.setTrimRange(val, timelineEnd);
+              }
+            }}
+            endTime={timelineEnd}
+            setEndTime={(val) => {
+              setTimelineEnd(val);
+              if (activeTab === 'selective') {
+                trimmerActionsRef.current?.setTrimRange(timelineStart, val);
+              }
+            }}
+            currentTime={timelineCurrent}
+            setCurrentTime={setTimelineCurrent}
+            activeTab={activeTab}
+            sequenceItemsCount={massClips.filter((c) => c.url && c.url.trim()).length}
+          />
+        </div>
+
+        {/* 3. Right Inspector & Telemetry Rail (Collapsible) */}
+        <InspectorRail
+          isOpen={isInspectorOpen}
+          onClose={() => setIsInspectorOpen(false)}
+          activeTab={activeTab}
+          downloadType={downloadType}
+          setDownloadType={setDownloadType}
+          selectedQuality={selectedQuality}
+          setSelectedQuality={setSelectedQuality}
+          formats={formats}
+          isFetchingFormats={isFetchingFormats}
+          globalOutputDir={globalOutputDir}
+          onOpenOutputModal={() => setShowOutputFolderModal(true)}
+          isDownloading={isDownloading}
+          progress={singleProgress}
+          status={singleStatus}
+          onDownload={handleSingleDownload}
+          onCancelClick={() => setShowCancelConfirmModal(true)}
+          url={url}
+          singleVideoMetadata={singleVideoMetadata}
+          playlistEntries={playlistEntries}
+          onOpenPlaylistModal={() => setShowPlaylistModal(true)}
+          onConvertLocal={handleConvertLocal}
+          // Multi-track stitcher props
+          massClips={massClips}
+          isMassProcessing={isMassProcessing}
+          massStatus={massStatus}
+          onMassStitch={() => massActionsRef.current?.triggerStitch()}
+          onMassCancel={() => massActionsRef.current?.triggerCancel()}
+          // Keyframe trimmer props
+          trimmerClipsCount={trimmerClipsCount}
+          isTrimmerDownloading={isTrimmerDownloading}
+          trimmerStatus={trimmerStatus}
+          onTrimmerDownload={() => trimmerActionsRef.current?.triggerDownload()}
+          onTrimmerCancel={() => trimmerActionsRef.current?.triggerCancel()}
+          trimmerStartTime={timelineStart}
+          trimmerEndTime={timelineEnd}
+          // History ledger props
+          historyCount={history.length}
+          onOpenClearHistoryModal={() => setShowClearHistoryModal(true)}
+          // Settings props
+          systemStatus={systemStatus}
+          onRefreshDiagnostics={refreshSystemStatus}
+          isRefreshingDiagnostics={isRefreshingStatus}
+          onOpenCookieWizard={() => setShowCookieWizard(true)}
+          cookieBrowser={cookieBrowser}
+          cookieStatus={cookieStatus}
+        />
       </div>
 
       {/* Persistent Bottom Status Strip */}

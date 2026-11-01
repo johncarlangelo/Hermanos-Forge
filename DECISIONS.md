@@ -18,6 +18,7 @@ This document records key technical, architectural, and design decisions made th
 - [ADR-010: Obsidian Forge Media Studio Design Language & Visual Evolution](#adr-010-obsidian-forge-media-studio-design-language--visual-evolution)
 - [ADR-011: Strict Obsidian Dark Theme Primacy & Removal of Light Mode](#adr-011-strict-obsidian-dark-theme-primacy--removal-of-light-mode)
 - [ADR-012: Subframe Studio Redesign & Design System Evolution (v2.0)](#adr-012-subframe-studio-redesign--design-system-evolution-v20)
+- [ADR-013: Studio Workbench 3-Zone Spatial Architecture](#adr-013-studio-workbench-3-zone-spatial-architecture)
 
 ---
 
@@ -261,5 +262,33 @@ A newly integrated Subframe Model Context Protocol (MCP) server was authenticate
 #### Consequences
 - **Positive**: Pixel-perfect design system alignment with the Subframe MCP canvas, robust state preservation, clean component encapsulation, and 0 lint/build errors.
 - **Negative**: Requires ongoing token discipline across future workspace additions.
+
+---
+
+### ADR-013: Studio Workbench 3-Zone Spatial Architecture
+
+* **Status**: Accepted
+* **Date**: 2026-11-01
+
+#### Context
+Prior iterations of Hermanos Forge organized workflows as 5 stacked card views placed inside a generic scrolling page with a collapsible sidebar. This stacked tab model lacked the spatial density, visual hierarchy, and real-time inspector feedback typical of modern professional digital media production tools (DAWs, NLEs, and IDEs like Premiere, DaVinci Resolve, Ableton, and VS Code).
+
+#### Decision
+Depart from the single-column stacked card tabs and implement a unified 3-Zone Studio Workbench Spatial Architecture:
+1. **Left Activity Dock (`ActivityDock.jsx`)**:
+   - Sleek, compact vertical dock (`w-16`) housing primary studio tools (Media Workbench, Multi-Track Stitcher, Timeline Trimmer), utility drawers (History Ledger, Studio Settings), and persistent bottom controls (Cookie Auth status capsule, destination folder picker, inspector rail toggle).
+2. **Center Stage (The Studio Canvas)**:
+   - **Header: Global Spotlight / Command Bar (`CommandBar.jsx`)**: Global `Ctrl+K` hotkey listener, instant clipboard paste button, dynamic stream detection pills (YouTube video, playlist counter, auth alert), and stream title breadcrumb.
+   - **Main Viewport**: Rich, interactive canvas stage for active workspaces (Cinematic 16:9 Media Monitor with thumbnail preview, batch sequence lane cards, visual waveform canvas, history ledger, and diagnostics HUD).
+   - **Bottom Dock: Persistent Studio Timeline Ruler (`TimelineRuler.jsx`)**: Calibrated time ruler with ticks, draggable In-point and Out-point trim handles with minimum gap clamping, draggable playhead scrubber, transport controls (Jump to In, Play/Pause preview, Jump to Out), and sequence duration tallies.
+3. **Right Inspector & Telemetry Rail (`InspectorRail.jsx`)**:
+   - Collapsible panel (`w-80`/`w-84`, toggled via `Ctrl+I`) containing:
+     - **Stream Properties**: Subframe segmented format toggle (`MP4 Video` / `MP3 Master`), precision resolution dropdown, live stream codec chips (`H.264`, `AAC 320k`, `60 FPS`, `16:9`), and output destination directory.
+     - **Live Engine Telemetry**: Real-time speed gauge with dynamic level bars, ETA countdown card, dual transfer progress bar, live terminal console stream (`yt-dlp`/FFmpeg stdout), and primary glowing "Forge Media Stream" action button with cancel support.
+4. **Preserved Compatibility**: All Electron IPC APIs (`window.electronAPI`, `window.stitchAPI`) and modals remain fully functional and state-preserved in the DOM.
+
+#### Consequences
+- **Positive**: Professional, high-density Studio Workbench layout; instantaneous access to stream properties and live telemetry from anywhere in the app; unified timeline interaction; zero form resets or state loss when switching tabs.
+- **Negative**: Increased component coordination requiring disciplined prop and state synchronization at the App coordinator level.
 
 
