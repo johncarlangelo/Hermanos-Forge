@@ -167,3 +167,22 @@ The following specialized design skills are installed locally inside `.agent/ski
 4. **`forge-issue` (`/forge-issue`)**: Interactive and template-conforming issue creator enforcing `.github/ISSUE_TEMPLATE/` schemas, `--assignee "@me"`, and repository priority and category labels.
 5. **`forge-pr` (`/forge-pr`)**: Standardized PR authoring skill that runs pre-flight verification (`npm run lint`, `npm run build`), targets `dev` by default, enforces Conventional Commits titles, and structures the PR description and verification record.
 6. **`forge-branch` (`/forge-branch`)**: Branch workflow skill that ensures a clean working tree, synchronizes remote `dev`, validates naming conventions (`feature/*`, `bug-fix/*`, `chore/*`, `docs/*`), and switches to the new branch.
+
+---
+
+## 7. Workspace Subagent Roster & Domain Boundaries
+
+The repository maintains specialized subagents inside `.agent/agents/` (gitignored). Subagents strictly run on first-party Google Gemini models and must only be invoked for tasks matching their explicit domain:
+
+| Subagent Name | Model Tier | Strict Domain & Trigger Rule |
+|---|---|---|
+| **`frontend-specialist`** | `gemini-3.8-flash-high` | **Frontend UI only**: React 19 components, Tailwind CSS, Framer Motion transitions, views, and modals. Never invoke for Python backend or Electron main process tasks. |
+| **`backend-specialist`** | `gemini-3.8-flash-high` | **Backend only**: `backend.py`, yt-dlp options, FFmpeg operations, Netscape cookie parsers, and Windows child process management (`CREATE_NO_WINDOW`). Never invoke for React UI or CSS. |
+| **`electron-bridge-expert`** | `gemini-3.8-flash-high` | **Electron Desktop only**: `electron/main.cjs`, `electron/preload.cjs`, IPC channel security, native dialogs, and electron-builder packaging. Never invoke for pure React styling or Python algorithms. |
+| **`ui-auditor`** | `gemini-3.8-flash-medium` | **Visual & UX Audits only**: Evaluates design tokens, visual hierarchy, spacing, contrast, focus rings, and Obsidian Dark theme parity against `DESIGN.md`. |
+| **`docs-archivist`** | `gemini-3.8-flash-medium` | **Documentation & Ledger only**: Synchronizes `ARCHITECTURE.md`, `DESIGN.md`, `TASKS.md`, `PROGRESS.md`, `DECISIONS.md`, and local Obsidian notes with shipped features and PR merges. |
+| **`frontend-verifier`** | `gemini-3.8-flash-low` | **Static Code QA only**: Executes `npm run lint`, checks Vite production builds, and enforces React 19 hook rules with 0 errors and 0 warnings. |
+| **`test-engineer`** | `gemini-3.8-flash-low` | **Automated Logic Tests only**: Executes `npm test` (`node --test scripts/*.test.mjs`), validating timecode parsers, boundary conditions, and stdout regex extractions. |
+
+### Strict Domain Triggering Principle
+Never invoke a frontend subagent when working on backend or Electron tasks, and vice versa. Always route work to the subagent with the exact domain match and lowest sufficient model tier.
