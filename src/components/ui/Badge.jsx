@@ -39,7 +39,7 @@ export function Badge({
   return (
     <span
       className={cn(
-        'inline-flex items-center font-medium select-none shrink-0 tracking-tight whitespace-nowrap',
+        'inline-flex items-center font-medium select-none tracking-tight whitespace-nowrap',
         variants[variant],
         sizes[size],
         className
@@ -53,7 +53,7 @@ export function Badge({
         </span>
       )}
       {icon && <span className="shrink-0">{icon}</span>}
-      <span>{children}</span>
+      <span className="truncate">{children}</span>
     </span>
   );
 }

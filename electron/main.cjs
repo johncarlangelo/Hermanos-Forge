@@ -73,29 +73,44 @@ app.on('activate', () => {
 });
 
 // Helper to find the correct python command
+let cachedPythonCmd = undefined;
 function getPythonCommand() {
+    if (cachedPythonCmd !== undefined) return cachedPythonCmd;
+    const opts = { windowsHide: true, stdio: 'ignore' };
     try {
-        execSync('py --version');
-        return 'py';
+        execSync('py --version', opts);
+        cachedPythonCmd = 'py';
+        return cachedPythonCmd;
     } catch (e) {
         try {
-            execSync('python --version');
-            return 'python';
+            execSync('python --version', opts);
+            cachedPythonCmd = 'python';
+            return cachedPythonCmd;
         } catch (e2) {
             try {
-                execSync('python3 --version');
-                return 'python3';
+                execSync('python3 --version', opts);
+                cachedPythonCmd = 'python3';
+                return cachedPythonCmd;
             } catch (e3) {
-                return 'python'; // Fallback
+                cachedPythonCmd = null;
+                return null;
             }
         }
     }
 }
 
 function getBackendExe() {
-    const isDev = process.env.ELECTRON_START_URL ? true : false;
+    const isDev = Boolean(process.env.ELECTRON_START_URL || !app.isPackaged);
     
     if (isDev) {
+        // In dev mode, prioritize live backend.py script with Python
+        const backendPy = path.join(__dirname, '../backend.py');
+        const pyCmd = getPythonCommand();
+        if (pyCmd && fs.existsSync(backendPy)) {
+            return { cmd: pyCmd, args: [backendPy] };
+        }
+
+        // Fall back to compiled exe if Python is not found
         const exePath1 = path.join(__dirname, '../dist_backend/backend/backend.exe');
         const exePath2 = path.join(__dirname, '../dist_backend/backend.exe');
         if (fs.existsSync(exePath1)) {
@@ -104,9 +119,8 @@ function getBackendExe() {
         if (fs.existsSync(exePath2)) {
             return { cmd: exePath2, args: [] };
         }
-        // Fall back to running the .py script directly with Python
-        const pyCmd = getPythonCommand();
-        return { cmd: pyCmd, args: [path.join(__dirname, '../backend.py')] };
+
+        return { cmd: pyCmd || 'python', args: [backendPy] };
     } else {
         // In production, electron-builder places extraResources under:
         // <install>/resources/app.asar.unpacked/<to>/
@@ -164,10 +178,14 @@ function runBackendCommand(action, extraArgs = [], event) {
             }
         } catch (e) {}
 
+        const cwd = path.isAbsolute(backend.cmd)
+            ? path.dirname(backend.cmd)
+            : (backend.args && backend.args[0] && path.isAbsolute(backend.args[0]) ? path.dirname(backend.args[0]) : undefined);
+
         const child = spawn(backend.cmd, args, {
             windowsHide: true,
             env: { ...process.env, PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1', ELECTRON_RESOURCES_PATH: process.resourcesPath, ...(ffPath ? { FFMPEG_PATH: ffPath } : {}) },
-            cwd: path.dirname(backend.cmd) || undefined
+            cwd
         });
 
         activeSingleDownloadProcess = child;
@@ -184,56 +202,136 @@ function runBackendCommand(action, extraArgs = [], event) {
             if (!settled) { settled = true; reject(err); }
         };
 
-        child.stdout.on('data', (data) => {
-            // Decode as UTF-8 explicitly from the raw buffer
-            const text = data.toString('utf8');
-            const lines = text.split('\n');
-            lines.forEach(line => {
-                line = line.trim();
-                if (!line) return;
-                
-                sendLog(`[STDOUT] ${line}`);
-                
-                if (line.startsWith('PROGRESS:')) {
-                    const percent = parseFloat(line.split(':')[1]);
-                    if (event && !isNaN(percent)) event.sender.send('progress-update', percent);
-                } else if (line.startsWith('STATUS:')) {
-                    const status = line.substring(7);
-                    if (event) event.sender.send('status-update', status);
-                } else if (line.startsWith('FORMATS:')) {
-                    try {
-                        const formats = JSON.parse(line.substring(8));
-                        lastSuccess = formats;
-                        doResolve(formats);
-                    } catch (e) {}
-                } else if (line.startsWith('METADATA:')) {
-                    try {
-                        const metadata = JSON.parse(line.substring(9));
-                        lastSuccess = metadata;
-                        doResolve(metadata);
-                    } catch (e) {}
-                } else if (line.startsWith('INSPECT:')) {
-                    try {
-                        const result = JSON.parse(line.substring(8));
-                        lastSuccess = result;
-                        doResolve(result);
-                    } catch (e) {}
-                } else if (line.startsWith('SUCCESS:')) {
-                    const filepath = line.substring(8).trim();
-                    lastSuccess = { success: true, filepath };
-                    doResolve(lastSuccess);
-                } else if (line.startsWith('ERROR:')) {
-                    lastError = new Error(line.substring(6).trim());
-                    doReject(lastError);
-                } else if (line.startsWith('AUTH_ERROR:')) {
-                    const msg = line.substring(11).trim();
-                    if (event) event.sender.send('auth-error', msg);
-                    lastError = new Error(`AUTH_ERROR: ${msg}`);
-                    doReject(lastError);
-                } else {
-                    console.log(`Backend output: ${line}`);
+        let stdoutBuffer = '';
+
+        const handleStdoutLine = (line) => {
+            line = line.trim();
+            if (!line) return;
+            
+            sendLog(`[STDOUT] ${line}`);
+            
+            let handled = false;
+
+            const telemetryIdx = line.indexOf('TELEMETRY:');
+            if (telemetryIdx !== -1) {
+                handled = true;
+                try {
+                    let jsonStr = line.substring(telemetryIdx + 10).trim();
+                    const firstBrace = jsonStr.indexOf('{');
+                    const lastBrace = jsonStr.lastIndexOf('}');
+                    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace >= firstBrace) {
+                        jsonStr = jsonStr.substring(firstBrace, lastBrace + 1);
+                    }
+                    const telemetryData = JSON.parse(jsonStr);
+                    if (event) event.sender.send('telemetry-update', telemetryData);
+                } catch (e) {
+                    console.error('Failed to parse telemetry JSON:', e);
                 }
-            });
+            }
+
+            const progressIdx = line.indexOf('PROGRESS:');
+            if (progressIdx !== -1) {
+                handled = true;
+                const afterProgress = line.substring(progressIdx + 9).trim();
+                const match = afterProgress.match(/^(\d+(?:\.\d+)?)/);
+                const percent = match ? parseFloat(match[1]) : parseFloat(afterProgress);
+                if (event && !isNaN(percent)) event.sender.send('progress-update', percent);
+            }
+
+            const statusIdx = line.indexOf('STATUS:');
+            if (statusIdx !== -1) {
+                handled = true;
+                let status = line.substring(statusIdx + 7).trim();
+                const nextTag = status.search(/(?:TELEMETRY|PROGRESS|SUCCESS|ERROR|AUTH_ERROR|FORMATS|METADATA|INSPECT):/);
+                if (nextTag !== -1) status = status.substring(0, nextTag).trim();
+                if (event && status) event.sender.send('status-update', status);
+            }
+
+            // SUCCESS, FORMATS, METADATA, INSPECT are checked before ERROR/AUTH_ERROR
+            // so payload strings (e.g. video titles containing "ERROR:") do not trigger false rejections
+            const successIdx = line.indexOf('SUCCESS:');
+            if (successIdx !== -1) {
+                handled = true;
+                const filepath = line.substring(successIdx + 8).trim();
+                lastSuccess = { success: true, filepath };
+                doResolve(lastSuccess);
+                return;
+            }
+
+            const formatsIdx = line.indexOf('FORMATS:');
+            if (formatsIdx !== -1) {
+                handled = true;
+                try {
+                    let jsonStr = line.substring(formatsIdx + 8).trim();
+                    const fb = jsonStr.indexOf('[');
+                    const lb = jsonStr.lastIndexOf(']');
+                    if (fb !== -1 && lb !== -1 && lb >= fb) jsonStr = jsonStr.substring(fb, lb + 1);
+                    const formats = JSON.parse(jsonStr);
+                    lastSuccess = formats;
+                    doResolve(formats);
+                    return;
+                } catch (e) {}
+            }
+
+            const metadataIdx = line.indexOf('METADATA:');
+            if (metadataIdx !== -1) {
+                handled = true;
+                try {
+                    let jsonStr = line.substring(metadataIdx + 9).trim();
+                    const fb = jsonStr.indexOf('{');
+                    const lb = jsonStr.lastIndexOf('}');
+                    if (fb !== -1 && lb !== -1 && lb >= fb) jsonStr = jsonStr.substring(fb, lb + 1);
+                    const metadata = JSON.parse(jsonStr);
+                    lastSuccess = metadata;
+                    doResolve(metadata);
+                    return;
+                } catch (e) {}
+            }
+
+            const inspectIdx = line.indexOf('INSPECT:');
+            if (inspectIdx !== -1) {
+                handled = true;
+                try {
+                    let jsonStr = line.substring(inspectIdx + 8).trim();
+                    const fb = jsonStr.indexOf('{');
+                    const lb = jsonStr.lastIndexOf('}');
+                    if (fb !== -1 && lb !== -1 && lb >= fb) jsonStr = jsonStr.substring(fb, lb + 1);
+                    const result = JSON.parse(jsonStr);
+                    lastSuccess = result;
+                    doResolve(result);
+                    return;
+                } catch (e) {}
+            }
+
+            const authIdx = line.indexOf('AUTH_ERROR:');
+            if (authIdx !== -1) {
+                handled = true;
+                const msg = line.substring(authIdx + 11).trim();
+                if (event) event.sender.send('auth-error', msg);
+                lastError = new Error(`AUTH_ERROR: ${msg}`);
+                doReject(lastError);
+                return;
+            }
+
+            const errorIdx = line.indexOf('ERROR:');
+            if (errorIdx !== -1) {
+                handled = true;
+                lastError = new Error(line.substring(errorIdx + 6).trim());
+                doReject(lastError);
+                return;
+            }
+
+            if (!handled) {
+                console.log(`Backend output: ${line}`);
+            }
+        };
+
+        child.stdout.on('data', (data) => {
+            // Decode as UTF-8 explicitly from raw buffer and handle stream line chunking
+            stdoutBuffer += data.toString('utf8');
+            const lines = stdoutBuffer.split(/[\r\n]+/);
+            stdoutBuffer = lines.pop(); // Keep partial trailing segment
+            lines.forEach(handleStdoutLine);
         });
 
         let stderrBuffer = '';
@@ -274,6 +372,10 @@ function runBackendCommand(action, extraArgs = [], event) {
         });
 
         child.on('close', (code) => {
+            if (stdoutBuffer && stdoutBuffer.trim()) {
+                handleStdoutLine(stdoutBuffer);
+                stdoutBuffer = '';
+            }
             activeSingleDownloadProcess = null;
             if (settled) return; // Already resolved/rejected by SUCCESS/ERROR line
 
@@ -300,7 +402,7 @@ function runBackendCommand(action, extraArgs = [], event) {
 ipcMain.handle('stitch-clips', async (event, { urls, outputDir, noStitch }) => {
     return new Promise((resolve, reject) => {
         const backend = getBackendExe();
-        if (!fs.existsSync(backend.cmd)) {
+        if (path.isAbsolute(backend.cmd) && !fs.existsSync(backend.cmd)) {
             const msg = `Backend not found at ${backend.cmd}. Ensure you ran 'npm run package-backend' before building, or include the backend in extraResources.`;
             console.error(msg);
             return reject(new Error(msg));
@@ -326,10 +428,14 @@ ipcMain.handle('stitch-clips', async (event, { urls, outputDir, noStitch }) => {
 
         if (ffPath) args.push('--ffmpeg-path', ffPath);
 
+        const cwd = path.isAbsolute(backend.cmd)
+            ? path.dirname(backend.cmd)
+            : (backend.args && backend.args[0] && path.isAbsolute(backend.args[0]) ? path.dirname(backend.args[0]) : undefined);
+
         activeStitchProcess = spawn(backend.cmd, args, {
             windowsHide: true,
             env: { ...process.env, PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1', ELECTRON_RESOURCES_PATH: process.resourcesPath, ...(ffPath ? { FFMPEG_PATH: ffPath } : {}) },
-            cwd: path.dirname(backend.cmd) || undefined
+            cwd
         });
 
         activeStitchProcess.stdout.on('data', (data) => {
