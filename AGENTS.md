@@ -38,7 +38,7 @@ For technical architecture, design tokens, active tasks, and decision records, r
 - Use the `@/` path alias for all internal imports (e.g. `@/components/ui/Button`, `@/lib/utils`). Avoid brittle relative path cascades (`../../components`).
 
 ### Shared Component Architecture & UI Primitives
-- **Location**: All reusable primitives live under `src/components/ui/` (`Button.jsx`, `Input.jsx`, `Select.jsx`, `Dialog.jsx`, `Tabs.jsx`, `Badge.jsx`, `Progress.jsx`, `Tooltip.jsx`, `Card.jsx`, `TitleBar.jsx`).
+- **Location**: All reusable primitives live under `src/components/ui/` (`Button.jsx`, `Input.jsx`, `Select.jsx`, `Dialog.jsx`, `Tabs.jsx`, `Badge.jsx`, `Progress.jsx`, `TelemetryHUD.jsx`, `Tooltip.jsx`, `Card.jsx`, `TitleBar.jsx`).
 - **Standard Signature**:
   - Accept standard props: `variant`, `size`, `className`, and forward all valid HTML attributes and refs.
   - Combine classes using the `cn()` utility (`clsx` + `tailwind-merge`) from `@/lib/utils`.

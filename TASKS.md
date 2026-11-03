@@ -12,6 +12,7 @@ This document tracks active engineering priorities, open GitHub issues, near-ter
 | **P0** | Design System & Agent Documentation Sync | `dev` | Completed | Updated `DESIGN.md`, `AGENTS.md`, `ARCHITECTURE.md`, `TASKS.md`, `PROGRESS.md`, and `DECISIONS.md` to reflect the active Obsidian Forge Media Studio design language. |
 | **P0** | Video Quality Fetch & 403 Bypass | `bug-fix/video-quality-fetch` | In Review | Switch YouTube player client to `['web_embedded', 'web']` to resolve 403 Forbidden errors when extracting formats. Verify format list rendering in UI and open PR to `dev`. |
 | **P1** | Frontend ESLint Cleanup | `dev` | Completed | Eliminated ESLint errors and warnings across all codebase files (0 errors, 0 warnings). |
+| **P1** | Real-Time Download Telemetry HUD (Issue #31) | `feature/download-telemetry-hud` | Completed | Real-time performance HUD: network transfer speed gauge with live beacon, ETA countdown timer, processed data volume meter, stream phase badge, and copyable status log strip. |
 
 ---
 
@@ -26,6 +27,9 @@ This document tracks active engineering priorities, open GitHub issues, near-ter
 | **[#18](https://github.com/johncarlangelo/Hermanos-Forge/issues/18)** | Dynamic Island for background jobs | Low | `enhancement`, `nice to have` | Implement a persistent Dynamic Island component to display background progress and allow multitasking across tabs during downloads. |
 | **[#20](https://github.com/johncarlangelo/Hermanos-Forge/issues/20)** | Video playback and preview | Mid | `enhancement`, `nice to have` | Integrate [Vidstack](https://vidstack.io/) with the YouTube IFrame API in [SelectiveDurationView.jsx](file:///d:/Comsci%20things/Python/Quick%20Tools%20Project/Hermanos%20Forge/src/components/views/SelectiveDurationView.jsx) for visual timeline scrubbing and start/end clip verification. |
 | **[#22](https://github.com/johncarlangelo/Hermanos-Forge/issues/22)** | Gemini watermark remover | Low | `enhancement` | Integrate [GeminiWatermarkTool](https://github.com/allenk/GeminiWatermarkTool) CLI to remove Google flow/nano banana watermarks from images and videos. |
+| **[#30](https://github.com/johncarlangelo/Hermanos-Forge/issues/30)** | Redesign timeline selector and editor in Selective Duration page | Mid | `enhancement`, `ux-gap` | Redesign the interactive timeline selector in Selective Duration with draggable playheads, time markers, and quick preset buttons. |
+| **[#31](https://github.com/johncarlangelo/Hermanos-Forge/issues/31)** | Real-time download performance HUD and stream metrics | Mid | `enhancement`, `nice to have` | Dedicated telemetry HUD displaying real-time speed, dynamic ETA countdown, volume meter, stream phase badge, and copyable status log strip. |
+| **[#33](https://github.com/johncarlangelo/Hermanos-Forge/issues/33)** | Automated startup yt-dlp update behind splash screen and on-demand engine updater | Mid | `enhancement`, `nice to have` | Check for and update standalone `yt-dlp.exe` in `%AppData%\Hermanos Forge\bin\` on startup behind a sleek splash screen (with #11), plus an on-demand update button in Settings. |
 
 ---
 

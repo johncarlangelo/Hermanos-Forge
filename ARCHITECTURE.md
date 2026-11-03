@@ -79,6 +79,7 @@ Communication from `backend.py` back to Electron occurs through unbuffered stdou
 | Output Prefix | Payload Type | Description | Handled In |
 |---|---|---|---|
 | `PROGRESS:<float>` | Float (`0.00`–`100.00`) | Real-time download progress percent | `ipcRenderer.on('progress-update')` |
+| `TELEMETRY:<json>` | JSON object | Real-time stream telemetry (downloaded, total, speed, eta, percent, phase) | `ipcRenderer.on('telemetry-update')` |
 | `STATUS:<string>` | Text message | Informational status (e.g., "Merging video and audio...") | `ipcRenderer.on('status-update')` |
 | `SUCCESS:<string>` | File path | Operation succeeded; returns saved output path | Resolves IPC Promise |
 | `ERROR:<string>` | Error description | Non-fatal or fatal error; rejects caller Promise | Rejects IPC Promise / emits error |

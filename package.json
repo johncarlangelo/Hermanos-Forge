@@ -12,7 +12,8 @@
     "electron:start": "cross-env ELECTRON_START_URL=http://localhost:5173 electron .",
     "electron:dev": "concurrently -k \"npm run dev\" \"wait-on http://localhost:5173 && npm run electron:start\"",
     "electron:build": "npm run build && electron-builder",
-    "package-backend": "py -m PyInstaller --noconsole --distpath ./dist_backend backend.py",
+    "package-backend": "py -m PyInstaller --noconsole --noconfirm --distpath ./dist_backend backend.py",
+    "test": "node --test scripts/*.test.mjs",
     "lint": "eslint .",
     "preview": "vite preview"
   },

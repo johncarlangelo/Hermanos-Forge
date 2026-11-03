@@ -20,8 +20,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
         ipcRenderer.on('status-update', handler);
         return () => ipcRenderer.removeListener('status-update', handler);
     },
+    onTelemetryUpdate: (callback) => {
+        const handler = (_event, t) => callback(_event, t);
+        ipcRenderer.on('telemetry-update', handler);
+        return () => ipcRenderer.removeListener('telemetry-update', handler);
+    },
     offProgressUpdate: (callback) => ipcRenderer.removeListener('progress-update', callback),
     offStatusUpdate: (callback) => ipcRenderer.removeListener('status-update', callback),
+    offTelemetryUpdate: (callback) => ipcRenderer.removeListener('telemetry-update', callback),
     onAuthError: (callback) => {
         const handler = (_event, msg) => callback(msg);
         ipcRenderer.on('auth-error', handler);

@@ -4,6 +4,7 @@ import argparse
 import subprocess
 import shutil
 import json
+import math
 import yt_dlp
 import time
 
@@ -109,15 +110,69 @@ def transcode_to_h264_if_needed(file_path, ffmpeg_bin):
     except Exception as e:
         print(f"ERROR:Transcode check failed: {e}", flush=True)
 
+def _sanitize_metric(val):
+    if val is None:
+        return None
+    try:
+        f = float(val)
+        if math.isfinite(f):
+            return f
+    except (ValueError, TypeError):
+        pass
+    return None
+
 def progress_hook(d):
-    """Hook to print progress in a format Electron can easily parse."""
-    if d['status'] == 'downloading':
-        downloaded = d.get('downloaded_bytes', 0)
-        total = d.get('total_bytes', 0)
+    """Hook to print progress and real-time telemetry in a format Electron can easily parse."""
+    status = d.get('status')
+    if status == 'downloading':
+        try:
+            downloaded = int(d.get('downloaded_bytes', 0) or 0)
+        except (ValueError, TypeError):
+            downloaded = 0
+
+        raw_total = d.get('total_bytes') or d.get('total_bytes_estimate') or 0
+        try:
+            total = int(raw_total)
+        except (ValueError, TypeError):
+            total = 0
+
+        speed = _sanitize_metric(d.get('speed'))
+        eta = _sanitize_metric(d.get('eta'))
         if total > 0:
-            progress = (downloaded / total) * 100
+            progress = min(100.0, max(0.0, (downloaded / total * 100)))
+        else:
+            progress = 0.0
+
+        telemetry = {
+            'downloaded': downloaded,
+            'total': total,
+            'speed': speed,
+            'eta': int(eta) if eta is not None else None,
+            'percent': round(progress, 2),
+            'status': status,
+            'phase': 'downloading'
+        }
+        print(f"TELEMETRY:{json.dumps(telemetry)}", flush=True)
+
+        if total > 0:
             print(f"PROGRESS:{progress:.2f}", flush=True)
-    elif d['status'] == 'finished':
+    elif status == 'finished':
+        raw_downloaded = d.get('total_bytes') or d.get('downloaded_bytes', 0) or 0
+        try:
+            downloaded = int(raw_downloaded)
+        except (ValueError, TypeError):
+            downloaded = 0
+
+        telemetry = {
+            'downloaded': downloaded,
+            'total': downloaded,
+            'speed': 0,
+            'eta': 0,
+            'percent': 100.0,
+            'status': status,
+            'phase': 'processing'
+        }
+        print(f"TELEMETRY:{json.dumps(telemetry)}", flush=True)
         print("STATUS:Download complete, processing...", flush=True)
 
 def get_available_formats(youtube_url, app_data_path=None):
@@ -331,6 +386,8 @@ def download_youtube_as_mp3(youtube_url, output_dir, ffmpeg_path=None, no_playli
             'ffmpeg_location': ffmpeg_bin,
             # 'ffprobe_location': ffprobe_bin,
             'noplaylist': no_playlist,
+            'quiet': True,
+            'noprogress': True,
         }
         apply_cookie_opts(ydl_opts, app_data_path)
 
@@ -377,6 +434,8 @@ def download_youtube_as_mp4(youtube_url, output_dir, quality=None, ffmpeg_path=N
             'ffmpeg_location': ffmpeg_bin,
             # 'ffprobe_location': ffprobe_bin,
             'noplaylist': no_playlist,
+            'quiet': True,
+            'noprogress': True,
             'postprocessors': [{
                 'key': 'FFmpegVideoConvertor',
                 'preferedformat': 'mp4',
@@ -490,6 +549,7 @@ def stitch_clips_from_urls(urls, output_dir, ffmpeg_path=None, no_stitch=False, 
                     'merge_output_format': 'mp4',
                     'ffmpeg_location': ffmpeg_bin,
                     'quiet': True,
+                    'noprogress': True,
                     'no_warnings': True,
                 }
                 apply_cookie_opts(ydl_opts, app_data_path)
@@ -592,6 +652,8 @@ def download_clip(youtube_url, output_dir, start_time, end_time, quality=None, p
             'outtmpl': outtmpl,
             'progress_hooks': [progress_hook],
             'ffmpeg_location': ffmpeg_bin,
+            'quiet': True,
+            'noprogress': True,
             'no_warnings': True,
             'download_ranges': yt_dlp.utils.download_range_func(None, [(start_time, end_time)]),
             'merge_output_format': 'mp4',

@@ -216,6 +216,7 @@ export default function App() {
   const [downloadType, setDownloadType] = useState('mp4'); // 'mp4' | 'mp3'
   const [singleStatus, setSingleStatus] = useState('');
   const [singleProgress, setSingleProgress] = useState(0);
+  const [singleTelemetry, setSingleTelemetry] = useState(null);
   const [isDownloading, setIsDownloading] = useState(false);
   const [urlError, setUrlError] = useState(null);
 
@@ -288,6 +289,13 @@ export default function App() {
       });
 
       unsubs.push(unsubProgress, unsubStatus);
+
+      if (window.electronAPI.onTelemetryUpdate) {
+        const unsubTelemetry = window.electronAPI.onTelemetryUpdate((_event, data) => {
+          setSingleTelemetry(data);
+        });
+        unsubs.push(unsubTelemetry);
+      }
 
       if (window.electronAPI.onAuthError) {
         const unsubAuth = window.electronAPI.onAuthError(() => {
@@ -417,6 +425,7 @@ export default function App() {
     setIsDownloading(true);
     setSingleProgress(0);
     setSingleStatus('Initializing media stream...');
+    setSingleTelemetry(null);
     downloadCancelRef.current = false;
 
     try {
@@ -455,6 +464,7 @@ export default function App() {
         setUrl('');
         setSingleProgress(0);
         setSingleStatus('');
+        setSingleTelemetry(null);
         setSingleVideoMetadata(null);
         setFormats([]);
         setSelectedQuality('');
@@ -465,6 +475,7 @@ export default function App() {
         ? 'Too fast! Please wait a few seconds and try again.'
         : err.message || 'Download failed';
       setSingleStatus(`Error: ${friendlyError}`);
+      setSingleTelemetry(null);
       setIsDownloading(false);
       toast.error(`Download failed: ${friendlyError}`);
     }
@@ -485,6 +496,9 @@ export default function App() {
 
     setShowPlaylistModal(false);
     setIsDownloading(true);
+    setSingleProgress(0);
+    setSingleStatus('Initializing playlist batch download...');
+    setSingleTelemetry(null);
     downloadCancelRef.current = false;
 
     const videosToDownload = playlistEntries.filter((v) =>
@@ -507,6 +521,8 @@ export default function App() {
       const video = videosToDownload[i];
       currentDownloadingVideoIdRef.current = video.id;
 
+      setSingleProgress(0);
+      setSingleTelemetry(null);
       setPlaylistDownloadQueue((prev) =>
         prev.map((item) =>
           item.id === video.id ? { ...item, status: 'Downloading...' } : item
@@ -555,10 +571,14 @@ export default function App() {
     currentDownloadingVideoIdRef.current = null;
     if (!downloadCancelRef.current) {
       setSingleStatus('All selected playlist videos downloaded!');
+      setSingleTelemetry(null);
       setTimeout(() => {
         setIsDownloading(false);
         setPlaylistDownloadQueue([]);
         setUrl('');
+        setSingleProgress(0);
+        setSingleStatus('');
+        setSingleTelemetry(null);
         setSingleVideoMetadata(null);
         setFormats([]);
         setSelectedQuality('');
@@ -582,12 +602,14 @@ export default function App() {
 
     setIsDownloading(true);
     setSingleProgress(0);
+    setSingleTelemetry(null);
     setSingleStatus('Converting local MP4 to MP3 audio...');
 
     try {
       const result = await window.electronAPI.convertLocalMp4(file, outdir);
       setSingleStatus('Conversion Complete!');
       setSingleProgress(100);
+      setSingleTelemetry(null);
       toast.success('Converted to MP3 successfully!');
 
       if (result && result.filepath) {
@@ -605,10 +627,13 @@ export default function App() {
         setIsDownloading(false);
         setSingleProgress(0);
         setSingleStatus('');
+        setSingleTelemetry(null);
       }, 3000);
     } catch (err) {
       setIsDownloading(false);
+      setSingleProgress(0);
       setSingleStatus('');
+      setSingleTelemetry(null);
       toast.error(`Conversion failed: ${err.message}`);
     }
   };
@@ -627,6 +652,7 @@ export default function App() {
     setIsDownloading(false);
     setSingleProgress(0);
     setSingleStatus('');
+    setSingleTelemetry(null);
     toast.error('Download canceled.', { icon: '🛑' });
   };
 
@@ -920,6 +946,7 @@ export default function App() {
               isDownloading={isDownloading}
               progress={singleProgress}
               status={singleStatus}
+              telemetry={singleTelemetry}
               playlistDownloadQueue={playlistDownloadQueue}
               onDownload={handleSingleDownload}
               onConvertLocal={handleConvertLocal}

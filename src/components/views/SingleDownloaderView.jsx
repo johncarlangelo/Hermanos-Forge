@@ -21,6 +21,7 @@ import {
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Progress } from '@/components/ui/Progress';
+import { TelemetryHUD } from '@/components/ui/TelemetryHUD';
 import toast from 'react-hot-toast';
 
 export function SingleDownloaderView({
@@ -40,6 +41,7 @@ export function SingleDownloaderView({
   isDownloading = false,
   progress = 0,
   status = '',
+  telemetry = null,
   playlistDownloadQueue = [],
   onDownload,
   onConvertLocal,
@@ -640,6 +642,13 @@ export function SingleDownloaderView({
             </div>
 
             <Progress value={progress} indeterminate={progress === 0} />
+
+            {/* Real-time Performance Telemetry HUD */}
+            <TelemetryHUD
+              telemetry={telemetry}
+              status={status}
+              isDownloading={isDownloading}
+            />
 
             {/* Playlist sequential progress queue */}
             {playlistDownloadQueue.length > 0 && (
