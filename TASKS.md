@@ -30,6 +30,7 @@ This document tracks active engineering priorities, open GitHub issues, near-ter
 | **[#30](https://github.com/johncarlangelo/Hermanos-Forge/issues/30)** | Redesign timeline selector and editor in Selective Duration page | Mid | `enhancement`, `ux-gap` | Redesign the interactive timeline selector in Selective Duration with draggable playheads, time markers, and quick preset buttons. |
 | **[#31](https://github.com/johncarlangelo/Hermanos-Forge/issues/31)** | Real-time download performance HUD and stream metrics | Mid | `enhancement`, `nice to have` | Dedicated telemetry HUD displaying real-time speed, dynamic ETA countdown, volume meter, stream phase badge, and copyable status log strip. |
 | **[#33](https://github.com/johncarlangelo/Hermanos-Forge/issues/33)** | Automated startup yt-dlp update behind splash screen and on-demand engine updater | Mid | `enhancement`, `nice to have` | Check for and update standalone `yt-dlp.exe` in `%AppData%\Hermanos Forge\bin\` on startup behind a sleek splash screen (with #11), plus an on-demand update button in Settings. |
+| **[#35](https://github.com/johncarlangelo/Hermanos-Forge/issues/35)** | Support MP3 audio extraction and quick duration presets in Selective Duration | Low | `enhancement`, `nice to have` | Add MP3 audio extraction format switcher and 1-click social presets (15s, 30s, 60s) to the Selective Duration timeline editor. |
 
 ---
 
