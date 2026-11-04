@@ -13,7 +13,7 @@ This document tracks active engineering priorities, open GitHub issues, near-ter
 | **P0** | Video Quality Fetch & 403 Bypass | `bug-fix/video-quality-fetch` | In Review | Switch YouTube player client to `['web_embedded', 'web']` to resolve 403 Forbidden errors when extracting formats. Verify format list rendering in UI and open PR to `dev`. |
 | **P1** | Frontend ESLint Cleanup | `dev` | Completed | Eliminated ESLint errors and warnings across all codebase files (0 errors, 0 warnings). |
 | **P1** | Real-Time Download Telemetry HUD (Issue #31) | `feature/download-telemetry-hud` | Completed | Real-time performance HUD: network transfer speed gauge with live beacon, ETA countdown timer, processed data volume meter, stream phase badge, and copyable status log strip. |
-| **P1** | Automated Startup Engine Updater & Splash Screen (Issue #33 & #11) | eature/startup-engine-updater | Completed | Frameless cold boot splash screen, automated %AppData% user-space yt-dlp updater, priority binary resolution, and on-demand updater in Settings. |
+| **P1** | Automated Startup Engine Updater & Splash Screen (Issue #33 & #11) | `feature/startup-engine-updater` | PR #36 | Full-sized 980x720 frameless cold boot splash screen with animated spectrum visualizer and laser sweep, automated user-space %AppData% yt-dlp updater, priority binary resolution, and on-demand updater in Settings. |
 
 ---
 
@@ -30,7 +30,7 @@ This document tracks active engineering priorities, open GitHub issues, near-ter
 | **[#22](https://github.com/johncarlangelo/Hermanos-Forge/issues/22)** | Gemini watermark remover | Low | `enhancement` | Integrate [GeminiWatermarkTool](https://github.com/allenk/GeminiWatermarkTool) CLI to remove Google flow/nano banana watermarks from images and videos. |
 | **[#30](https://github.com/johncarlangelo/Hermanos-Forge/issues/30)** | Redesign timeline selector and editor in Selective Duration page | Mid | `enhancement`, `ux-gap` | Redesign the interactive timeline selector in Selective Duration with draggable playheads, time markers, and quick preset buttons. |
 | **[#31](https://github.com/johncarlangelo/Hermanos-Forge/issues/31)** | Real-time download performance HUD and stream metrics | Mid | `enhancement`, `nice to have` | Dedicated telemetry HUD displaying real-time speed, dynamic ETA countdown, volume meter, stream phase badge, and copyable status log strip. |
-| **[#33](https://github.com/johncarlangelo/Hermanos-Forge/issues/33)** | Automated startup yt-dlp update behind splash screen and on-demand engine updater | Mid | enhancement, ice to have | Completed via automated %AppData%\\Hermanos Forge\\bin\\yt-dlp.exe updater behind splash screen, plus on-demand updater in Settings. |
+| **[#33](https://github.com/johncarlangelo/Hermanos-Forge/issues/33)** | Automated startup yt-dlp update behind splash screen and on-demand engine updater | Mid | `enhancement`, `nice to have` | Completed via automated %AppData%\\Hermanos Forge\\bin\\yt-dlp.exe updater behind splash screen, plus on-demand updater in Settings. |
 | **[#35](https://github.com/johncarlangelo/Hermanos-Forge/issues/35)** | Support MP3 audio extraction and quick duration presets in Selective Duration | Low | `enhancement`, `nice to have` | Add MP3 audio extraction format switcher and 1-click social presets (15s, 30s, 60s) to the Selective Duration timeline editor. |
 
 ---

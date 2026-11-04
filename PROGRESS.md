@@ -17,8 +17,8 @@ This document chronicles historical releases, merged capabilities, active sprint
 ## 2. Release & Milestone History
 
 ### [Unreleased] `v1.1.0` / `v1.1.0-pro` — Obsidian Forge Media Studio UI Redesign & Architecture Modernization
-- **Automated Startup yt-dlp Engine Updater & Native Splash Screen (Issue #33 & #11)**:
-  - Added lightweight frameless 440x280 native splash window (electron/splash.html + electron/splash-preload.cjs) with Obsidian Forge design tokens, eliminating cold-boot white flashes.
+- **Automated Startup yt-dlp Engine Updater & Native Splash Screen (PR #36 / Issue #33 & #11)**:
+  - Added lightweight frameless full-sized 980x720 native splash window (electron/splash.html + electron/splash-preload.cjs) with living audio spectrum wave, laser sweep, and smooth exit cross-fade with Obsidian Forge design tokens, eliminating cold-boot white flashes.
   - Implemented electron/engine-updater.cjs with user-space executable writing (%AppData%\\Hermanos Forge\\bin\\yt-dlp.exe), strict 2.5s network timeout version probe against GitHub releases API, and atomic replacement via backup/swap.
   - Added priority binary resolution hierarchy in ackend.py (--ytdlp-bin CLI override > %AppData% binary > bundled yt_dlp fallback) and implemented get_engine_version action.
   - Added on-demand engine updater UI inside SettingsView.jsx with active version chip, source indicator (Bundled vs AppData Updated), and 1-click update button with streaming progress.
