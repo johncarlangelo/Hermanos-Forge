@@ -45,7 +45,7 @@ export function Select({
   };
 
   return (
-    <div className={cn('relative w-full', className)} ref={containerRef}>
+    <div className={cn('relative w-full', isOpen ? 'z-50' : 'z-10', className)} ref={containerRef}>
       <button
         type="button"
         onClick={() => !disabled && setIsOpen(!isOpen)}
@@ -79,7 +79,7 @@ export function Select({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -4, scale: 0.98 }}
             transition={{ duration: 0.12, ease: 'easeOut' }}
-            className="absolute z-[100] w-full mt-1 bg-[var(--surface-1)] border border-[var(--border-subdued)] rounded-[6px] shadow-lg overflow-hidden py-1 max-h-56 overflow-y-auto"
+            className="absolute z-[100] w-full mt-1.5 bg-obsidian-900 border border-purple-800/60 rounded-xl shadow-2xl py-1 max-h-56 overflow-y-auto"
             role="listbox"
           >
             {options.length === 0 ? (
@@ -102,13 +102,13 @@ export function Select({
                     className={cn(
                       'w-full text-left px-2.5 py-1.5 text-xs flex items-center justify-between transition-colors',
                       isSelected
-                        ? 'bg-[var(--accent-muted)] text-[var(--accent-primary)] font-semibold'
-                        : 'text-[var(--text-primary)] hover:bg-[var(--surface-hover)]'
+                        ? 'bg-purple-950/70 text-accent-neon font-semibold'
+                        : 'text-[var(--text-primary)] hover:bg-purple-900/30 hover:text-white'
                     )}
                   >
                     <span className="truncate">{option.label}</span>
                     {isSelected && (
-                      <Check className="w-3.5 h-3.5 text-[var(--accent-primary)] shrink-0 ml-1.5" />
+                      <Check className="w-3.5 h-3.5 text-accent-neon shrink-0 ml-1.5" />
                     )}
                   </button>
                 );

@@ -17,6 +17,19 @@ This document chronicles historical releases, merged capabilities, active sprint
 ## 2. Release & Milestone History
 
 ### [Unreleased] `v1.1.0` / `v1.1.0-pro` — Obsidian Forge Media Studio UI Redesign & Architecture Modernization
+- **Selective Duration Studio Timeline Redesign (Issue #30)**:
+  - Transformed timeline into a polished, thumbnail-based video trimming workstation.
+  - Implemented tiled video frame snapshot filmstrip track (`TimelineThumbnailTrack.jsx`) with unselected head/tail dimmed masks.
+  - Added distinct draggable playhead scrubber (`TimelinePlayhead.jsx`) with inverted neon purple head and hairline indicator.
+  - Upgraded adaptive time ruler (`TimelineRuler.jsx`) with major/minor tick marks and responsive timestamps.
+  - Created prominent tactile caliper trim handles (`TimelineTrimmerHandle.jsx`) with directional chevrons, pointer capture (`setPointerCapture`), and floating HUD tooltips.
+  - Added compact zoom toolbar combining `[-]`, smooth range slider with glowing neon purple thumb, `[+]`, numeric zoom readout (`1.0x` - `30.0x`), and `1x` reset button.
+  - Streamlined bottom timecode controls into a single non-wrapping row with compact start/end inputs and duration frames pill.
+  - Fixed z-index hierarchy and card clipping on output resolution dropdown selector (`Select.jsx`).
+  - Added sub-second keyboard nudging (`ArrowLeft/Right` for 0.1s, `Shift` for 1.0s, `Alt` for 0.05s) and step buttons (`-1s`, `-0.1s`, `+0.1s`, `+1s`).
+  - Added 1-click social duration presets (`15s Reel`, `30s TikTok`, `60s Shorts`, `Full`) and 1-click segment duplication (`duplicateClip`).
+  - 100% test pass rate (32/32 tests) and zero ESLint errors/warnings.
+
 - **Automated Startup yt-dlp Engine Updater & Native Splash Screen (PR #36 / Issue #33 & #11)**:
   - Added lightweight frameless full-sized 980x720 native splash window (electron/splash.html + electron/splash-preload.cjs) with living audio spectrum wave, laser sweep, and smooth exit cross-fade with Obsidian Forge design tokens, eliminating cold-boot white flashes.
   - Implemented electron/engine-updater.cjs with user-space executable writing (%AppData%\\Hermanos Forge\\bin\\yt-dlp.exe), strict 2.5s network timeout version probe against GitHub releases API, and atomic replacement via backup/swap.
