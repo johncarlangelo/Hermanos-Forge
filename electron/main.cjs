@@ -3,6 +3,7 @@ const path = require('path');
 const { spawn, execSync } = require('child_process');
 const fs = require('fs');
 const ffmpeg = require('fluent-ffmpeg');
+const engineUpdater = require('./engine-updater.cjs');
 
 // Set fluent-ffmpeg paths for bundled executables
 const basePath = app.isPackaged ? process.resourcesPath : app.getAppPath();
@@ -13,14 +14,56 @@ ffmpeg.setFfmpegPath(ffmpegPath);
 ffmpeg.setFfprobePath(ffprobePath);
 
 let mainWindow;
+let splashWindow = null;
 let activeStitchProcess = null;
 let activeSingleDownloadProcess = null;
 let logsWindow = null;
+let cachedBundledYtdlpVer = null;
 
 function sendLog(line) {
     if (logsWindow && !logsWindow.isDestroyed()) {
         logsWindow.webContents.send('log-update', line);
     }
+}
+
+let splashLoaded = false;
+let pendingSplashStatus = null;
+
+function sendSplashStatus(message, percent) {
+    pendingSplashStatus = { message, percent };
+    if (splashWindow && !splashWindow.isDestroyed() && splashLoaded) {
+        splashWindow.webContents.send('splash-status', pendingSplashStatus);
+    }
+}
+
+function createSplashWindow() {
+    splashLoaded = false;
+    pendingSplashStatus = null;
+    splashWindow = new BrowserWindow({
+        width: 980,
+        height: 720,
+        minWidth: 800,
+        minHeight: 600,
+        frame: false,
+        resizable: false,
+        center: true,
+        show: true,
+        backgroundColor: '#09090C',
+        webPreferences: {
+            preload: path.join(__dirname, 'splash-preload.cjs'),
+            nodeIntegration: false,
+            contextIsolation: true
+        }
+    });
+
+    splashWindow.webContents.once('did-finish-load', () => {
+        splashLoaded = true;
+        if (pendingSplashStatus && splashWindow && !splashWindow.isDestroyed()) {
+            splashWindow.webContents.send('splash-status', pendingSplashStatus);
+        }
+    });
+
+    splashWindow.loadFile(path.join(__dirname, 'splash.html'));
 }
 
 function createWindow() {
@@ -30,6 +73,8 @@ function createWindow() {
         minWidth: 800,
         minHeight: 600,
         frame: false,
+        show: false,
+        backgroundColor: '#09090C',
         webPreferences: {
             preload: path.join(__dirname, 'preload.cjs'),
             nodeIntegration: false,
@@ -58,7 +103,129 @@ function createWindow() {
     }
 }
 
-app.whenReady().then(createWindow);
+async function getBundledYtdlpVersion() {
+    if (cachedBundledYtdlpVer) return cachedBundledYtdlpVer;
+    try {
+        const backend = getBackendExe();
+        const res = await new Promise((resolve) => {
+            let settled = false;
+            const doResolve = (ver) => {
+                if (!settled) {
+                    settled = true;
+                    resolve(ver);
+                }
+            };
+            const timer = setTimeout(() => {
+                doResolve('2026.06.09');
+            }, 3000);
+
+            try {
+                const child = spawn(backend.cmd, [...backend.args, '--action', 'get_engine_version', '--ytdlp-bin', 'bundled'], {
+                    windowsHide: true,
+                    env: { ...process.env, PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1' }
+                });
+                let out = '';
+                child.stdout.on('data', d => { out += d.toString(); });
+                child.on('close', () => {
+                    clearTimeout(timer);
+                    const match = out.match(/VERSION:(\{.*\})/);
+                    if (match) {
+                        try {
+                            const parsed = JSON.parse(match[1]);
+                            doResolve(parsed.version);
+                            return;
+                        } catch { }
+                    }
+                    doResolve('2026.06.09');
+                });
+                child.on('error', () => {
+                    clearTimeout(timer);
+                    doResolve('2026.06.09');
+                });
+            } catch {
+                clearTimeout(timer);
+                doResolve('2026.06.09');
+            }
+        });
+        cachedBundledYtdlpVer = res || '2026.06.09';
+        return cachedBundledYtdlpVer;
+    } catch {
+        return '2026.06.09';
+    }
+}
+
+function initializeApp() {
+    createSplashWindow();
+    createWindow();
+
+    let isAppReady = false;
+    let isEngineReady = false;
+
+    let hasTransitioned = false;
+    function tryShowMainWindow() {
+        if (isAppReady && isEngineReady && !hasTransitioned) {
+            hasTransitioned = true;
+            sendSplashStatus('Forge Media Engine ready', 100);
+
+            // Synchronize mainWindow bounds to match splash exactly
+            if (splashWindow && !splashWindow.isDestroyed()) {
+                try {
+                    splashWindow.webContents.send('splash-closing');
+                    const bounds = splashWindow.getBounds();
+                    if (mainWindow && !mainWindow.isDestroyed()) {
+                        mainWindow.setBounds(bounds);
+                    }
+                } catch {}
+            }
+
+            // Allow 420ms for splash exit animation before showing main window
+            setTimeout(() => {
+                if (mainWindow && !mainWindow.isDestroyed()) {
+                    mainWindow.show();
+                    mainWindow.focus();
+                }
+                if (splashWindow && !splashWindow.isDestroyed()) {
+                    splashWindow.close();
+                    splashWindow = null;
+                }
+            }, 420);
+        }
+    }
+
+    mainWindow.once('ready-to-show', () => {
+        isAppReady = true;
+        tryShowMainWindow();
+    });
+
+    // Fallback safety timer so app never hangs indefinitely
+    setTimeout(() => {
+        if (!isAppReady) {
+            isAppReady = true;
+            tryShowMainWindow();
+        }
+        if (!isEngineReady) {
+            isEngineReady = true;
+            tryShowMainWindow();
+        }
+    }, 8000);
+
+    engineUpdater.startupCheckAndUpdate({
+        appDataPath: app.getPath('userData'),
+        fallbackBundledResolver: () => getBundledYtdlpVersion(),
+        onStatus: (message, percent) => {
+            sendSplashStatus(message, percent);
+        }
+    }).then(() => {
+        isEngineReady = true;
+        tryShowMainWindow();
+    }).catch((err) => {
+        console.warn('Startup engine check warning:', err);
+        isEngineReady = true;
+        tryShowMainWindow();
+    });
+}
+
+app.whenReady().then(initializeApp);
 
 app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') {
@@ -69,6 +236,7 @@ app.on('window-all-closed', () => {
 app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
         createWindow();
+        if (mainWindow) mainWindow.show();
     }
 });
 
@@ -101,7 +269,7 @@ function getPythonCommand() {
 
 function getBackendExe() {
     const isDev = Boolean(process.env.ELECTRON_START_URL || !app.isPackaged);
-    
+
     if (isDev) {
         // In dev mode, prioritize live backend.py script with Python
         const backendPy = path.join(__dirname, '../backend.py');
@@ -140,18 +308,18 @@ function getBackendExe() {
 function runBackendCommand(action, extraArgs = [], event) {
     return new Promise((resolve, reject) => {
         const backend = getBackendExe();
-            // If the backend executable (or fallback) doesn't exist, fail fast with a clear message
-            // We only check if the command is an absolute path. For system commands like 'py', fs.existsSync will be false
-            if (path.isAbsolute(backend.cmd) && !fs.existsSync(backend.cmd)) {
-                const msg = `Backend not found at ${backend.cmd}. Ensure you ran 'npm run package-backend' before building, or include the backend in extraResources.`;
-                console.error(msg);
-                if (event && event.sender) event.sender.send('status-update', msg);
-                return reject(new Error(msg));
-            }
+        // If the backend executable (or fallback) doesn't exist, fail fast with a clear message
+        // We only check if the command is an absolute path. For system commands like 'py', fs.existsSync will be false
+        if (path.isAbsolute(backend.cmd) && !fs.existsSync(backend.cmd)) {
+            const msg = `Backend not found at ${backend.cmd}. Ensure you ran 'npm run package-backend' before building, or include the backend in extraResources.`;
+            console.error(msg);
+            if (event && event.sender) event.sender.send('status-update', msg);
+            return reject(new Error(msg));
+        }
         const args = [...backend.args, '--action', action, ...extraArgs];
-        
+
         console.log(`Running backend: ${backend.cmd} ${args.join(' ')}`);
-        
+
         // If available, locate bundled ffmpeg under the app resources and pass it to the backend
         let ffPath = ffmpegPath;
         if (!fs.existsSync(ffPath)) {
@@ -163,7 +331,14 @@ function runBackendCommand(action, extraArgs = [], event) {
             if (ffPath) {
                 args.push('--ffmpeg-path', ffPath);
             }
-        } catch (e) {}
+        } catch (e) { }
+
+        try {
+            const ytdlpBin = engineUpdater.resolveYtdlpBinary(app.getPath('userData'));
+            if (ytdlpBin) {
+                args.push('--ytdlp-bin', ytdlpBin);
+            }
+        } catch (e) { }
 
         let expectedDuration = null;
         try {
@@ -176,7 +351,7 @@ function runBackendCommand(action, extraArgs = [], event) {
                     expectedDuration = e - s;
                 }
             }
-        } catch (e) {}
+        } catch (e) { }
 
         const cwd = path.isAbsolute(backend.cmd)
             ? path.dirname(backend.cmd)
@@ -207,9 +382,9 @@ function runBackendCommand(action, extraArgs = [], event) {
         const handleStdoutLine = (line) => {
             line = line.trim();
             if (!line) return;
-            
+
             sendLog(`[STDOUT] ${line}`);
-            
+
             let handled = false;
 
             const telemetryIdx = line.indexOf('TELEMETRY:');
@@ -270,7 +445,7 @@ function runBackendCommand(action, extraArgs = [], event) {
                     lastSuccess = formats;
                     doResolve(formats);
                     return;
-                } catch (e) {}
+                } catch (e) { }
             }
 
             const metadataIdx = line.indexOf('METADATA:');
@@ -285,7 +460,7 @@ function runBackendCommand(action, extraArgs = [], event) {
                     lastSuccess = metadata;
                     doResolve(metadata);
                     return;
-                } catch (e) {}
+                } catch (e) { }
             }
 
             const inspectIdx = line.indexOf('INSPECT:');
@@ -300,7 +475,7 @@ function runBackendCommand(action, extraArgs = [], event) {
                     lastSuccess = result;
                     doResolve(result);
                     return;
-                } catch (e) {}
+                } catch (e) { }
             }
 
             const authIdx = line.indexOf('AUTH_ERROR:');
@@ -338,7 +513,7 @@ function runBackendCommand(action, extraArgs = [], event) {
 
         child.stderr.on('data', (data) => {
             stderrBuffer += data.toString('utf8');
-            
+
             // split by \r or \n
             const lines = stderrBuffer.split(/[\r\n]+/);
             // keep the last segment in the buffer (might be incomplete)
@@ -355,7 +530,7 @@ function runBackendCommand(action, extraArgs = [], event) {
                         const minutes = parseInt(timeMatch[2], 10);
                         const seconds = parseFloat(timeMatch[3]);
                         const currentSeconds = (hours * 3600) + (minutes * 60) + seconds;
-                        
+
                         let percent = (currentSeconds / expectedDuration) * 100;
                         if (percent > 100) percent = 100;
                         if (event && !isNaN(percent)) event.sender.send('progress-update', percent);
@@ -390,7 +565,7 @@ function runBackendCommand(action, extraArgs = [], event) {
                 doReject(lastError || new Error(`Process exited with code ${code}`));
             }
         });
-        
+
         child.on('error', (err) => {
             activeSingleDownloadProcess = null;
             doReject(new Error(`Failed to start backend process: ${err.message}`));
@@ -427,6 +602,11 @@ ipcMain.handle('stitch-clips', async (event, { urls, outputDir, noStitch }) => {
         }
 
         if (ffPath) args.push('--ffmpeg-path', ffPath);
+
+        try {
+            const ytdlpBin = engineUpdater.resolveYtdlpBinary(app.getPath('userData'));
+            if (ytdlpBin) args.push('--ytdlp-bin', ytdlpBin);
+        } catch (e) { }
 
         const cwd = path.isAbsolute(backend.cmd)
             ? path.dirname(backend.cmd)
@@ -675,10 +855,10 @@ ipcMain.handle('open-logs-window', () => {
         autoHideMenuBar: true,
     });
 
-    const startUrl = process.env.ELECTRON_START_URL 
-        ? `${process.env.ELECTRON_START_URL}#logs` 
+    const startUrl = process.env.ELECTRON_START_URL
+        ? `${process.env.ELECTRON_START_URL}#logs`
         : `file://${path.join(__dirname, '../dist/index.html')}#logs`;
-    
+
     logsWindow.loadURL(startUrl);
 
     logsWindow.on('closed', () => {
@@ -700,7 +880,7 @@ ipcMain.handle('check-system-status', async () => {
     const ffmpegDir = path.join(basePath, 'ffmpeg');
     const ffPath = path.join(ffmpegDir, 'ffmpeg.exe');
     const probePath = path.join(ffmpegDir, 'ffprobe.exe');
-    
+
     // Find all .dll files in ffmpeg directory
     const dlls = [];
     try {
@@ -719,13 +899,51 @@ ipcMain.handle('check-system-status', async () => {
     } catch (e) {
         console.error('Error scanning DLLs', e);
     }
-    
+
+    let ytdlpDiagnostics = null;
+    try {
+        const ytdlpInfo = await engineUpdater.checkEngineVersion(app.getPath('userData'), getBundledYtdlpVersion, 1500);
+        ytdlpDiagnostics = {
+            state: ytdlpInfo.source === 'AppData Updated' ? 'ONLINE (Updated)' : 'ONLINE (Bundled)',
+            version: ytdlpInfo.currentVersion,
+            source: ytdlpInfo.source,
+            path: ytdlpInfo.path,
+            updateAvailable: ytdlpInfo.updateAvailable,
+            latestVersion: ytdlpInfo.latestVersion
+        };
+    } catch (e) {
+        ytdlpDiagnostics = {
+            state: 'ONLINE (Bundled)',
+            version: 'Bundled',
+            source: 'Bundled',
+            path: 'Bundled Python Package',
+            updateAvailable: false,
+            latestVersion: null
+        };
+    }
+
     return {
         backend: { state: bState, path: backend.cmd },
         ffmpeg: { state: fs.existsSync(ffPath) ? 'ONLINE' : 'MISSING', path: ffPath },
         ffprobe: { state: fs.existsSync(probePath) ? 'ONLINE' : 'MISSING', path: probePath },
+        ytdlp: ytdlpDiagnostics,
         dlls: dlls
     };
+});
+
+ipcMain.handle('check-engine-version', async () => {
+    return engineUpdater.checkEngineVersion(app.getPath('userData'), getBundledYtdlpVersion);
+});
+
+ipcMain.handle('update-engine', async (event) => {
+    return engineUpdater.performEngineUpdate({
+        appDataPath: app.getPath('userData'),
+        onProgress: (pct) => {
+            if (event && event.sender && !event.sender.isDestroyed()) {
+                event.sender.send('engine-update-progress', pct);
+            }
+        }
+    });
 });
 
 // Window control handlers for custom title bar

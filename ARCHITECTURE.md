@@ -88,26 +88,42 @@ Communication from `backend.py` back to Electron occurs through unbuffered stdou
 | `FORMATS:<json>` | JSON array | Available video heights and resolution options | Resolves `getAvailableFormats` |
 | `METADATA:<json>` | JSON object | Video duration, title, formats, extractor details | Resolves `getVideoMetadata` |
 | `INSPECT:<json>` | JSON object | Identifies whether URL is a single video or a playlist | Resolves `inspectUrl` |
+| `VERSION:<json>` | JSON object | Active engine version, source (`AppData Updated` vs `Bundled`), and path | Handled in `getBundledYtdlpVersion` |
 
 ---
 
 ## 4. Media Processing Engine & Dependencies
 
-### 1. Bundled FFmpeg & FFprobe Resolution
+### 1. Standalone yt-dlp Auto-Updater & Priority Resolution
+- **User-Space Target**: Standalone binary is written to `%AppData%\Hermanos Forge\bin\yt-dlp.exe`. This ensures updates never prompt for Windows UAC administrator elevation.
+- **Priority Hierarchy**:
+  1. CLI override: `--ytdlp-bin <path>` passed explicitly by Electron main process.
+  2. Local user-space binary: `%AppData%\Hermanos Forge\bin\yt-dlp.exe` if present and executable.
+  3. Bundled fallback: Bundled Python `yt_dlp` package (dev) or compiled executable inside `dist_backend` (production).
+- **Startup Probe & Splash Screen**:
+  - Cold boot launches a frameless 440×280 native splash screen (`electron/splash.html`) styled in Obsidian Forge design tokens with pulsing activity beacon and micro cyber progress bar.
+  - Startup version probe fetches latest release from `https://api.github.com/repos/yt-dlp/yt-dlp/releases/latest` with strict 2.5s network timeout and `User-Agent: HermanosForge`.
+  - If a newer release exists, it downloads the binary to a `.temp` file and atomically swaps it into destination `%AppData%\Hermanos Forge\bin\yt-dlp.exe`.
+  - If offline, rate-limited, or timed out, the updater fails gracefully and launches the application without delay.
+  - When `mainWindow` emits `ready-to-show` and engine initialization finishes, a smooth 300ms transition reveals `mainWindow.show()` and disposes the splash window.
+- **On-Demand Updater**:
+  - `electronAPI.checkEngineVersion()` and `electronAPI.updateEngine()` provide user-driven checks and updates directly from the Settings View.
+
+### 2. Bundled FFmpeg & FFprobe Resolution
 - Packaged binaries are bundled inside the `ffmpeg/` directory at the project root (`ffmpeg.exe`, `ffprobe.exe`, and required shared `.dll` files such as `avcodec`, `avformat`, `avutil`, etc.).
 - Electron calculates the explicit absolute path to `ffmpeg.exe` and passes it to `backend.py` via the `--ffmpeg-path` command-line argument.
 - `fluent-ffmpeg` in the main process and `backend.py` configure their binary locations dynamically using this resolved path.
 
-### 2. Video Codec Transcoding (H.264 Compatibility)
+### 3. Video Codec Transcoding (H.264 Compatibility)
 - Certain platforms deliver videos in modern VP9 or AV1 codecs. For maximum Windows media player compatibility, `backend.py` inspects stream codecs using FFprobe:
   - AVC/H.264 streams are multiplexed directly without unnecessary re-encoding (`-c:a copy`).
   - Non-H.264 streams are transcoded in-place to `libx264` (`-preset medium -crf 23`).
 
-### 3. Selective Duration Cutting
+### 4. Selective Duration Cutting
 - Downloader ranges are passed via `download_ranges` to avoid downloading full files when only partial clips are requested.
 - Precise cutting mode forces keyframe alignment and audio re-encoding (`external_downloader_args = {'ffmpeg_o': ['-c:v', 'libx264', '-preset', 'fast', '-c:a', 'aac']}`).
 
-### 4. Clip Concatenation
+### 5. Clip Concatenation
 - The Mass Clip Downloader creates an FFmpeg concat demuxer file listing all downloaded clips sequentially and merges them into a unified `.mp4` container.
 
 ---

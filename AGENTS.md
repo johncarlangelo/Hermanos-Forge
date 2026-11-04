@@ -110,6 +110,11 @@ For technical architecture, design tokens, active tasks, and decision records, r
 - **Console Flash Prevention**: All child processes spawned by Python, FFmpeg, or yt-dlp on Windows must include `creationflags = 0x08000000` (`CREATE_NO_WINDOW`) to eliminate flashing command prompt windows.
 - **FFmpeg Path Resolution**: Always prioritize the `--ffmpeg-path` explicitly passed by Electron CLI args, with safe fallback to `shutil.which('ffmpeg')`.
 
+### yt-dlp Binary Priority Resolution & Engine Updater
+- **Three-Tier Resolution**: Backend always prioritizes --ytdlp-bin CLI override > %AppData%\\Hermanos Forge\\bin\\yt-dlp.exe > bundled Python engine.
+- **Fail-Safe Startup**: Background engine checks during cold boot must never block or stall startup. Enforce strict 2.5s network probe timeout with graceful offline fallback.
+- **Atomic File Swapping**: Never download directly over the active executable; always download into a .temp file and atomically swap via backup/rename logic to survive Windows file locks.
+
 ### Error Trapping & Interception
 - Always wrap yt-dlp extraction with `handle_yt_error(e)` to route YouTube sign-in, bot detection, or age-restriction barriers to `AUTH_ERROR:` before falling back to generic `ERROR:`.
 

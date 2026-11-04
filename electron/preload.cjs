@@ -47,6 +47,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
         return () => ipcRenderer.removeListener('log-update', handler);
     },
     checkSystemStatus: () => ipcRenderer.invoke('check-system-status'),
+    checkEngineVersion: () => ipcRenderer.invoke('check-engine-version'),
+    updateEngine: () => ipcRenderer.invoke('update-engine'),
+    onEngineUpdateProgress: (callback) => {
+        const handler = (_event, pct) => callback(pct);
+        ipcRenderer.on('engine-update-progress', handler);
+        return () => ipcRenderer.removeListener('engine-update-progress', handler);
+    },
     openExternal: (url) => ipcRenderer.invoke('open-external', url),
     minimizeWindow: () => ipcRenderer.invoke('window-minimize'),
     maximizeWindow: () => ipcRenderer.invoke('window-maximize'),

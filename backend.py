@@ -7,6 +7,7 @@ import json
 import math
 import yt_dlp
 import time
+import threading
 
 # Force UTF-8 encoding for stdout/stderr to prevent charmap errors on Windows
 if sys.stdout and hasattr(sys.stdout, 'reconfigure'):
@@ -66,6 +67,60 @@ if os.name == 'nt':
         kwargs['creationflags'] = kwargs.get('creationflags', 0) | 0x08000000
         return _original_popen(*args, **kwargs)
     subprocess.Popen = _patched_popen
+
+def resolve_ytdlp_bin(cli_override=None, app_data_path=None):
+    r"""
+    Priority resolution for yt-dlp binary:
+    1. CLI override (--ytdlp-bin)
+    2. %AppData%\Hermanos Forge\bin\yt-dlp.exe (user-writable updated binary)
+    3. Bundled Python engine (None)
+    """
+    if cli_override:
+        if cli_override.lower() in ('bundled', 'none', 'false', '0'):
+            return None
+        if os.path.exists(cli_override):
+            try:
+                if os.path.isfile(cli_override):
+                    return cli_override
+            except Exception:
+                pass
+
+    if app_data_path:
+        cand = os.path.join(app_data_path, 'bin', 'yt-dlp.exe')
+        if os.path.exists(cand):
+            try:
+                if os.path.isfile(cand):
+                    return cand
+            except Exception:
+                pass
+
+    appdata = os.environ.get('APPDATA')
+    if appdata:
+        cand = os.path.join(appdata, 'Hermanos Forge', 'bin', 'yt-dlp.exe')
+        if os.path.exists(cand):
+            try:
+                if os.path.isfile(cand):
+                    return cand
+            except Exception:
+                pass
+
+    return None
+
+def get_engine_version(ytdlp_bin=None):
+    if ytdlp_bin and os.path.exists(ytdlp_bin):
+        try:
+            creationflags = 0x08000000 if os.name == 'nt' else 0
+            res = subprocess.run([ytdlp_bin, '--version'], capture_output=True, text=True, timeout=5, creationflags=creationflags)
+            ver = res.stdout.strip()
+            if ver:
+                print(f"VERSION:{json.dumps({'version': ver, 'source': 'AppData Updated', 'path': ytdlp_bin})}", flush=True)
+                return
+        except Exception:
+            pass
+
+    ver = getattr(getattr(yt_dlp, 'version', None), '__version__', 'unknown')
+    src_path = getattr(yt_dlp, '__file__', 'bundled')
+    print(f"VERSION:{json.dumps({'version': ver, 'source': 'Bundled', 'path': src_path})}", flush=True)
 
 def get_ffmpeg_path(explicit_path=None):
     """Get the path to the bundled ffmpeg executable.
@@ -175,7 +230,44 @@ def progress_hook(d):
         print(f"TELEMETRY:{json.dumps(telemetry)}", flush=True)
         print("STATUS:Download complete, processing...", flush=True)
 
-def get_available_formats(youtube_url, app_data_path=None):
+def get_available_formats(youtube_url, app_data_path=None, ytdlp_bin=None):
+    if ytdlp_bin and os.path.exists(ytdlp_bin):
+        try:
+            creationflags = 0x08000000 if os.name == 'nt' else 0
+            cmd = [ytdlp_bin, '--dump-single-json', '--format', 'all', '--no-playlist', '--quiet', '--no-warnings']
+            if app_data_path:
+                cookie_file = os.path.join(app_data_path, 'cookies.txt')
+                if os.path.exists(cookie_file):
+                    cmd.extend(['--cookies', cookie_file])
+            cmd.extend(['--extractor-args', 'youtube:player_client=android,web', youtube_url])
+            res = subprocess.run(cmd, capture_output=True, text=True, timeout=30, creationflags=creationflags)
+            if res.returncode == 0 and res.stdout.strip():
+                json_str = res.stdout.strip()
+                fb = json_str.find('{')
+                lb = json_str.rfind('}')
+                if fb != -1 and lb != -1 and lb >= fb:
+                    json_str = json_str[fb:lb+1]
+                info = json.loads(json_str)
+                formats = info.get('formats', [])
+                video_formats_dict = {}
+                for f in formats:
+                    height = f.get('height')
+                    vcodec = f.get('vcodec')
+                    if height and vcodec != 'none' and vcodec is not None:
+                        video_formats_dict[height] = {
+                            'format_id': f['format_id'],
+                            'height': height,
+                            'resolution': f"{height}p"
+                        }
+                video_formats = list(video_formats_dict.values())
+                video_formats.sort(key=lambda x: x['height'])
+                print(f"FORMATS:{json.dumps(video_formats)}", flush=True)
+                return
+        except Exception as e:
+            if handle_yt_error(e):
+                return
+            pass
+
     ydl_opts = {
         'quiet': True,
         'no_warnings': True,
@@ -211,7 +303,53 @@ def get_available_formats(youtube_url, app_data_path=None):
         if not handle_yt_error(e):
             print(f"ERROR:Failed to fetch formats: {e}", flush=True)
 
-def get_metadata(youtube_url, app_data_path=None):
+def get_metadata(youtube_url, app_data_path=None, ytdlp_bin=None):
+    if ytdlp_bin and os.path.exists(ytdlp_bin):
+        try:
+            creationflags = 0x08000000 if os.name == 'nt' else 0
+            cmd = [ytdlp_bin, '--dump-single-json', '--no-playlist', '--quiet', '--no-warnings']
+            if app_data_path:
+                cookie_file = os.path.join(app_data_path, 'cookies.txt')
+                if os.path.exists(cookie_file):
+                    cmd.extend(['--cookies', cookie_file])
+            cmd.extend(['--extractor-args', 'youtube:player_client=android,web', youtube_url])
+            res = subprocess.run(cmd, capture_output=True, text=True, timeout=30, creationflags=creationflags)
+            if res.returncode == 0 and res.stdout.strip():
+                json_str = res.stdout.strip()
+                fb = json_str.find('{')
+                lb = json_str.rfind('}')
+                if fb != -1 and lb != -1 and lb >= fb:
+                    json_str = json_str[fb:lb+1]
+                info = json.loads(json_str)
+                formats = info.get('formats', [])
+                video_formats_dict = {}
+                for f in formats:
+                    height = f.get('height')
+                    vcodec = f.get('vcodec')
+                    if height and vcodec != 'none' and vcodec is not None:
+                        video_formats_dict[height] = {
+                            'format_id': f['format_id'],
+                            'height': height,
+                            'resolution': f"{height}p"
+                        }
+                video_formats = list(video_formats_dict.values())
+                video_formats.sort(key=lambda x: x['height'])
+                metadata = {
+                    'duration': info.get('duration', 0),
+                    'formats': video_formats,
+                    'title': info.get('title'),
+                    'extractor_key': info.get('extractor_key', info.get('extractor', 'Unknown')),
+                    'thumbnail': info.get('thumbnail'),
+                    'id': info.get('id'),
+                    'uploader': info.get('uploader') or info.get('channel') or info.get('uploader_id'),
+                }
+                print(f"METADATA:{json.dumps(metadata)}", flush=True)
+                return
+        except Exception as e:
+            if handle_yt_error(e):
+                return
+            pass
+
     ydl_opts = {
         'quiet': True,
         'no_warnings': True,
@@ -255,7 +393,49 @@ def get_metadata(youtube_url, app_data_path=None):
         if not handle_yt_error(e):
             print(f"ERROR:Failed to fetch metadata: {e}", flush=True)
 
-def inspect_url(youtube_url, app_data_path=None):
+def inspect_url(youtube_url, app_data_path=None, ytdlp_bin=None):
+    if ytdlp_bin and os.path.exists(ytdlp_bin):
+        try:
+            creationflags = 0x08000000 if os.name == 'nt' else 0
+            cmd = [ytdlp_bin, '--dump-single-json', '--flat-playlist', '--quiet', '--no-warnings']
+            if app_data_path:
+                cookie_file = os.path.join(app_data_path, 'cookies.txt')
+                if os.path.exists(cookie_file):
+                    cmd.extend(['--cookies', cookie_file])
+            cmd.extend(['--extractor-args', 'youtube:player_client=android,web', youtube_url])
+            res = subprocess.run(cmd, capture_output=True, text=True, timeout=30, creationflags=creationflags)
+            if res.returncode == 0 and res.stdout.strip():
+                json_str = res.stdout.strip()
+                fb = json_str.find('{')
+                lb = json_str.rfind('}')
+                if fb != -1 and lb != -1 and lb >= fb:
+                    json_str = json_str[fb:lb+1]
+                info = json.loads(json_str)
+                result = {
+                    '_type': info.get('_type', 'video'),
+                    'id': info.get('id'),
+                    'title': info.get('title'),
+                }
+                if result['_type'] == 'playlist' or 'entries' in info:
+                    result['_type'] = 'playlist'
+                    entries = info.get('entries', [])
+                    if not isinstance(entries, list):
+                        entries = list(entries)
+                    result['entries'] = [
+                        {
+                            'id': e.get('id'),
+                            'url': e.get('url'),
+                            'title': e.get('title'),
+                            'duration': e.get('duration')
+                        } for e in entries if isinstance(e, dict) and (e.get('id') or e.get('url'))
+                    ]
+                print(f"INSPECT:{json.dumps(result)}", flush=True)
+                return
+        except Exception as e:
+            if handle_yt_error(e):
+                return
+            pass
+
     ydl_opts = {
         'extract_flat': True,
         'quiet': True,
@@ -296,7 +476,75 @@ def inspect_url(youtube_url, app_data_path=None):
         if not handle_yt_error(e):
             print(f"ERROR:Failed to inspect url: {e}", flush=True)
 
-def download_youtube_as_mp3(youtube_url, output_dir, ffmpeg_path=None, no_playlist=False, app_data_path=None):
+def download_youtube_as_mp3(youtube_url, output_dir, ffmpeg_path=None, no_playlist=False, app_data_path=None, ytdlp_bin=None):
+    if ytdlp_bin and os.path.exists(ytdlp_bin):
+        try:
+            if not os.path.exists(output_dir):
+                os.makedirs(output_dir)
+            ffmpeg_bin = get_ffmpeg_path(ffmpeg_path)
+            cmd = [
+                ytdlp_bin,
+                '-x', '--audio-format', 'mp3', '--audio-quality', '192',
+                '-o', os.path.join(output_dir, '%(title)s.%(ext)s'),
+                '--ffmpeg-location', ffmpeg_bin,
+                '--newline',
+                '--print', 'after_move:SUCCESS:%(filepath)s',
+                '--progress-template', 'download:PROGRESS:%(progress._percent_str)s'
+            ]
+            if no_playlist:
+                cmd.append('--no-playlist')
+            if app_data_path:
+                cookie_file = os.path.join(app_data_path, 'cookies.txt')
+                if os.path.exists(cookie_file):
+                    cmd.extend(['--cookies', cookie_file])
+            cmd.extend(['--extractor-args', 'youtube:player_client=android,web', youtube_url])
+
+            creationflags = 0x08000000 if os.name == 'nt' else 0
+            print("STATUS:Starting MP3 download...", flush=True)
+            proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, encoding='utf-8', errors='replace', creationflags=creationflags)
+            err_output = []
+            def _drain_stderr():
+                try:
+                    for eline in proc.stderr:
+                        err_output.append(eline)
+                except Exception:
+                    pass
+            stderr_thread = threading.Thread(target=_drain_stderr, daemon=True)
+            stderr_thread.start()
+
+            for line in proc.stdout:
+                line_s = line.strip()
+                if not line_s:
+                    continue
+                if line_s.startswith('SUCCESS:'):
+                    print(line_s, flush=True)
+                elif 'PROGRESS:' in line_s:
+                    clean_pct = line_s.split('PROGRESS:')[1].replace('%', '').strip()
+                    try:
+                        p_val = float(clean_pct)
+                        print(f"PROGRESS:{p_val:.2f}", flush=True)
+                        telemetry = {
+                            'percent': p_val,
+                            'phase': 'downloading'
+                        }
+                        print(f"TELEMETRY:{json.dumps(telemetry)}", flush=True)
+                    except ValueError:
+                        pass
+                else:
+                    print(f"STATUS:{line_s}", flush=True)
+
+            proc.wait()
+            stderr_thread.join(timeout=2)
+            err = "".join(err_output)
+            if proc.returncode == 0:
+                return
+            if err and handle_yt_error(err):
+                return
+        except Exception as e:
+            if handle_yt_error(e):
+                return
+            pass
+
     try:
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
@@ -406,7 +654,85 @@ def download_youtube_as_mp3(youtube_url, output_dir, ffmpeg_path=None, no_playli
         if not handle_yt_error(e):
             print(f"ERROR:{e}", flush=True)
 
-def download_youtube_as_mp4(youtube_url, output_dir, quality=None, ffmpeg_path=None, no_playlist=False, app_data_path=None):
+def download_youtube_as_mp4(youtube_url, output_dir, quality=None, ffmpeg_path=None, no_playlist=False, app_data_path=None, ytdlp_bin=None):
+    if ytdlp_bin and os.path.exists(ytdlp_bin):
+        try:
+            if not os.path.exists(output_dir):
+                os.makedirs(output_dir)
+            ffmpeg_bin = get_ffmpeg_path(ffmpeg_path)
+            if quality:
+                format_str = f'bestvideo[height<={quality}][vcodec^=avc1]+bestaudio[ext=m4a]/bestvideo[height<={quality}][ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best'
+            else:
+                format_str = 'bestvideo[vcodec^=avc1]+bestaudio[ext=m4a]/bestvideo[ext=mp4]+bestaudio[ext=m4a]/bestvideo+bestaudio/best'
+
+            cmd = [
+                ytdlp_bin,
+                '-f', format_str,
+                '--merge-output-format', 'mp4',
+                '-o', os.path.join(output_dir, '%(title)s.%(ext)s'),
+                '--ffmpeg-location', ffmpeg_bin,
+                '--newline',
+                '--print', 'after_move:SUCCESS:%(filepath)s',
+                '--progress-template', 'download:PROGRESS:%(progress._percent_str)s'
+            ]
+            if no_playlist:
+                cmd.append('--no-playlist')
+            if app_data_path:
+                cookie_file = os.path.join(app_data_path, 'cookies.txt')
+                if os.path.exists(cookie_file):
+                    cmd.extend(['--cookies', cookie_file])
+            cmd.extend(['--extractor-args', 'youtube:player_client=android,web', youtube_url])
+
+            creationflags = 0x08000000 if os.name == 'nt' else 0
+            print("STATUS:Starting MP4 download...", flush=True)
+            proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, encoding='utf-8', errors='replace', creationflags=creationflags)
+            err_output = []
+            def _drain_stderr():
+                try:
+                    for eline in proc.stderr:
+                        err_output.append(eline)
+                except Exception:
+                    pass
+            stderr_thread = threading.Thread(target=_drain_stderr, daemon=True)
+            stderr_thread.start()
+
+            downloaded_mp4_path = None
+            for line in proc.stdout:
+                line_s = line.strip()
+                if not line_s:
+                    continue
+                if line_s.startswith('SUCCESS:'):
+                    downloaded_mp4_path = line_s[8:].strip()
+                elif 'PROGRESS:' in line_s:
+                    clean_pct = line_s.split('PROGRESS:')[1].replace('%', '').strip()
+                    try:
+                        p_val = float(clean_pct)
+                        print(f"PROGRESS:{p_val:.2f}", flush=True)
+                        telemetry = {
+                            'percent': p_val,
+                            'phase': 'downloading'
+                        }
+                        print(f"TELEMETRY:{json.dumps(telemetry)}", flush=True)
+                    except ValueError:
+                        pass
+                else:
+                    print(f"STATUS:{line_s}", flush=True)
+
+            proc.wait()
+            stderr_thread.join(timeout=2)
+            err = "".join(err_output)
+            if proc.returncode == 0:
+                if downloaded_mp4_path:
+                    transcode_to_h264_if_needed(downloaded_mp4_path, ffmpeg_bin)
+                    print(f"SUCCESS:{downloaded_mp4_path}", flush=True)
+                return
+            if err and handle_yt_error(err):
+                return
+        except Exception as e:
+            if handle_yt_error(e):
+                return
+            pass
+
     try:
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
@@ -629,7 +955,7 @@ def stitch_clips_from_urls(urls, output_dir, ffmpeg_path=None, no_stitch=False, 
     except Exception as e:
         print(f"ERROR:{e}", flush=True)
 
-def download_clip(youtube_url, output_dir, start_time, end_time, quality=None, precise_cut=False, ffmpeg_path=None, title_override=None, app_data_path=None):
+def download_clip(youtube_url, output_dir, start_time, end_time, quality=None, precise_cut=False, ffmpeg_path=None, title_override=None, app_data_path=None, ytdlp_bin=None):
     try:
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
@@ -690,7 +1016,7 @@ def download_clip(youtube_url, output_dir, start_time, end_time, quality=None, p
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Hermanos Forge Backend")
-    parser.add_argument('--action', choices=['get_formats', 'download_mp3', 'download_mp4', 'convert_mp4', 'stitch_clips', 'inspect_url', 'get_metadata', 'download_clip', 'extract_cookies'], required=True)
+    parser.add_argument('--action', choices=['get_formats', 'download_mp3', 'download_mp4', 'convert_mp4', 'stitch_clips', 'inspect_url', 'get_metadata', 'download_clip', 'extract_cookies', 'get_engine_version'], required=True)
     parser.add_argument('--url', help="YouTube URL")
     parser.add_argument('--urls', help="JSON list of clip URLs, in order")
     parser.add_argument('--file', help="Local MP4 file path for conversion")
@@ -701,27 +1027,31 @@ if __name__ == "__main__":
     parser.add_argument('--precise', action='store_true', help="Use precise cutting (re-encodes cuts)")
     parser.add_argument('--title-override', help="Override the output filename base")
     parser.add_argument('--ffmpeg-path', help='Absolute path to ffmpeg executable (overrides detection)')
+    parser.add_argument('--ytdlp-bin', help='Path to standalone yt-dlp executable')
     parser.add_argument('--no-stitch', action='store_true', help="Download clips without stitching")
     parser.add_argument('--no-playlist', action='store_true', help="Download only single video from a playlist link")
     parser.add_argument('--app-data-path', help="Path to Electron's userData directory")
     parser.add_argument('--browser', help="Browser to extract cookies from")
 
     args = parser.parse_args()
+    ytdlp_bin = resolve_ytdlp_bin(args.ytdlp_bin, args.app_data_path)
 
-    if args.action == 'get_formats':
-        get_available_formats(args.url, args.app_data_path)
+    if args.action == 'get_engine_version':
+        get_engine_version(ytdlp_bin)
+    elif args.action == 'get_formats':
+        get_available_formats(args.url, args.app_data_path, ytdlp_bin=ytdlp_bin)
     elif args.action == 'get_metadata':
-        get_metadata(args.url, args.app_data_path)
+        get_metadata(args.url, args.app_data_path, ytdlp_bin=ytdlp_bin)
     elif args.action == 'inspect_url':
-        inspect_url(args.url, args.app_data_path)
+        inspect_url(args.url, args.app_data_path, ytdlp_bin=ytdlp_bin)
     elif args.action == 'download_mp3':
-        download_youtube_as_mp3(args.url, args.outdir, ffmpeg_path=args.ffmpeg_path, no_playlist=args.no_playlist, app_data_path=args.app_data_path)
+        download_youtube_as_mp3(args.url, args.outdir, ffmpeg_path=args.ffmpeg_path, no_playlist=args.no_playlist, app_data_path=args.app_data_path, ytdlp_bin=ytdlp_bin)
     elif args.action == 'download_mp4':
-        download_youtube_as_mp4(args.url, args.outdir, args.quality, ffmpeg_path=args.ffmpeg_path, no_playlist=args.no_playlist, app_data_path=args.app_data_path)
+        download_youtube_as_mp4(args.url, args.outdir, args.quality, ffmpeg_path=args.ffmpeg_path, no_playlist=args.no_playlist, app_data_path=args.app_data_path, ytdlp_bin=ytdlp_bin)
     elif args.action == 'convert_mp4':
         convert_local_mp4_to_mp3(args.file, args.outdir, ffmpeg_path=args.ffmpeg_path)
     elif args.action == 'download_clip':
-        download_clip(args.url, args.outdir, args.start, args.end, quality=args.quality, precise_cut=args.precise, ffmpeg_path=args.ffmpeg_path, title_override=args.title_override, app_data_path=args.app_data_path)
+        download_clip(args.url, args.outdir, args.start, args.end, quality=args.quality, precise_cut=args.precise, ffmpeg_path=args.ffmpeg_path, title_override=args.title_override, app_data_path=args.app_data_path, ytdlp_bin=ytdlp_bin)
     elif args.action == 'stitch_clips':
         try:
             urls = json.loads(args.urls)
