@@ -7,14 +7,10 @@ const NICE_INTERVALS = [
 
 function chooseInterval(duration, zoomLevel) {
   if (!duration || duration <= 0) return { major: 10, minor: 2 };
-  // Approximate width per second (assuming typical container width ~ 800px)
   const approxWidth = 800 * zoomLevel;
   const pixelsPerSec = approxWidth / duration;
+  const targetSec = 90 / pixelsPerSec;
 
-  // Desired distance between major ticks is around 80px to 140px
-  const targetSec = 100 / pixelsPerSec;
-
-  // Find closest interval in nice intervals list
   let bestMajor = NICE_INTERVALS[0];
   for (const interval of NICE_INTERVALS) {
     if (interval >= targetSec) {
@@ -23,7 +19,6 @@ function chooseInterval(duration, zoomLevel) {
     }
   }
 
-  // Minor interval is typically 1/2 or 1/5 of major
   let bestMinor = bestMajor / 5;
   if (bestMajor <= 0.5) bestMinor = bestMajor / 2;
   else if (bestMajor === 1) bestMinor = 0.2;
@@ -36,7 +31,7 @@ function chooseInterval(duration, zoomLevel) {
   return { major: bestMajor, minor: bestMinor };
 }
 
-export function TimelineRuler({ duration, zoomLevel }) {
+export function TimelineRuler({ duration, zoomLevel = 1 }) {
   const { majorTicks, minorTicks } = useMemo(() => {
     if (!duration || duration <= 0) {
       return { majorTicks: [], minorTicks: [] };
@@ -46,17 +41,15 @@ export function TimelineRuler({ duration, zoomLevel }) {
     const majors = [];
     const minors = [];
 
-    // Avoid generating thousands of ticks if duration is massive
-    const maxTicks = 120;
+    const maxTicks = 100;
     const safeMajor = Math.max(major, duration / maxTicks);
 
     for (let t = safeMajor; t < duration; t += safeMajor) {
       majors.push(t);
     }
 
-    if (minor > 0 && duration / minor <= 300) {
+    if (minor > 0 && duration / minor <= 250) {
       for (let t = minor; t < duration; t += minor) {
-        // Only add minor if it doesn't collide closely with a major tick
         const isNearMajor = majors.some((m) => Math.abs(m - t) < minor * 0.4);
         if (!isNearMajor) {
           minors.push(t);
@@ -70,53 +63,49 @@ export function TimelineRuler({ duration, zoomLevel }) {
   if (!duration) return null;
 
   return (
-    <div className="absolute inset-0 pointer-events-none select-none overflow-hidden">
-      {/* Top subtle ruler border */}
-      <div className="absolute top-0 inset-x-0 h-px bg-purple-500/20" />
-
+    <div className="w-full h-5 relative pointer-events-none select-none overflow-hidden bg-obsidian-950/90 border-b border-purple-900/30">
       {/* Origin tick (00:00) */}
-      <div className="absolute top-0 left-0 flex flex-col items-start pl-1">
-        <div className="w-px h-3.5 bg-accent-neon/70 shadow-sm" />
-        <span className="text-[10px] font-mono text-[var(--text-secondary)] tracking-tight opacity-90 pl-0.5 mt-0.5">
+      <div className="absolute top-0 bottom-0 left-0 flex flex-col items-start pl-1 justify-end pb-0.5">
+        <span className="text-[10px] font-mono tabular-nums text-purple-300 font-medium tracking-tight">
           00:00
         </span>
+        <div className="w-px h-1.5 bg-purple-400" />
       </div>
 
       {/* Minor ticks */}
       {minorTicks.map((t, idx) => (
         <div
           key={`min-${idx}`}
-          className="absolute top-0"
+          className="absolute bottom-0"
           style={{ left: `${(t / duration) * 100}%` }}
         >
-          <div className="w-px h-1.5 bg-purple-400/25 -translate-x-1/2" />
+          <div className="w-px h-1 bg-purple-400/25 -translate-x-1/2" />
         </div>
       ))}
 
-      {/* Major ticks */}
+      {/* Major ticks with readable timestamps */}
       {majorTicks.map((t, idx) => (
         <div
           key={`maj-${idx}`}
-          className="absolute top-0 flex flex-col items-center"
+          className="absolute top-0 bottom-0 flex flex-col items-center justify-end pb-0.5"
           style={{ left: `${(t / duration) * 100}%` }}
         >
-          <div className="w-px h-3.5 bg-purple-400/60 shadow-sm -translate-x-1/2" />
-          <span className="text-[10px] font-mono tabular-nums text-[var(--text-secondary)] tracking-tight opacity-90 -translate-x-1/2 mt-0.5 whitespace-nowrap">
+          <span className="text-[10px] font-mono tabular-nums text-purple-200/90 tracking-tight whitespace-nowrap -translate-x-1/2">
             {formatTimeShort(t)}
           </span>
+          <div className="w-px h-1.5 bg-purple-400/60 -translate-x-1/2" />
         </div>
       ))}
 
       {/* End tick (Duration) */}
-      <div className="absolute top-0 right-0 flex flex-col items-end pr-1">
-        <div className="w-px h-3.5 bg-accent-neon/70 shadow-sm" />
-        <span className="text-[10px] font-mono tabular-nums text-[var(--text-secondary)] tracking-tight opacity-90 pr-0.5 mt-0.5">
+      <div className="absolute top-0 bottom-0 right-0 flex flex-col items-end pr-1 justify-end pb-0.5">
+        <span className="text-[10px] font-mono tabular-nums text-purple-300 font-medium tracking-tight">
           {formatTimeShort(duration)}
         </span>
+        <div className="w-px h-1.5 bg-purple-400" />
       </div>
     </div>
   );
 }
 
 export default TimelineRuler;
-

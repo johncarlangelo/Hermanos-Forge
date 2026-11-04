@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Lock,
   Unlock,
@@ -6,28 +6,25 @@ import {
   Copy,
   Check,
   RotateCcw,
-  Film,
+  Minus,
+  Plus,
   Loader2,
   Clock,
-  ChevronLeft,
-  ChevronRight,
-  ZoomIn,
-  ZoomOut,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
-import { TimelineMinimap } from './TimelineMinimap';
-import { TimelineFilmTrack } from './TimelineFilmTrack';
+import { TimelineThumbnailTrack } from './TimelineThumbnailTrack';
 import { TimelineRuler } from './TimelineRuler';
 import { TimelineTrimmerHandle } from './TimelineTrimmerHandle';
+import { TimelinePlayhead } from './TimelinePlayhead';
 import { formatTime, parseTime, clamp } from './timeUtils';
 import toast from 'react-hot-toast';
 
 const PRESETS = [
-  { label: '15s (Reel)', seconds: 15 },
-  { label: '30s (TikTok)', seconds: 30 },
-  { label: '60s (Shorts)', seconds: 60 },
+  { label: '15s', seconds: 15 },
+  { label: '30s', seconds: 30 },
+  { label: '60s', seconds: 60 },
   { label: 'Full', seconds: 'full' },
 ];
 
@@ -39,18 +36,17 @@ export function StudioClipTimeline({
   duplicateClip,
   index,
   totalClips,
-  allClips = [],
   isDownloadingQueue = false,
   handleRetryClip,
 }) {
   const [zoomLevel, setZoomLevel] = useState(1);
+  const [userPlayheadTime, setUserPlayheadTime] = useState(null);
+
   const [isEditingStart, setIsEditingStart] = useState(false);
   const [isEditingEnd, setIsEditingEnd] = useState(false);
   const [startInput, setStartInput] = useState('');
   const [endInput, setEndInput] = useState('');
 
-  const [scrollLeft, setScrollLeft] = useState(0);
-  const [containerWidth, setContainerWidth] = useState(800);
   const [isSlidingRange, setIsSlidingRange] = useState(false);
 
   const containerRef = useRef(null);
@@ -60,29 +56,10 @@ export function StudioClipTimeline({
   const clipDuration = Math.max(0, clip.endTime - clip.startTime);
   const approxFrames = Math.round(clipDuration * 30); // 30fps estimate
 
-  // Track container width and scroll for minimap viewport sync
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-
-    const handleScroll = () => {
-      setScrollLeft(container.scrollLeft);
-    };
-
-    const observer = new ResizeObserver((entries) => {
-      if (entries[0]) {
-        setContainerWidth(entries[0].contentRect.width);
-      }
-    });
-
-    container.addEventListener('scroll', handleScroll);
-    observer.observe(container);
-
-    return () => {
-      container.removeEventListener('scroll', handleScroll);
-      observer.disconnect();
-    };
-  }, []);
+  // Derived playhead time clamped between 0 and duration
+  const activePlayheadTime = userPlayheadTime !== null
+    ? clamp(userPlayheadTime, 0, duration)
+    : clip.startTime;
 
   // Mouse wheel zoom with Ctrl key
   useEffect(() => {
@@ -93,27 +70,12 @@ export function StudioClipTimeline({
       if (e.ctrlKey) {
         e.preventDefault();
         const delta = e.deltaY > 0 ? -0.5 : 0.5;
-        setZoomLevel((prev) => clamp(prev + delta, 1, 50));
+        setZoomLevel((prev) => clamp(prev + delta, 1, 30));
       }
     };
     container.addEventListener('wheel', handleWheel, { passive: false });
     return () => container.removeEventListener('wheel', handleWheel);
   }, [clip.isLocked, clip.isExcluded]);
-
-  // Minimap seek callback
-  const handleSeekMinimap = useCallback(
-    (targetTime) => {
-      if (!containerRef.current || !duration) return;
-      const targetPercent = targetTime / duration;
-      const totalTrackWidth = containerWidth * zoomLevel;
-      const scrollPos = targetPercent * totalTrackWidth - containerWidth / 2;
-      containerRef.current.scrollTo({
-        left: Math.max(0, scrollPos),
-        behavior: 'smooth',
-      });
-    },
-    [duration, containerWidth, zoomLevel]
-  );
 
   // Timecode Input Handlers
   const handleStartInputChange = (e) => setStartInput(e.target.value);
@@ -153,19 +115,6 @@ export function StudioClipTimeline({
     updateClip(clip.id, { endTime: parsed });
   };
 
-  // Sub-second Nudge Helpers
-  const nudgeStartTime = (delta) => {
-    if (clip.isLocked || clip.isExcluded) return;
-    const newStart = clamp(clip.startTime + delta, 0, clip.endTime - 0.1);
-    updateClip(clip.id, { startTime: parseFloat(newStart.toFixed(2)) });
-  };
-
-  const nudgeEndTime = (delta) => {
-    if (clip.isLocked || clip.isExcluded) return;
-    const newEnd = clamp(clip.endTime + delta, clip.startTime + 0.1, duration);
-    updateClip(clip.id, { endTime: parseFloat(newEnd.toFixed(2)) });
-  };
-
   // Quick Preset Selection
   const applyPreset = (presetSec) => {
     if (clip.isLocked || clip.isExcluded || !duration) return;
@@ -184,10 +133,10 @@ export function StudioClipTimeline({
       startTime: parseFloat(newStart.toFixed(2)),
       endTime: parseFloat(newEnd.toFixed(2)),
     });
-    toast.success(`Applied ${presetSec}s duration preset.`);
+    toast.success(`Applied ${presetSec}s preset.`);
   };
 
-  // Active Range Sliding Handler (Grab and slide whole window)
+  // Active Range Sliding (Grab and slide the whole cut across track)
   const handleRangePointerDown = (e) => {
     if (clip.isLocked || clip.isExcluded || !duration) return;
     e.stopPropagation();
@@ -196,7 +145,7 @@ export function StudioClipTimeline({
     try {
       e.currentTarget.setPointerCapture(e.pointerId);
     } catch {
-      // Fallback
+      // Safe fallback
     }
 
     setIsSlidingRange(true);
@@ -233,7 +182,7 @@ export function StudioClipTimeline({
       try {
         upEvent.currentTarget.releasePointerCapture(upEvent.pointerId);
       } catch {
-        // Fallback
+        // Safe fallback
       }
       setIsSlidingRange(false);
       window.removeEventListener('pointermove', handlePointerMove);
@@ -244,39 +193,52 @@ export function StudioClipTimeline({
     window.addEventListener('pointerup', handlePointerUp);
   };
 
+  // Track click to seek playhead
+  const handleTrackPointerDown = (e) => {
+    if (clip.isLocked || clip.isExcluded || !duration || !trackRef.current) return;
+    const rect = trackRef.current.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const ratio = Math.max(0, Math.min(1, clickX / rect.width));
+    const targetTime = parseFloat((ratio * duration).toFixed(2));
+    setUserPlayheadTime(targetTime);
+  };
+
   return (
     <div
-      className={`p-5 rounded-2xl border transition-all duration-200 ${
+      className={`p-3.5 sm:p-4 rounded-xl border transition-all duration-200 space-y-2.5 ${
         clip.isExcluded
           ? 'bg-obsidian-950/60 border-purple-900/20 opacity-60'
           : 'bg-obsidian-900/90 border-purple-800/40 shadow-sm'
       }`}
     >
-      {/* 1. Header Toolbar */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3.5 pb-4 border-b border-purple-900/30">
-        {/* Left: Badge, Title Input & Status */}
-        <div className="flex items-center gap-2.5 flex-wrap">
-          <Badge variant="accent" size="md">
-            Segment #{index + 1}
+      {/* 1. Single-Row Clean Segment Header */}
+      <div className="flex items-center justify-between gap-2 pb-2 border-b border-purple-900/30">
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <Badge variant="accent" size="sm" className="font-bold shrink-0">
+            #{index + 1}
           </Badge>
 
-          <Input
-            type="text"
-            placeholder="Segment Name (e.g. Intro Hook, Chorus)"
-            value={clip.title}
-            onChange={(e) => updateClip(clip.id, { title: e.target.value })}
-            disabled={clip.isLocked || clip.isExcluded || isDownloadingQueue}
-            className="h-8 text-xs sm:text-sm w-56 bg-obsidian-950/80 border-purple-900/40"
-          />
+          <div className="flex-1 max-w-[200px] min-w-[100px] shrink-0">
+            <Input
+              type="text"
+              size="sm"
+              placeholder="Segment Name (optional)"
+              value={clip.title}
+              onChange={(e) => updateClip(clip.id, { title: e.target.value })}
+              disabled={clip.isLocked || clip.isExcluded || isDownloadingQueue}
+              className="h-7 text-xs bg-obsidian-950/80 border-purple-900/40 px-2"
+            />
+          </div>
 
           <Button
             variant={clip.isLocked ? 'accentMuted' : 'outline'}
             size="iconSm"
             onClick={() => updateClip(clip.id, { isLocked: !clip.isLocked })}
             disabled={clip.isExcluded || isDownloadingQueue}
-            title={clip.isLocked ? 'Unlock Timeline' : 'Lock Timeline (Prevents accidental movement)'}
+            title={clip.isLocked ? 'Unlock Timeline' : 'Lock Timeline'}
+            className="w-7 h-7 shrink-0"
           >
-            {clip.isLocked ? <Lock className="w-3.5 h-3.5 text-accent-neon" /> : <Unlock className="w-3.5 h-3.5" />}
+            {clip.isLocked ? <Lock className="w-3 h-3 text-accent-neon" /> : <Unlock className="w-3 h-3" />}
           </Button>
 
           {duplicateClip && (
@@ -285,13 +247,14 @@ export function StudioClipTimeline({
               size="iconSm"
               onClick={() => duplicateClip(clip.id)}
               disabled={clip.isExcluded || isDownloadingQueue}
-              title="Duplicate Segment (Clone adjacent slice)"
+              title="Duplicate Segment"
+              className="w-7 h-7 shrink-0"
             >
-              <Copy className="w-3.5 h-3.5 text-purple-300" />
+              <Copy className="w-3 h-3 text-purple-300" />
             </Button>
           )}
 
-          <label className="flex items-center gap-2 cursor-pointer text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] select-none ml-1">
+          <label className="flex items-center gap-1.5 cursor-pointer text-xs text-purple-300/80 hover:text-purple-100 select-none shrink-0 ml-1">
             <input
               type="checkbox"
               checked={clip.isExcluded}
@@ -300,58 +263,98 @@ export function StudioClipTimeline({
               className="sr-only"
             />
             <div
-              className={`w-4 h-4 rounded-[4px] border flex items-center justify-center transition-colors ${
+              className={`w-3.5 h-3.5 rounded-[3px] border flex items-center justify-center transition-colors ${
                 clip.isExcluded
                   ? 'bg-accent-violet border-accent-violet text-white'
                   : 'border-purple-800/60 bg-obsidian-950'
               }`}
             >
-              {clip.isExcluded && <Check className="w-2.5 h-2.5 stroke-[3]" />}
+              {clip.isExcluded && <Check className="w-2 h-2 stroke-[3]" />}
             </div>
-            <span>Exclude</span>
+            <span className="text-[11px]">Exclude</span>
           </label>
         </div>
 
-        {/* Right: Quick Duration Presets & Duration Badge */}
-        <div className="flex items-center gap-3 flex-wrap">
-          <div className="flex items-center gap-1 bg-obsidian-950/80 p-1 rounded-lg border border-purple-900/30">
-            <span className="text-[10px] uppercase font-mono tracking-wider text-purple-300/70 px-1 font-semibold">
-              Presets:
-            </span>
-            {PRESETS.map((p) => (
-              <button
-                key={p.label}
-                type="button"
-                onClick={() => applyPreset(p.seconds)}
-                disabled={clip.isLocked || clip.isExcluded || isDownloadingQueue}
-                className="px-2 py-0.5 rounded text-[11px] font-mono font-medium text-purple-200 hover:text-white hover:bg-purple-900/50 transition-colors disabled:opacity-40 cursor-pointer"
-              >
-                {p.label}
-              </button>
-            ))}
-          </div>
+        {totalClips > 1 && (
+          <Button
+            variant="ghost"
+            size="iconSm"
+            onClick={() => removeClip(clip.id)}
+            disabled={isDownloadingQueue}
+            className="text-rose-400 hover:bg-rose-950/30 hover:text-rose-300 w-7 h-7 shrink-0"
+            title="Remove Segment"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </Button>
+        )}
+      </div>
 
-          <div className="flex items-center gap-2 bg-purple-950/40 border border-purple-700/40 px-2.5 py-1 rounded-lg">
-            <Clock className="w-3.5 h-3.5 text-accent-neon" />
-            <span className="font-mono text-xs tabular-nums text-purple-100 font-bold">
-              {formatTime(clipDuration, true)}
-            </span>
-            <span className="text-[10px] font-mono text-purple-300/60 hidden sm:inline">
-              ({approxFrames}f @ 30fps)
-            </span>
-          </div>
-
-          {totalClips > 1 && (
-            <Button
-              variant="ghost"
-              size="iconSm"
-              onClick={() => removeClip(clip.id)}
-              disabled={isDownloadingQueue}
-              className="text-rose-400 hover:bg-rose-950/30 hover:text-rose-300"
-              title="Remove Segment"
+      {/* 2. Compact Presets & Zoom Toolbar Row */}
+      <div className="flex items-center justify-between gap-2 pt-0.5">
+        {/* Presets chips */}
+        <div className="flex items-center gap-1 shrink-0">
+          <span className="text-[10px] uppercase font-mono tracking-wider text-purple-300/70 mr-0.5 font-semibold">
+            Presets:
+          </span>
+          {PRESETS.map((p) => (
+            <button
+              key={p.label}
+              type="button"
+              onClick={() => applyPreset(p.seconds)}
+              disabled={clip.isLocked || clip.isExcluded || isDownloadingQueue}
+              className="px-2 py-0.5 rounded text-[10px] font-mono font-medium text-purple-200 hover:text-white bg-obsidian-950 border border-purple-900/40 hover:border-purple-600 transition-colors disabled:opacity-40 cursor-pointer"
             >
-              <Trash2 className="w-3.5 h-3.5" />
-            </Button>
+              {p.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Zoom Group with Slider & +/- Buttons */}
+        <div className="flex items-center gap-1.5 bg-obsidian-950/90 border border-purple-900/40 rounded-lg px-2 py-0.5 shrink-0">
+          <button
+            type="button"
+            onClick={() => setZoomLevel((prev) => clamp(prev - 0.5, 1, 30))}
+            disabled={zoomLevel <= 1}
+            className="w-5 h-5 rounded flex items-center justify-center text-purple-300 hover:text-white hover:bg-purple-900/40 disabled:opacity-30 cursor-pointer"
+            title="Zoom out"
+          >
+            <Minus className="w-2.5 h-2.5" />
+          </button>
+
+          <input
+            type="range"
+            min="1"
+            max="30"
+            step="0.5"
+            value={zoomLevel}
+            onChange={(e) => setZoomLevel(parseFloat(e.target.value))}
+            aria-label="Timeline zoom level"
+            className="w-16 sm:w-24 h-1.5 bg-obsidian-850 rounded-full appearance-none cursor-pointer border border-purple-900/60 accent-accent-neon [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-accent-neon [&::-webkit-slider-thumb]:hover:bg-white [&::-webkit-slider-thumb]:hover:scale-110 [&::-webkit-slider-thumb]:transition-all [&::-moz-range-thumb]:w-3 [&::-moz-range-thumb]:h-3 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-accent-neon [&::-moz-range-thumb]:border-0"
+          />
+
+          <button
+            type="button"
+            onClick={() => setZoomLevel((prev) => clamp(prev + 0.5, 1, 30))}
+            disabled={zoomLevel >= 30}
+            className="w-5 h-5 rounded flex items-center justify-center text-purple-300 hover:text-white hover:bg-purple-900/40 disabled:opacity-30 cursor-pointer"
+            title="Zoom in"
+          >
+            <Plus className="w-2.5 h-2.5" />
+          </button>
+
+          <span className="text-[10px] font-mono tabular-nums text-purple-200 font-bold min-w-[2.2rem] text-center">
+            {zoomLevel.toFixed(1)}x
+          </span>
+
+          {zoomLevel > 1 && (
+            <button
+              type="button"
+              onClick={() => setZoomLevel(1)}
+              className="w-5 h-5 rounded flex items-center justify-center text-purple-400 hover:text-white hover:bg-purple-900/40 cursor-pointer"
+              title="Reset Zoom to 1x"
+            >
+              <RotateCcw className="w-2.5 h-2.5" />
+            </button>
           )}
         </div>
       </div>
@@ -359,7 +362,7 @@ export function StudioClipTimeline({
       {/* Inline Download Status */}
       {(clip.status !== 'idle' || clip.message) && (
         <div
-          className={`my-3 p-3 rounded-lg border text-xs sm:text-sm flex items-center justify-between gap-2.5 ${
+          className={`my-1.5 p-2 rounded-lg border text-xs flex items-center justify-between gap-2 ${
             clip.status === 'downloading'
               ? 'bg-purple-950/40 border-accent-violet/40 text-purple-200'
               : clip.status === 'done'
@@ -371,13 +374,13 @@ export function StudioClipTimeline({
         >
           <div className="flex items-center gap-2 min-w-0">
             {clip.status === 'downloading' && (
-              <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0 text-accent-neon" />
+              <Loader2 className="w-3 h-3 animate-spin shrink-0 text-accent-neon" />
             )}
-            <span className="truncate">{clip.message || 'Queued...'}</span>
+            <span className="truncate text-xs">{clip.message || 'Queued...'}</span>
           </div>
           <div className="flex items-center gap-2 shrink-0">
             {clip.status === 'downloading' && (
-              <span className="font-mono font-bold text-accent-neon">
+              <span className="font-mono font-bold text-accent-neon text-xs">
                 {(clip.progress || 0).toFixed(1)}%
               </span>
             )}
@@ -386,7 +389,7 @@ export function StudioClipTimeline({
                 variant="destructive"
                 size="sm"
                 onClick={() => handleRetryClip(clip)}
-                className="h-7 text-xs px-2.5"
+                className="h-6 text-[10px] px-2"
               >
                 Retry
               </Button>
@@ -395,130 +398,47 @@ export function StudioClipTimeline({
         </div>
       )}
 
-      {/* 2. Global Minimap Overview Track */}
-      <div className={`mt-3.5 ${clip.isLocked || clip.isExcluded ? 'opacity-40 pointer-events-none' : ''}`}>
-        <TimelineMinimap
-          duration={duration}
-          activeClip={clip}
-          allClips={allClips}
-          zoomLevel={zoomLevel}
-          scrollLeft={scrollLeft}
-          containerWidth={containerWidth}
-          onSeekMinimap={handleSeekMinimap}
-        />
-
-        {/* 3. Zoom Deck & Keyboard Nudge Hints */}
-        <div className="flex items-center justify-between my-2">
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] font-mono uppercase tracking-wider text-purple-300/80 font-bold flex items-center gap-1.5">
-              <Film className="w-3.5 h-3.5 text-accent-neon" />
-              Video Clip Trimmer
-            </span>
-            <span className="hidden md:inline-flex items-center gap-1 text-[10px] font-mono text-[var(--text-tertiary)] bg-obsidian-950/60 px-2 py-0.5 rounded border border-purple-900/30">
-              <span className="text-accent-neon font-semibold">[← / →]</span> Nudge 0.1s &middot;
-              <span className="text-accent-neon font-semibold">[Shift]</span> 1.0s &middot;
-              <span className="text-accent-neon font-semibold">[Alt]</span> 0.05s
-            </span>
-          </div>
-
-          <div className="flex items-center gap-1.5">
-            <span className="text-[11px] font-mono tabular-nums text-purple-200 mr-1">
-              {zoomLevel.toFixed(1)}x
-            </span>
-
-            {/* Quick zoom step chips */}
-            {[1, 2, 5, 10].map((z) => (
-              <button
-                key={z}
-                type="button"
-                onClick={() => setZoomLevel(z)}
-                className={`px-1.5 py-0.5 rounded text-[10px] font-mono transition-colors ${
-                  zoomLevel === z
-                    ? 'bg-accent-violet text-white font-bold'
-                    : 'text-purple-300/70 hover:text-white bg-obsidian-950 border border-purple-900/30'
-                }`}
-              >
-                {z}x
-              </button>
-            ))}
-
-            <Button
-              variant="outline"
-              size="iconSm"
-              onClick={() => setZoomLevel((prev) => clamp(prev - 0.5, 1, 50))}
-              title="Zoom out timeline"
-              className="w-6 h-6"
-            >
-              <ZoomOut className="w-3 h-3" />
-            </Button>
-
-            <input
-              type="range"
-              min="1"
-              max="50"
-              step="0.5"
-              value={zoomLevel}
-              onChange={(e) => setZoomLevel(parseFloat(e.target.value))}
-              aria-label="Timeline zoom level"
-              className="w-16 sm:w-24 h-1 bg-obsidian-950 rounded-lg appearance-none cursor-pointer accent-accent-violet border border-purple-900/40"
-            />
-
-            <Button
-              variant="outline"
-              size="iconSm"
-              onClick={() => setZoomLevel((prev) => clamp(prev + 0.5, 1, 50))}
-              title="Zoom in timeline"
-              className="w-6 h-6"
-            >
-              <ZoomIn className="w-3 h-3" />
-            </Button>
-
-            <Button
-              variant="ghost"
-              size="iconSm"
-              onClick={() => setZoomLevel(1)}
-              title="Reset Zoom to 1x"
-              className="w-6 h-6 text-purple-300"
-            >
-              <RotateCcw className="w-3 h-3" />
-            </Button>
-          </div>
-        </div>
-
-        {/* 4. Zoomable Video Trimmer Viewport */}
+      {/* 3. Polished Thumbnail-Based Video Trimming Timeline Track */}
+      <div
+        ref={containerRef}
+        className={`w-full bg-obsidian-950 rounded-lg border border-purple-900/50 overflow-x-auto overflow-y-hidden relative select-none shadow-inner ${
+          clip.isLocked || clip.isExcluded ? 'opacity-40 pointer-events-none' : ''
+        }`}
+      >
         <div
-          ref={containerRef}
-          className="w-full h-20 pt-6 pb-2 bg-obsidian-950 rounded-xl border border-purple-900/50 overflow-x-auto overflow-y-hidden relative timeline-scrollbar select-none shadow-inner"
+          ref={trackRef}
+          onPointerDown={handleTrackPointerDown}
+          className="relative min-w-full flex flex-col"
+          style={{ width: `${zoomLevel * 100}%` }}
         >
-          <div
-            ref={trackRef}
-            className="h-full relative bg-obsidian-900/80 rounded-md"
-            style={{ width: `${zoomLevel * 100}%`, minWidth: '100%' }}
-          >
-            {/* Clean Video Track with Dimmed Trim Masks */}
-            <TimelineFilmTrack
+          {/* Top Time Ruler (Height: 20px) */}
+          <TimelineRuler duration={duration} zoomLevel={zoomLevel} />
+
+          {/* Filmstrip Thumbnail Track Container (Explicit Height: 64px / h-16) */}
+          <div className="w-full h-16 relative">
+            {/* Tiled Video Frame Thumbnails with Dimmed Trim Masks */}
+            <TimelineThumbnailTrack
+              metadata={metadata}
               duration={duration}
               startTime={clip.startTime}
               endTime={clip.endTime}
+              zoomLevel={zoomLevel}
             />
 
-            {/* Adaptive Time Ruler */}
-            <TimelineRuler duration={duration} zoomLevel={zoomLevel} />
-
-            {/* Draggable Active Region Span (Clean translucent window, grab to slide) */}
+            {/* Draggable Active Region Window (Slide window across timeline) */}
             <div
               onPointerDown={handleRangePointerDown}
-              className={`absolute top-0 bottom-0 bg-purple-500/10 hover:bg-purple-500/15 border-y border-purple-400/70 cursor-grab active:cursor-grabbing z-20 transition-colors ${
-                isSlidingRange ? 'bg-purple-500/20 ring-1 ring-purple-300 shadow-sm' : ''
+              className={`absolute inset-y-0 bg-purple-500/10 hover:bg-purple-500/15 cursor-grab active:cursor-grabbing z-20 transition-colors ${
+                isSlidingRange ? 'bg-purple-500/20' : ''
               }`}
               style={{
                 left: `${duration > 0 ? (clip.startTime / duration) * 100 : 0}%`,
                 right: `${duration > 0 ? 100 - (clip.endTime / duration) * 100 : 0}%`,
               }}
-              title="Click and drag to slide segment across timeline"
+              title="Click and drag to slide clip segment"
             />
 
-            {/* In-Point Trimmer Handle [ */}
+            {/* Clearly Visible In-Point Trim Handle */}
             <TimelineTrimmerHandle
               type="start"
               time={clip.startTime}
@@ -529,7 +449,7 @@ export function StudioClipTimeline({
               onTimeChange={(val) => updateClip(clip.id, { startTime: parseFloat(val.toFixed(2)) })}
             />
 
-            {/* Out-Point Trimmer Handle ] */}
+            {/* Clearly Visible Out-Point Trim Handle */}
             <TimelineTrimmerHandle
               type="end"
               time={clip.endTime}
@@ -539,123 +459,64 @@ export function StudioClipTimeline({
               disabled={clip.isLocked || clip.isExcluded}
               onTimeChange={(val) => updateClip(clip.id, { endTime: parseFloat(val.toFixed(2)) })}
             />
+
+            {/* Distinct Draggable Playhead */}
+            <TimelinePlayhead
+              playheadTime={activePlayheadTime}
+              duration={duration}
+              disabled={clip.isLocked || clip.isExcluded}
+              onPlayheadChange={setUserPlayheadTime}
+            />
           </div>
         </div>
+      </div>
 
-        {/* 5. Sub-Second Precision Deck & Timecode Controls */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-          {/* IN Timecode Deck */}
-          <div className="p-3 bg-obsidian-950/80 rounded-xl border border-purple-900/40 space-y-2">
-            <div className="flex items-center justify-between">
-              <label className="text-[11px] font-mono uppercase tracking-wider text-purple-200 font-semibold flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-purple-300" />
-                In-Point (Start)
-              </label>
-              <div className="flex items-center gap-1">
-                <button
-                  type="button"
-                  onClick={() => nudgeStartTime(-1)}
-                  disabled={clip.isLocked || clip.isExcluded}
-                  className="px-1.5 py-0.5 rounded text-[10px] font-mono text-purple-300 hover:bg-purple-950 border border-purple-800/40 disabled:opacity-40"
-                  title="Step backward 1s"
-                >
-                  -1s
-                </button>
-                <button
-                  type="button"
-                  onClick={() => nudgeStartTime(-0.1)}
-                  disabled={clip.isLocked || clip.isExcluded}
-                  className="px-1.5 py-0.5 rounded text-[10px] font-mono text-purple-300 hover:bg-purple-950 border border-purple-800/40 disabled:opacity-40"
-                  title="Nudge backward 0.1s"
-                >
-                  <ChevronLeft className="w-3 h-3 inline" /> 0.1s
-                </button>
-                <button
-                  type="button"
-                  onClick={() => nudgeStartTime(0.1)}
-                  disabled={clip.isLocked || clip.isExcluded}
-                  className="px-1.5 py-0.5 rounded text-[10px] font-mono text-purple-300 hover:bg-purple-950 border border-purple-800/40 disabled:opacity-40"
-                  title="Nudge forward 0.1s"
-                >
-                  0.1s <ChevronRight className="w-3 h-3 inline" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => nudgeStartTime(1)}
-                  disabled={clip.isLocked || clip.isExcluded}
-                  className="px-1.5 py-0.5 rounded text-[10px] font-mono text-purple-300 hover:bg-purple-950 border border-purple-800/40 disabled:opacity-40"
-                  title="Step forward 1s"
-                >
-                  +1s
-                </button>
-              </div>
-            </div>
-
+      {/* 4. Compact Single-Row Start / Duration / End Controls */}
+      <div className="flex items-center justify-between gap-2 pt-1">
+        {/* Compact Start Input with explicit container width */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          <span className="text-[10px] font-mono text-purple-300 font-bold uppercase tracking-wider">
+            Start:
+          </span>
+          <div className="w-24 sm:w-28 shrink-0">
             <Input
               type="text"
+              size="sm"
               value={isEditingStart ? startInput : formatTime(clip.startTime, true)}
               onFocus={handleStartInputFocus}
               onChange={handleStartInputChange}
               onBlur={handleStartInputBlur}
-              className="font-mono text-center text-sm h-9 tracking-wider bg-obsidian-900 border-purple-900/60 text-purple-100 focus:border-accent-violet focus:ring-purple-500/30"
+              className="font-mono text-center text-xs h-7 tracking-wide bg-obsidian-950 border-purple-900/60 text-purple-100 focus:border-accent-violet focus:ring-1 focus:ring-accent-violet px-1"
               disabled={clip.isLocked || clip.isExcluded || isDownloadingQueue}
             />
           </div>
+        </div>
 
-          {/* OUT Timecode Deck */}
-          <div className="p-3 bg-obsidian-950/80 rounded-xl border border-purple-900/40 space-y-2">
-            <div className="flex items-center justify-between">
-              <label className="text-[11px] font-mono uppercase tracking-wider text-purple-200 font-semibold flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-accent-violet" />
-                Out-Point (End)
-              </label>
-              <div className="flex items-center gap-1">
-                <button
-                  type="button"
-                  onClick={() => nudgeEndTime(-1)}
-                  disabled={clip.isLocked || clip.isExcluded}
-                  className="px-1.5 py-0.5 rounded text-[10px] font-mono text-purple-300 hover:bg-purple-950 border border-purple-800/40 disabled:opacity-40"
-                  title="Step backward 1s"
-                >
-                  -1s
-                </button>
-                <button
-                  type="button"
-                  onClick={() => nudgeEndTime(-0.1)}
-                  disabled={clip.isLocked || clip.isExcluded}
-                  className="px-1.5 py-0.5 rounded text-[10px] font-mono text-purple-300 hover:bg-purple-950 border border-purple-800/40 disabled:opacity-40"
-                  title="Nudge backward 0.1s"
-                >
-                  <ChevronLeft className="w-3 h-3 inline" /> 0.1s
-                </button>
-                <button
-                  type="button"
-                  onClick={() => nudgeEndTime(0.1)}
-                  disabled={clip.isLocked || clip.isExcluded}
-                  className="px-1.5 py-0.5 rounded text-[10px] font-mono text-purple-300 hover:bg-purple-950 border border-purple-800/40 disabled:opacity-40"
-                  title="Nudge forward 0.1s"
-                >
-                  0.1s <ChevronRight className="w-3 h-3 inline" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => nudgeEndTime(1)}
-                  disabled={clip.isLocked || clip.isExcluded}
-                  className="px-1.5 py-0.5 rounded text-[10px] font-mono text-purple-300 hover:bg-purple-950 border border-purple-800/40 disabled:opacity-40"
-                  title="Step forward 1s"
-                >
-                  +1s
-                </button>
-              </div>
-            </div>
+        {/* Center Clip Duration Pill (Clean & Integrated) */}
+        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-purple-950/40 border border-purple-700/40 shrink-0">
+          <Clock className="w-3 h-3 text-accent-neon shrink-0" />
+          <span className="font-mono text-xs tabular-nums text-purple-100 font-bold">
+            {formatTime(clipDuration, true)}
+          </span>
+          <span className="text-[10px] font-mono text-purple-300/60 hidden sm:inline">
+            ({approxFrames}f)
+          </span>
+        </div>
 
+        {/* Compact End Input with explicit container width */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          <span className="text-[10px] font-mono text-purple-300 font-bold uppercase tracking-wider">
+            End:
+          </span>
+          <div className="w-24 sm:w-28 shrink-0">
             <Input
               type="text"
+              size="sm"
               value={isEditingEnd ? endInput : formatTime(clip.endTime, true)}
               onFocus={handleEndInputFocus}
               onChange={handleEndInputChange}
               onBlur={handleEndInputBlur}
-              className="font-mono text-center text-sm h-9 tracking-wider bg-obsidian-900 border-purple-900/60 text-purple-100 focus:border-accent-violet focus:ring-purple-500/30"
+              className="font-mono text-center text-xs h-7 tracking-wide bg-obsidian-950 border-purple-900/60 text-purple-100 focus:border-accent-violet focus:ring-1 focus:ring-accent-violet px-1"
               disabled={clip.isLocked || clip.isExcluded || isDownloadingQueue}
             />
           </div>

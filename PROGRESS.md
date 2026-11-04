@@ -18,10 +18,14 @@ This document chronicles historical releases, merged capabilities, active sprint
 
 ### [Unreleased] `v1.1.0` / `v1.1.0-pro` — Obsidian Forge Media Studio UI Redesign & Architecture Modernization
 - **Selective Duration Studio Timeline Redesign (Issue #30)**:
-  - Transformed basic range sliders into a studio-grade NLE scrubbing workstation modeled after Premiere Pro and DaVinci Resolve.
-  - Implemented 24px global minimap overview strip (`TimelineMinimap.jsx`) with draggable viewport lens and full-video context.
-  - Built Cinema Video Film Track (`TimelineFilmTrack.jsx`) with cyber-cyan and electric violet illumination.
-  - Crafted tactile In-Point `[` and Out-Point `]` bracket handles (`TimelineTrimmerHandle.jsx`) with smooth pointer capture (`setPointerCapture`) and floating HUD tooltips.
+  - Transformed timeline into a polished, thumbnail-based video trimming workstation.
+  - Implemented tiled video frame snapshot filmstrip track (`TimelineThumbnailTrack.jsx`) with unselected head/tail dimmed masks.
+  - Added distinct draggable playhead scrubber (`TimelinePlayhead.jsx`) with inverted neon purple head and hairline indicator.
+  - Upgraded adaptive time ruler (`TimelineRuler.jsx`) with major/minor tick marks and responsive timestamps.
+  - Created prominent tactile caliper trim handles (`TimelineTrimmerHandle.jsx`) with directional chevrons, pointer capture (`setPointerCapture`), and floating HUD tooltips.
+  - Added compact zoom toolbar combining `[-]`, smooth range slider with glowing neon purple thumb, `[+]`, numeric zoom readout (`1.0x` - `30.0x`), and `1x` reset button.
+  - Streamlined bottom timecode controls into a single non-wrapping row with compact start/end inputs and duration frames pill.
+  - Fixed z-index hierarchy and card clipping on output resolution dropdown selector (`Select.jsx`).
   - Added sub-second keyboard nudging (`ArrowLeft/Right` for 0.1s, `Shift` for 1.0s, `Alt` for 0.05s) and step buttons (`-1s`, `-0.1s`, `+0.1s`, `+1s`).
   - Added 1-click social duration presets (`15s Reel`, `30s TikTok`, `60s Shorts`, `Full`) and 1-click segment duplication (`duplicateClip`).
   - 100% test pass rate (32/32 tests) and zero ESLint errors/warnings.

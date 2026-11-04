@@ -1,6 +1,12 @@
 import { useState, useRef } from 'react';
+import { ChevronRight, ChevronLeft } from 'lucide-react';
 import { formatTime } from './timeUtils';
 
+/**
+ * Clearly Visible Draggable Start and End Trim Handles
+ * Features prominent tactile caliper bars, directional inward chevrons,
+ * smooth pointer capture, and floating real-time timecode tooltips.
+ */
 export function TimelineTrimmerHandle({
   type = 'start', // 'start' | 'end'
   time = 0,
@@ -97,7 +103,7 @@ export function TimelineTrimmerHandle({
   return (
     <div
       role="slider"
-      aria-label={isStart ? 'In-point trimmer handle' : 'Out-point trimmer handle'}
+      aria-label={isStart ? 'In-point trim handle' : 'Out-point trim handle'}
       aria-valuenow={time}
       aria-valuemin={minTime}
       aria-valuemax={maxTime}
@@ -113,57 +119,39 @@ export function TimelineTrimmerHandle({
       }`}
       style={{
         left: `${percent}%`,
-        width: '16px',
-        marginLeft: '-8px',
+        width: '18px',
+        marginLeft: '-9px',
       }}
     >
-      {/* Floating Precision HUD Tooltip */}
+      {/* Floating Precision Time Tooltip */}
       <div
-        className={`absolute -top-7 ${tooltipAlignClass} px-2 py-0.5 rounded-[4px] text-[10px] font-mono tabular-nums font-semibold whitespace-nowrap border pointer-events-none transition-all duration-150 z-40 bg-obsidian-950/95 text-purple-100 border-purple-500/60 shadow-md ${
-          showHUD ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+        className={`absolute -top-7 ${tooltipAlignClass} px-2 py-0.5 rounded text-[10px] font-mono tabular-nums font-bold whitespace-nowrap border pointer-events-none transition-all duration-150 z-50 bg-obsidian-950/95 text-white border-purple-500/80 shadow-md ${
+          showHUD ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'
         }`}
       >
-        <span className="text-[9px] uppercase tracking-wider text-purple-300/70 mr-1 font-bold">
-          {isStart ? 'IN' : 'OUT'}:
+        <span className="text-[9px] uppercase tracking-wider text-purple-300 mr-1 font-semibold">
+          {isStart ? 'START' : 'END'}:
         </span>
         {formatTime(time, true)}
       </div>
 
-      {/* Clean Minimalist Caliper Handle Bar */}
+      {/* Prominent Tactile Caliper Handle Bar */}
       <div
-        className={`w-2.5 h-full rounded-[2px] border transition-all duration-100 flex items-center justify-center relative ${
+        className={`w-3 h-full flex flex-col items-center justify-center transition-all duration-100 shadow-md border ${
+          isStart ? 'rounded-l-[4px] border-r-0' : 'rounded-r-[4px] border-l-0'
+        } ${
           isDragging || isFocused
-            ? 'bg-accent-violet border-purple-200 ring-1 ring-purple-300 shadow-glow-violet'
-            : 'bg-obsidian-850 border-purple-400 hover:border-purple-200 hover:bg-purple-950'
+            ? 'bg-purple-500 border-white ring-2 ring-purple-300 shadow-glow-violet'
+            : 'bg-accent-violet border-purple-300/80 hover:bg-purple-600 hover:border-white'
         }`}
       >
-        {/* Inward In/Out Bracket Caps */}
+        {/* Directional Inward Chevron */}
         {isStart ? (
-          <>
-            <div className="absolute top-0 right-0 w-1.5 h-1 bg-current opacity-80 rounded-tr-[1px]" />
-            <div className="absolute bottom-0 right-0 w-1.5 h-1 bg-current opacity-80 rounded-br-[1px]" />
-          </>
+          <ChevronRight className="w-2.5 h-2.5 text-white stroke-[3] shrink-0" />
         ) : (
-          <>
-            <div className="absolute top-0 left-0 w-1.5 h-1 bg-current opacity-80 rounded-tl-[1px]" />
-            <div className="absolute bottom-0 left-0 w-1.5 h-1 bg-current opacity-80 rounded-bl-[1px]" />
-          </>
+          <ChevronLeft className="w-2.5 h-2.5 text-white stroke-[3] shrink-0" />
         )}
-
-        {/* Minimalist Center Grip Notch */}
-        <div
-          className={`w-0.5 h-3 rounded-full transition-colors ${
-            isDragging || isFocused ? 'bg-white' : 'bg-purple-300/80 group-hover:bg-white'
-          }`}
-        />
       </div>
-
-      {/* Hairline guide extending through track */}
-      <div
-        className={`w-px h-full absolute top-0 pointer-events-none ${
-          isDragging || isFocused ? 'bg-purple-300/60' : 'bg-transparent'
-        }`}
-      />
     </div>
   );
 }

@@ -269,7 +269,7 @@ Video trimming in `SelectiveDurationView` was previously restricted to simple HT
 
 #### Decision
 1. Decomposed the timeline into modular components under `src/components/views/timeline/` (`TimelineMinimap`, `TimelineFilmTrack`, `TimelineRuler`, `TimelineTrimmerHandle`, `StudioClipTimeline`, `timeUtils`).
-2. Implemented dual-track architecture: a top 24px global minimap overview representing 100% video duration with active segment highlights and a draggable zoom lens, above a high-definition zoomable workstation track (1x to 50x magnification).
+2. Implemented a compact, polished thumbnail-based video trimming timeline displaying tiled video frame snapshots (1x to 50x magnification).
 3. Built a Cinema Video Film Track with subtle film perforations, frame intervals, and dimmed trim-out masks on unselected head/tail bounds.
 4. Swapped native range inputs for tactile NLE In/Out brackets (`[` and `]`) utilizing modern `setPointerCapture` for uninterrupted scrubbing across window borders, paired with real-time floating timecode tooltips.
 5. Implemented sub-second keyboard nudging (`ArrowLeft/Right` for 0.1s, `Shift` for 1.0s, `Alt` for 0.05s) and 1-click social clipping presets (15s, 30s, 60s, Full).

@@ -336,21 +336,21 @@ export function SelectiveDurationView({
   }, [metadata]);
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto w-full pb-10">
+    <div className="space-y-4 max-w-4xl mx-auto w-full pb-6 px-1">
       {/* URL & Inspection Card */}
-      <Card className="surface-panel">
-        <CardContent className="space-y-6 p-6 sm:p-7">
-          <div className="flex items-center justify-between pb-3.5 border-b border-[var(--border-subdued)]">
+      <Card className="surface-panel overflow-visible relative z-30">
+        <CardContent className="space-y-4 p-4 sm:p-6 overflow-visible">
+          <div className="flex items-center justify-between pb-3 border-b border-[var(--border-subdued)]">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-purple-950/50 border border-purple-800/40 flex items-center justify-center text-accent-neon shadow-sm">
-                <Film className="w-4.5 h-4.5" />
+              <div className="w-8 h-8 rounded-lg bg-purple-950/50 border border-purple-800/40 flex items-center justify-center text-accent-neon shadow-sm">
+                <Film className="w-4 h-4" />
               </div>
               <div>
                 <h2 className="text-base sm:text-lg font-bold text-[var(--text-primary)] tracking-tight font-heading">
-                  Selective Duration Studio Downloader
+                  Selective Duration Downloader
                 </h2>
-                <p className="text-xs sm:text-sm text-[var(--text-secondary)] mt-0.5 leading-relaxed">
-                  Interactive multi-track timeline scrubbing, audio waveforms, and precision trimming.
+                <p className="text-xs text-[var(--text-secondary)] mt-0.5 leading-relaxed">
+                  Thumbnail-based video trimming timeline with frame-accurate precision.
                 </p>
               </div>
             </div>
@@ -383,7 +383,7 @@ export function SelectiveDurationView({
 
           {/* Video Metadata & Global Resolution Selector Card */}
           {metadata && (
-            <div className="p-5 bg-obsidian-900/90 border border-purple-800/40 rounded-2xl flex flex-col md:flex-row items-start gap-5 shadow-sm">
+            <div className="p-5 bg-obsidian-900/90 border border-purple-800/40 rounded-2xl flex flex-col md:flex-row items-start gap-5 shadow-sm relative z-30 overflow-visible">
               {/* Thumbnail with Fallback */}
               <div className="w-full md:w-52 aspect-video bg-obsidian-950 rounded-xl overflow-hidden shrink-0 border border-purple-900/40 relative flex items-center justify-center group shadow-sm">
                 {getThumbnailUrl() ? (
@@ -440,7 +440,7 @@ export function SelectiveDurationView({
                 </div>
 
                 {/* Target Resolution / Quality Selector */}
-                <div className="pt-1 max-w-xs">
+                <div className="pt-1 max-w-xs relative z-40">
                   <label className="block text-[10px] font-mono uppercase tracking-wider text-purple-300/80 mb-1.5 font-semibold">
                     Output Resolution
                   </label>
@@ -460,19 +460,19 @@ export function SelectiveDurationView({
 
       {/* Segments Section */}
       {metadata && (
-        <Card className="surface-panel">
-          <CardContent className="space-y-6 p-6 sm:p-7">
-            <div className="flex items-center justify-between pb-3.5 border-b border-[var(--border-subdued)]">
+        <Card className="surface-panel relative z-10">
+          <CardContent className="space-y-4 p-4 sm:p-6">
+            <div className="flex items-center justify-between pb-3 border-b border-[var(--border-subdued)]">
               <div>
                 <h3 className="text-sm sm:text-base font-bold text-[var(--text-primary)] tracking-tight font-heading">
-                  Studio Timeline Trimming Segments ({clips.length})
+                  Video Trimming Segments ({clips.length})
                 </h3>
-                <p className="text-xs sm:text-sm text-[var(--text-secondary)] mt-1">
-                  Drag the cyan In-Point and violet Out-Point brackets, use keyboard nudging, or enter exact timecodes.
+                <p className="text-xs text-[var(--text-secondary)] mt-0.5">
+                  Drag start and end handles across video thumbnails, or enter exact timecodes below.
                 </p>
               </div>
 
-              <Badge variant="accent" size="md">
+              <Badge variant="accent" size="sm">
                 {clips.filter((c) => !c.isExcluded).length} Active
               </Badge>
             </div>
