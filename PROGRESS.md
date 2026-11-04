@@ -17,6 +17,13 @@ This document chronicles historical releases, merged capabilities, active sprint
 ## 2. Release & Milestone History
 
 ### [Unreleased] `v1.1.0` / `v1.1.0-pro` — Obsidian Forge Media Studio UI Redesign & Architecture Modernization
+- **Automated Startup yt-dlp Engine Updater & Native Splash Screen (PR #36 / Issue #33 & #11)**:
+  - Added lightweight frameless full-sized 980x720 native splash window (electron/splash.html + electron/splash-preload.cjs) with living audio spectrum wave, laser sweep, and smooth exit cross-fade with Obsidian Forge design tokens, eliminating cold-boot white flashes.
+  - Implemented electron/engine-updater.cjs with user-space executable writing (%AppData%\\Hermanos Forge\\bin\\yt-dlp.exe), strict 2.5s network timeout version probe against GitHub releases API, and atomic replacement via backup/swap.
+  - Added priority binary resolution hierarchy in ackend.py (--ytdlp-bin CLI override > %AppData% binary > bundled yt_dlp fallback) and implemented get_engine_version action.
+  - Added on-demand engine updater UI inside SettingsView.jsx with active version chip, source indicator (Bundled vs AppData Updated), and 1-click update button with streaming progress.
+  - Added unit test suite scripts/verify_engine_updater.test.mjs verifying version string normalization, release tag comparison, atomic replacement logic, and offline fallback (28 total tests passing).
+
 - **Obsidian Forge Media Studio Overhaul (Commit `b885179`)**:
   - Upgraded design system to the *Obsidian Forge Media Studio* aesthetic: deep obsidian backgrounds (`#09090C`, `#0E0E13`, `#16161F`), cyber-luminescent violet (`#9D4EDD`), amethyst (`#B5179E`), neon purple (`#C084FC`), and radiant cyan (`#00F0FF`).
   - Added specialized Google Fonts typography: `Space Grotesk` (display & headings), `DM Sans` (body & form UI), and `JetBrains Mono` with `tabular-nums` (durations, bitrates, URLs, and timecodes).

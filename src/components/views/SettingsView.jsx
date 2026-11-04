@@ -12,7 +12,9 @@ import {
   ChevronDown,
   ChevronUp,
   Cpu,
+  DownloadCloud,
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
@@ -30,6 +32,83 @@ export function SettingsView({
   onRefreshStatus,
 }) {
   const [showDlls, setShowDlls] = useState(false);
+  const [localEngineUpdate, setLocalEngineUpdate] = useState(null);
+  const [isCheckingEngine, setIsCheckingEngine] = useState(false);
+  const [isUpdatingEngine, setIsUpdatingEngine] = useState(false);
+  const [engineProgress, setEngineProgress] = useState(0);
+
+  const currentEngine = {
+    version: localEngineUpdate?.version ?? systemStatus?.ytdlp?.version ?? 'Bundled',
+    source: localEngineUpdate?.source ?? systemStatus?.ytdlp?.source ?? 'Bundled',
+    path: localEngineUpdate?.path ?? systemStatus?.ytdlp?.path ?? 'Bundled Python Package',
+    latestVersion: localEngineUpdate?.latestVersion ?? systemStatus?.ytdlp?.latestVersion ?? null,
+    updateAvailable: localEngineUpdate !== null ? localEngineUpdate.updateAvailable : Boolean(systemStatus?.ytdlp?.updateAvailable),
+  };
+
+  const handleCheckEngineUpdate = async () => {
+    if (!window.electronAPI?.checkEngineVersion) return;
+    setIsCheckingEngine(true);
+    try {
+      const res = await window.electronAPI.checkEngineVersion();
+      if (res) {
+        setLocalEngineUpdate({
+          version: res.currentVersion,
+          source: res.source,
+          path: res.path,
+          latestVersion: res.latestVersion,
+          updateAvailable: res.updateAvailable,
+        });
+        if (res.updateAvailable && res.latestVersion) {
+          toast.success(`Update available: v${res.latestVersion}`);
+        } else if (res.offline) {
+          toast.error('Could not reach update server. Operating in offline mode.');
+        } else {
+          toast.success(`yt-dlp engine is up to date (v${res.currentVersion}).`);
+        }
+      }
+    } catch (err) {
+      toast.error(`Check failed: ${err.message}`);
+    } finally {
+      setIsCheckingEngine(false);
+    }
+  };
+
+  const handleUpdateEngine = async () => {
+    if (!window.electronAPI?.updateEngine) return;
+    setIsUpdatingEngine(true);
+    setEngineProgress(0);
+    try {
+      let unsub = null;
+      if (window.electronAPI.onEngineUpdateProgress) {
+        unsub = window.electronAPI.onEngineUpdateProgress((pct) => {
+          setEngineProgress(pct);
+        });
+      }
+      const res = await window.electronAPI.updateEngine();
+      if (unsub) unsub();
+
+      if (res && res.success) {
+        setLocalEngineUpdate({
+          version: res.version,
+          source: res.source,
+          path: res.path,
+          latestVersion: res.version,
+          updateAvailable: false,
+        });
+        toast.success(`yt-dlp engine updated to v${res.version} successfully!`);
+        if (onRefreshStatus) {
+          onRefreshStatus();
+        }
+      } else {
+        toast.error(`Update failed: ${res?.error || 'Unknown error'}`);
+      }
+    } catch (err) {
+      toast.error(`Update failed: ${err.message}`);
+    } finally {
+      setIsUpdatingEngine(false);
+      setEngineProgress(0);
+    }
+  };
 
   const renderStatusPill = (state) => {
     if (!state) return null;
@@ -200,6 +279,87 @@ export function SettingsView({
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* yt-dlp Extraction Core */}
+            <div className="p-4 bg-[var(--surface-2)]/70 border border-[var(--border-subdued)] rounded-xl col-span-1 sm:col-span-2 shadow-sm">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[var(--border-subdued)]">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-lg bg-purple-950/60 border border-purple-800/40 text-[var(--accent-neon)] shrink-0">
+                    <DownloadCloud className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm font-bold text-[var(--text-primary)] font-heading">
+                        yt-dlp Media Engine Core
+                      </span>
+                      <Badge
+                        variant={currentEngine.source === 'AppData Updated' ? 'success' : 'default'}
+                        size="sm"
+                      >
+                        {currentEngine.source === 'AppData Updated' ? 'AppData Updated' : 'Bundled'}
+                      </Badge>
+                      {currentEngine.updateAvailable && (
+                        <Badge variant="accent" size="sm">
+                          v{currentEngine.latestVersion} Available
+                        </Badge>
+                      )}
+                    </div>
+                    <span className="font-mono text-xs text-[var(--text-secondary)] block mt-0.5">
+                      Active: <span className="text-[var(--text-primary)] font-semibold">{currentEngine.version}</span>
+                      {currentEngine.latestVersion && !currentEngine.updateAvailable && (
+                        <span className="text-[var(--status-success)] ml-2">• Up to date</span>
+                      )}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {currentEngine.updateAvailable ? (
+                    <Button
+                      variant="primary"
+                      size="md"
+                      onClick={handleUpdateEngine}
+                      isLoading={isUpdatingEngine}
+                      className="text-xs sm:text-sm font-semibold shrink-0"
+                    >
+                      <RefreshCw className={`w-4 h-4 ${isUpdatingEngine ? 'animate-spin' : ''}`} />
+                      <span>{isUpdatingEngine ? `Updating (${engineProgress}%)...` : 'Update yt-dlp Engine'}</span>
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      size="md"
+                      onClick={handleCheckEngineUpdate}
+                      isLoading={isCheckingEngine}
+                      className="text-xs sm:text-sm font-semibold shrink-0"
+                    >
+                      <RefreshCw className={`w-4 h-4 ${isCheckingEngine ? 'animate-spin' : ''}`} />
+                      <span>{isCheckingEngine ? 'Checking...' : 'Check for Updates'}</span>
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              <div className="mt-2.5 flex items-center justify-between text-xs text-[var(--text-tertiary)] font-mono">
+                <span className="truncate" title={currentEngine.path}>
+                  Target: {currentEngine.path}
+                </span>
+                {isUpdatingEngine && (
+                  <span className="text-[var(--accent-neon)] font-semibold shrink-0 ml-2">
+                    {engineProgress}%
+                  </span>
+                )}
+              </div>
+
+              {isUpdatingEngine && (
+                <div className="w-full bg-[var(--surface-1)] rounded-full h-1.5 mt-2.5 overflow-hidden">
+                  <div
+                    className="bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-cyan)] h-full transition-all duration-200"
+                    style={{ width: `${engineProgress}%` }}
+                  />
+                </div>
+              )}
+            </div>
+
             {/* Backend Runtime */}
             <div className="p-4 bg-[var(--surface-2)]/70 border border-[var(--border-subdued)] rounded-xl">
               <div className="flex items-center justify-between gap-2.5">

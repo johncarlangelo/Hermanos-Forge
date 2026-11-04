@@ -235,6 +235,14 @@ export default function App() {
     backend: { state: 'ONLINE', path: 'Checking...' },
     ffmpeg: { state: 'ONLINE', path: 'Checking...' },
     ffprobe: { state: 'ONLINE', path: 'Checking...' },
+    ytdlp: {
+      state: 'ONLINE',
+      version: 'Checking...',
+      source: 'Bundled',
+      path: 'Checking...',
+      updateAvailable: false,
+      latestVersion: null,
+    },
     dlls: [],
   });
 

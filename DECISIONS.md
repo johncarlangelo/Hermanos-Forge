@@ -17,6 +17,7 @@ This document records key technical, architectural, and design decisions made th
 - [ADR-009: Precision Studio Design System & Modular UI Architecture](#adr-009-precision-studio-design-system--modular-ui-architecture)
 - [ADR-010: Obsidian Forge Media Studio Design Language & Visual Evolution](#adr-010-obsidian-forge-media-studio-design-language--visual-evolution)
 - [ADR-011: Strict Obsidian Dark Theme Primacy & Removal of Light Mode](#adr-011-strict-obsidian-dark-theme-primacy--removal-of-light-mode)
+- [ADR-012: User-Space Standalone yt-dlp Auto-Updater & Priority Hierarchy](#adr-012-user-space-standalone-yt-dlp-auto-updater--priority-hierarchy)
 
 ---
 
@@ -145,7 +146,7 @@ Adopt `#09090B` (deep charcoal black) as the primary background aesthetic, paire
 
 ### ADR-008: Native Splash Window for Cold-Boot Mitigation
 
-* **Status**: Accepted (Planned for v1.1.0)
+* **Status**: Accepted & Implemented (v1.1.0-pro)
 * **Date**: 2026-07-01
 
 #### Context
@@ -231,3 +232,26 @@ User feedback confirmed that the application's cybernetic aesthetic, neon accent
 - **Positive**: Drastically simplifies styling maintenance, guarantees consistent high-contrast visual fidelity, and aligns with user experience preferences.
 - **Negative**: Users preferring light backgrounds cannot toggle the interface mode.
 
+---
+
+### ADR-012: User-Space Standalone yt-dlp Auto-Updater & Priority Hierarchy
+
+* **Status**: Accepted
+* **Date**: 2026-11-04
+
+#### Context
+YouTube regularly updates anti-bot challenges, video formats, and JS player client signatures, requiring frequent updates to yt-dlp. Because Hermanos Forge installs into %ProgramFiles% in production, updating bundled files inside the installation directory requires Windows UAC administrator elevation. Furthermore, stalling cold boot on slow networks or when offline would ruin application startup UX.
+
+#### Decision
+1. **User-Space Target**: Direct all yt-dlp downloads to %AppData%\Hermanos Forge\bin\yt-dlp.exe, which requires zero UAC administrator prompts.
+2. **Strict 2.5s Timeout**: Probe https://api.github.com/repos/yt-dlp/yt-dlp/releases/latest with a strict 2.5-second timeout and graceful offline fallback, ensuring cold boot is never delayed.
+3. **Atomic Replacement**: Download binary to a temporary file (.temp.<timestamp>) and perform atomic replacement using backup/swap logic, resilient to Windows file locks.
+4. **Three-Tier Priority Hierarchy**:
+   - Tier 1: --ytdlp-bin CLI override
+   - Tier 2: %AppData%\Hermanos Forge\bin\yt-dlp.exe (if present and executable)
+   - Tier 3: Bundled Python package yt_dlp / packaged backend executable
+5. **Dual Updater Modes**: Seamless automatic updates during startup behind the native splash screen, combined with an on-demand Check for Updates / Update yt-dlp Engine panel in Settings.
+
+#### Consequences
+- **Positive**: Zero UAC elevation prompts, automatic extractor resilience against YouTube changes, non-blocking offline startup, and full user visibility in Settings.
+- **Negative**: Adds ~23MB standalone binary storage in user AppData upon initial engine update.

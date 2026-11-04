@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hermanos Forge</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Space+Grotesk:wght@300..700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    :root {
+      --bg-base: #09090C;
+      --surface-1: #0E0E13;
+      --surface-2: #16161F;
+      --accent-violet: #9D4EDD;
+      --accent-neon: #C084FC;
+      --accent-cyan: #00F0FF;
+      --accent-amethyst: #B5179E;
+      --text-primary: #F8F9FA;
+      --text-secondary: #A1A1AA;
+      --text-muted: #52525B;
+      --border-subdued: rgba(157, 78, 221, 0.22);
+      --border-glow: rgba(157, 78, 221, 0.45);
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: var(--bg-base);
+      color: var(--text-primary);
+      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      border: 1px solid var(--border-subdued);
+      border-radius: 12px;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 24px 60px rgba(0, 0, 0, 0.9);
+      transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), filter 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* Out-transition animation triggered on splash-closing */
+    body.is-closing {
+      opacity: 0;
+      transform: scale(1.02);
+      filter: blur(8px) brightness(1.25);
+    }
+
+    /* Cybernetic dot grid backdrop */
+    .noise-grid {
+      position: absolute;
+      inset: 0;
+      background-image: radial-gradient(circle, rgba(157, 78, 221, 0.12) 1px, transparent 1px);
+      background-size: 28px 28px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Ambient ceiling radial spotlight */
+    .ambient-glow-top {
+      position: absolute;
+      top: -120px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 720px;
+      height: 380px;
+      background: radial-gradient(ellipse at center, rgba(157, 78, 221, 0.28) 0%, rgba(181, 23, 158, 0.12) 50%, transparent 75%);
+      pointer-events: none;
+      z-index: 0;
+      animation: ambientBreathe 6s ease-in-out infinite alternate;
+    }
+
+    /* Ambient secondary cyan glow at bottom corner */
+    .ambient-glow-bottom {
+      position: absolute;
+      bottom: -100px;
+      right: 10%;
+      width: 500px;
+      height: 300px;
+      background: radial-gradient(ellipse at center, rgba(0, 240, 255, 0.1) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    @keyframes ambientBreathe {
+      0% { opacity: 0.7; transform: translateX(-50%) scale(0.95); }
+      100% { opacity: 1; transform: translateX(-50%) scale(1.08); }
+    }
+
+    /* Specular top highlight line */
+    .specular-top {
+      position: absolute;
+      top: 0;
+      left: 8%;
+      right: 8%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(192, 132, 252, 0.7) 40%, rgba(0, 240, 255, 0.6) 60%, transparent);
+      z-index: 10;
+    }
+
+    /* Top Drag Titlebar */
+    .titlebar {
+      height: 44px;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      -webkit-app-region: drag;
+      position: relative;
+      z-index: 10;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      background: rgba(9, 9, 12, 0.6);
+      backdrop-filter: blur(12px);
+    }
+
+    .titlebar-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .titlebar-icon {
+      width: 18px;
+      height: 18px;
+      filter: drop-shadow(0 0 6px var(--accent-neon));
+    }
+
+    .titlebar-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-primary);
+    }
+
+    .titlebar-badge {
+      font-family: 'JetBrains Mono', Consolas, monospace;
+      font-size: 10px;
+      color: var(--accent-cyan);
+      background: rgba(0, 240, 255, 0.08);
+      border: 1px solid rgba(0, 240, 255, 0.25);
+      padding: 2px 8px;
+      border-radius: 4px;
+      letter-spacing: 0.05em;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .titlebar-beacon {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--accent-cyan);
+      box-shadow: 0 0 6px var(--accent-cyan);
+      animation: pulseFast 1.4s infinite ease-in-out;
+    }
+
+    /* Main Center Stage */
+    .stage {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px 40px;
+      position: relative;
+      z-index: 2;
+    }
+
+    /* Entrance animation container */
+    .entrance-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      max-width: 600px;
+      animation: stageEntrance 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes stageEntrance {
+      0% {
+        opacity: 0;
+        transform: translateY(18px) scale(0.96);
+        filter: blur(6px);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        filter: blur(0);
+      }
+    }
+
+    /* Brand Emblem */
+    .brand-emblem-wrap {
+      position: relative;
+      margin-bottom: 24px;
+    }
+
+    .brand-emblem-pulse {
+      position: absolute;
+      inset: -12px;
+      border-radius: 28px;
+      background: radial-gradient(circle, rgba(157, 78, 221, 0.35) 0%, rgba(0, 240, 255, 0.15) 50%, transparent 70%);
+      filter: blur(14px);
+      animation: emblemPulse 3s ease-in-out infinite alternate;
+    }
+
+    @keyframes emblemPulse {
+      0% { transform: scale(0.95); opacity: 0.6; }
+      100% { transform: scale(1.15); opacity: 1; }
+    }
+
+    .brand-emblem {
+      width: 82px;
+      height: 82px;
+      border-radius: 22px;
+      background: linear-gradient(135deg, rgba(22, 22, 31, 0.95) 0%, rgba(14, 14, 19, 0.95) 100%);
+      border: 1px solid rgba(157, 78, 221, 0.55);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      z-index: 2;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.7), inset 0 0 20px rgba(157, 78, 221, 0.3), 0 0 30px rgba(157, 78, 221, 0.25);
+    }
+
+    .brand-emblem svg {
+      width: 42px;
+      height: 42px;
+      filter: drop-shadow(0 0 10px rgba(192, 132, 252, 0.85));
+    }
+
+    /* Title & Typography */
+    .hero-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 700;
+      font-size: 32px;
+      letter-spacing: -0.03em;
+      color: #FFFFFF;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .hero-gradient {
+      background: linear-gradient(135deg, #FFFFFF 0%, #E9D5FF 40%, #C084FC 80%, #00F0FF 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 0 30px rgba(192, 132, 252, 0.35);
+    }
+
+    .hero-version {
+      font-family: 'JetBrains Mono', Consolas, monospace;
+      font-size: 11px;
+      color: var(--accent-neon);
+      background: rgba(157, 78, 221, 0.16);
+      border: 1px solid rgba(157, 78, 221, 0.35);
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-weight: 500;
+    }
+
+    .hero-subtitle {
+      font-size: 12px;
+      color: var(--text-secondary);
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      font-weight: 600;
+      margin-bottom: 26px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .hero-subtitle::before,
+    .hero-subtitle::after {
+      content: '';
+      width: 24px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(157, 78, 221, 0.4));
+    }
+    .hero-subtitle::after {
+      background: linear-gradient(90deg, rgba(157, 78, 221, 0.4), transparent);
+    }
+
+    /* Living Audio Spectrum Wave Visualizer */
+    .spectrum-wave {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      height: 38px;
+      margin-bottom: 30px;
+      padding: 0 16px;
+    }
+
+    .spectrum-bar {
+      width: 3px;
+      height: 100%;
+      background: linear-gradient(180deg, var(--accent-cyan) 0%, var(--accent-neon) 40%, var(--accent-violet) 100%);
+      border-radius: 3px;
+      box-shadow: 0 0 8px rgba(0, 240, 255, 0.35);
+      transform-origin: bottom center;
+      animation: spectrumUndulate 1.8s ease-in-out infinite alternate;
+    }
+
+    @keyframes spectrumUndulate {
+      0% { transform: scaleY(0.12); opacity: 0.35; }
+      50% { transform: scaleY(0.75); opacity: 0.9; }
+      100% { transform: scaleY(0.25); opacity: 0.5; }
+    }
+
+    /* Staggered equalizer bar delays for realistic harmonic motion */
+    .spectrum-bar:nth-child(1)  { animation-delay: 0.10s; }
+    .spectrum-bar:nth-child(2)  { animation-delay: 0.35s; }
+    .spectrum-bar:nth-child(3)  { animation-delay: 0.70s; }
+    .spectrum-bar:nth-child(4)  { animation-delay: 0.25s; }
+    .spectrum-bar:nth-child(5)  { animation-delay: 0.55s; }
+    .spectrum-bar:nth-child(6)  { animation-delay: 0.90s; }
+    .spectrum-bar:nth-child(7)  { animation-delay: 0.40s; }
+    .spectrum-bar:nth-child(8)  { animation-delay: 0.15s; }
+    .spectrum-bar:nth-child(9)  { animation-delay: 0.65s; }
+    .spectrum-bar:nth-child(10) { animation-delay: 0.85s; }
+    .spectrum-bar:nth-child(11) { animation-delay: 0.30s; }
+    .spectrum-bar:nth-child(12) { animation-delay: 0.50s; }
+    .spectrum-bar:nth-child(13) { animation-delay: 0.75s; }
+    .spectrum-bar:nth-child(14) { animation-delay: 0.20s; }
+    .spectrum-bar:nth-child(15) { animation-delay: 0.60s; }
+    .spectrum-bar:nth-child(16) { animation-delay: 0.95s; }
+    .spectrum-bar:nth-child(17) { animation-delay: 0.45s; }
+    .spectrum-bar:nth-child(18) { animation-delay: 0.12s; }
+    .spectrum-bar:nth-child(19) { animation-delay: 0.68s; }
+    .spectrum-bar:nth-child(20) { animation-delay: 0.32s; }
+    .spectrum-bar:nth-child(21) { animation-delay: 0.82s; }
+    .spectrum-bar:nth-child(22) { animation-delay: 0.52s; }
+    .spectrum-bar:nth-child(23) { animation-delay: 0.22s; }
+    .spectrum-bar:nth-child(24) { animation-delay: 0.78s; }
+
+    /* HUD Status Card */
+    .hud-card {
+      width: 100%;
+      background: rgba(14, 14, 19, 0.82);
+      border: 1px solid rgba(157, 78, 221, 0.28);
+      border-radius: 14px;
+      padding: 18px 24px;
+      backdrop-filter: blur(20px);
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hud-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 15%;
+      right: 15%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(192, 132, 252, 0.5), transparent);
+    }
+
+    .status-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-family: 'JetBrains Mono', Consolas, monospace;
+      font-size: 12px;
+    }
+
+    .status-message {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--text-primary);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-weight: 500;
+    }
+
+    .radar-beacon {
+      position: relative;
+      width: 10px;
+      height: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .radar-core {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent-cyan);
+      box-shadow: 0 0 8px var(--accent-cyan);
+    }
+
+    .radar-wave {
+      position: absolute;
+      inset: -3px;
+      border-radius: 50%;
+      border: 1px solid var(--accent-cyan);
+      animation: radarPing 1.8s cubic-bezier(0, 0.2, 0.8, 1) infinite;
+    }
+
+    @keyframes radarPing {
+      0% { transform: scale(0.6); opacity: 1; }
+      100% { transform: scale(2.2); opacity: 0; }
+    }
+
+    .percent-readout {
+      color: var(--accent-cyan);
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      text-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
+    }
+
+    /* Cyber Progress Bar with Laser Light Sweep */
+    .progress-track {
+      width: 100%;
+      height: 5px;
+      background: rgba(255, 255, 255, 0.06);
+      border-radius: 4px;
+      position: relative;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 12%;
+      background: linear-gradient(90deg, #9D4EDD 0%, #C084FC 50%, #00F0FF 100%);
+      border-radius: 4px;
+      box-shadow: 0 0 12px rgba(0, 240, 255, 0.6);
+      transition: width 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+    }
+
+    .progress-laser {
+      position: absolute;
+      top: 0;
+      left: -60px;
+      width: 50px;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.9), transparent);
+      animation: laserSweep 2.2s infinite ease-in-out;
+    }
+
+    @keyframes laserSweep {
+      0% { left: -60px; }
+      100% { left: 100%; }
+    }
+
+    /* Diagnostics Sub-bar */
+    .hud-subline {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-family: 'JetBrains Mono', Consolas, monospace;
+      font-size: 10px;
+      color: var(--text-muted);
+      border-top: 1px solid rgba(255, 255, 255, 0.04);
+      padding-top: 8px;
+    }
+
+    .hud-subline span {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .dot-indicator {
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: #10B981;
+      box-shadow: 0 0 4px #10B981;
+    }
+
+    /* Bottom Info Footer */
+    .footer-bar {
+      height: 38px;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      color: var(--text-muted);
+      border-top: 1px solid rgba(255, 255, 255, 0.03);
+      position: relative;
+      z-index: 10;
+    }
+
+    .footer-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    @keyframes pulseFast {
+      0%, 100% { opacity: 0.4; }
+      50% { opacity: 1; box-shadow: 0 0 10px var(--accent-cyan); }
+    }
+  </style>
+</head>
+<body>
+  <!-- Ambient Lighting & Texture -->
+  <div class="noise-grid"></div>
+  <div class="ambient-glow-top"></div>
+  <div class="ambient-glow-bottom"></div>
+  <div class="specular-top"></div>
+
+  <!-- Draggable Window Titlebar -->
+  <div class="titlebar">
+    <div class="titlebar-brand">
+      <svg class="titlebar-icon" viewBox="0 0 24 24" fill="none" stroke="#C084FC" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+      </svg>
+      <span class="titlebar-title">Hermanos Forge Studio</span>
+    </div>
+    <div class="titlebar-badge">
+      <div class="titlebar-beacon"></div>
+      <span>STARTUP SEQUENCE</span>
+    </div>
+  </div>
+
+  <!-- Main Stage Center Content -->
+  <main class="stage">
+    <div class="entrance-wrapper">
+      
+      <!-- Brand Emblem -->
+      <div class="brand-emblem-wrap">
+        <div class="brand-emblem-pulse"></div>
+        <div class="brand-emblem">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#C084FC" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Hero Typography -->
+      <h1 class="hero-title">
+        <span class="hero-gradient">HERMANOS FORGE</span>
+        <span class="hero-version">v1.1.0</span>
+      </h1>
+      <div class="hero-subtitle">Obsidian Media Studio</div>
+
+      <!-- Living Audio Frequency Spectrum Wave -->
+      <div class="spectrum-wave" aria-hidden="true">
+        <div class="spectrum-bar"></div>
+        <div class="spectrum-bar"></div>
+        <div class="spectrum-bar"></div>
+        <div class="spectrum-bar"></div>
+        <div class="spectrum-bar"></div>
+        <div class="spectrum-bar"></div>
+        <div class="spectrum-bar"></div>
+        <div class="spectrum-bar"></div>
+        <div class="spectrum-bar"></div>
+        <div class="spectrum-bar"></div>
+        <div class="spectrum-bar"></div>
+        <div class="spectrum-bar"></div>
+        <div class="spectrum-bar"></div>
+        <div class="spectrum-bar"></div>
+        <div class="spectrum-bar"></div>
+        <div class="spectrum-bar"></div>
+        <div class="spectrum-bar"></div>
+        <div class="spectrum-bar"></div>
+        <div class="spectrum-bar"></div>
+        <div class="spectrum-bar"></div>
+        <div class="spectrum-bar"></div>
+        <div class="spectrum-bar"></div>
+        <div class="spectrum-bar"></div>
+        <div class="spectrum-bar"></div>
+      </div>
+
+      <!-- HUD Status Card -->
+      <div class="hud-card">
+        <div class="status-row">
+          <div class="status-message">
+            <div class="radar-beacon">
+              <div class="radar-core"></div>
+              <div class="radar-wave"></div>
+            </div>
+            <span id="status-text">Initializing Forge Media Engine...</span>
+          </div>
+          <span id="percent-text" class="percent-readout">15%</span>
+        </div>
+
+        <div class="progress-track">
+          <div id="progress-bar" class="progress-fill">
+            <div class="progress-laser"></div>
+          </div>
+        </div>
+
+        <div class="hud-subline">
+          <span><span class="dot-indicator"></span> CORE SUBSYSTEM: yt-dlp & FFmpeg</span>
+          <span>STORAGE: %AppData%\bin</span>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Bottom Workspace Footer -->
+  <footer class="footer-bar">
+    <span>HERMANOS FORGE MEDIA STUDIO WORKBENCH</span>
+    <div class="footer-right">
+      <span>HIGH-PRECISION EXTRACTION</span>
+      <span>•</span>
+      <span>READYING INTERFACE</span>
+    </div>
+  </footer>
+
+  <script>
+    if (window.splashAPI) {
+      if (window.splashAPI.onStatus) {
+        window.splashAPI.onStatus(function(data) {
+          if (!data) return;
+          var statusEl = document.getElementById('status-text');
+          var barEl = document.getElementById('progress-bar');
+          var pctEl = document.getElementById('percent-text');
+          if (data.message && statusEl) {
+            statusEl.textContent = data.message;
+          }
+          if (typeof data.percent === 'number') {
+            var clamped = Math.min(100, Math.max(0, data.percent));
+            if (barEl) barEl.style.width = clamped + '%';
+            if (pctEl) pctEl.textContent = Math.round(clamped) + '%';
+          }
+        });
+      }
+
+      if (window.splashAPI.onClosing) {
+        window.splashAPI.onClosing(function() {
+          document.body.classList.add('is-closing');
+        });
+      }
+    }
+  </script>
+</body>
+</html>
