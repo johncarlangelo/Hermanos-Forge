@@ -29,6 +29,7 @@ For technical architecture, design tokens, active tasks, and decision records, r
 4. **Non-Destructive Refactoring**: Never remove working capabilities, comments, or documentation unless explicitly requested or replacing deprecated implementations.
 5. **Root Execution**: Always execute build and verification commands from the repository root. Never use `cd` within script invocations.
 6. **Clean Verification**: Before declaring any coding task complete, ensure `npm run lint` passes with 0 errors and 0 warnings.
+7. **No Commit or Push Without Explicit Review**: Never execute `git commit` or `git push` without first presenting the changes, allowing the user to inspect and verify the rendered UI and code, and receiving explicit permission/instruction from the user to commit or push.
 
 ---
 
@@ -48,7 +49,7 @@ For technical architecture, design tokens, active tasks, and decision records, r
   - If a genuinely new reusable pattern is required, implement it in `src/components/ui/` or `src/components/common/`, adhere to design tokens, and document its conventions here.
 
 ### Pages, Screens & View Decomposition
-- **View Containers**: Screen views live under `src/components/views/` (e.g. `SingleDownloaderView`, `MassClipView`, `SelectiveDurationView`, `HistoryView`, `SettingsView`).
+- **View Containers**: Screen views live under `src/components/views/` (e.g. `SingleDownloaderView`, `MassClipView`, `SelectiveDurationView` with modular subcomponents in `src/components/views/timeline/`, `HistoryView`, `SettingsView`).
 - **Dialogs & Modals**: Reusable overlays live under `src/components/modals/` (e.g. `CookieWizardModal`, `PlaylistSelectorModal`) and are wrapped in the shared `Dialog` primitive.
 - **Decomposition Rule**: Avoid massive monolith files (e.g. >500 lines). `App.jsx` serves as the application shell and navigation coordinator; specific feature workflows must be extracted into dedicated view containers.
 - **Form State Preservation**: Each view manages or binds to persistent state. Switching navigation tabs or opening/closing dialogs must **never** wipe form inputs, entered URLs, or active job progress.

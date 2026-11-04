@@ -555,23 +555,30 @@ Use toasts (`react-hot-toast`) for brief, dismissible operational notices (e.g.,
   - Cancel button for aborting active batch operations.
   - Queue persistence: State preserved in `mass-clips` localStorage key.
 
-### 8.3 Selective Duration Downloader (`src/components/views/SelectiveDurationView.jsx`)
+### 8.3 Selective Duration Studio Downloader (`src/components/views/SelectiveDurationView.jsx`)
 
 - **Module Header**:
-  - Title: `Selective Duration Downloader` with duration trimming description.
+  - Title: `Selective Duration Studio Downloader` with duration trimming description.
 - **URL Inspection**:
   - Source URL input with "Fetch Details" inspection button.
-  - Video preview strip with title, duration, and thumbnail.
-- **Interactive Dual-Handle Timeline**:
-  - Time ruler with draggable Start and End slider handles.
-  - Timecode display: High-precision start and end readouts in `JetBrains Mono` (`00:01:23.450`).
-  - Zoom controls: Zoom In / Zoom Out buttons for frame-accurate timeline scrubbing.
+  - Video preview strip with title, duration, channel, and thumbnail.
+- **Studio-Grade NLE Timeline Workstation (`src/components/views/timeline/`)**:
+  - **Global Minimap Overview (`TimelineMinimap.jsx`)**: 24px full-video duration strip displaying global segment positions and a draggable viewport lens when zoomed.
+  - **Cinema Video Film Track (`TimelineFilmTrack.jsx`)**: Precision video track with subtle film perforations, frame interval divisions, dimmed trim-out masks, and illuminated active cut window.
+  - **Adaptive Time Ruler (`TimelineRuler.jsx`)**: Major and minor subdivision tick marks with monospace tabular timestamps dynamically scaled by zoom factor.
+  - **Tactile NLE In/Out Trimmer Brackets (`TimelineTrimmerHandle.jsx`)**: Electric cyan In-Point `[` and electric violet Out-Point `]` with 3 tactile grip ridges, smooth `setPointerCapture`, directional pips, and real-time floating HUD timecode tooltips (`hh:mm:ss.ms`).
+  - **Active Range Dragger**: Grab-and-slide active segment region allowing users to shift the window across the timeline without altering duration.
+  - **Sub-Second Precision Deck & Keyboard Nudging**:
+    - Dedicated IN and OUT step buttons (`-1s`, `-0.1s`, `+0.1s`, `+1s`).
+    - Full keyboard accessibility: `ArrowLeft`/`ArrowRight` (0.1s nudge), `Shift+Arrow` (1.0s jump), and `Alt+Arrow` (0.05s micro-step).
+  - **Quick Duration Presets**: 1-click social clipping chips (`15s Reel`, `30s TikTok`, `60s Shorts`, `Full`).
+  - **Interactive Zoom Controls**: 1x to 50x magnification with quick presets (`1x`, `2x`, `5x`, `10x`), smooth slider, and `Ctrl + Wheel` scrubbing.
 - **Multi-Clip Segment Queue**:
-  - "Add Segment" action allowing multiple trimmed clips from the same source video.
-  - Segment table: Start time, End time, Duration, Lock/Exclude toggle, and Delete action.
+  - "Add Another Segment" and "Duplicate Segment" actions allowing multiple trimmed slices from the same source video.
+  - Segment controls: Start/End timecode decks, Duration badge with estimated frame counts (`@ 30fps`), Lock/Exclude toggles, and Delete action.
 - **Cutting Controls**:
   - Precise Cut Toggle: Enables FFmpeg re-encoding (`-c:v libx264 -preset fast -c:a aac`) for exact keyframe boundaries.
-  - "Download All Clips" primary action with live download progress.
+  - "Download Selected Clips" primary action with live download progress.
 
 ### 8.4 Download History (`src/components/views/HistoryView.jsx`)
 

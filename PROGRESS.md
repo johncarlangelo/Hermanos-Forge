@@ -17,6 +17,15 @@ This document chronicles historical releases, merged capabilities, active sprint
 ## 2. Release & Milestone History
 
 ### [Unreleased] `v1.1.0` / `v1.1.0-pro` — Obsidian Forge Media Studio UI Redesign & Architecture Modernization
+- **Selective Duration Studio Timeline Redesign (Issue #30)**:
+  - Transformed basic range sliders into a studio-grade NLE scrubbing workstation modeled after Premiere Pro and DaVinci Resolve.
+  - Implemented 24px global minimap overview strip (`TimelineMinimap.jsx`) with draggable viewport lens and full-video context.
+  - Built Cinema Video Film Track (`TimelineFilmTrack.jsx`) with cyber-cyan and electric violet illumination.
+  - Crafted tactile In-Point `[` and Out-Point `]` bracket handles (`TimelineTrimmerHandle.jsx`) with smooth pointer capture (`setPointerCapture`) and floating HUD tooltips.
+  - Added sub-second keyboard nudging (`ArrowLeft/Right` for 0.1s, `Shift` for 1.0s, `Alt` for 0.05s) and step buttons (`-1s`, `-0.1s`, `+0.1s`, `+1s`).
+  - Added 1-click social duration presets (`15s Reel`, `30s TikTok`, `60s Shorts`, `Full`) and 1-click segment duplication (`duplicateClip`).
+  - 100% test pass rate (32/32 tests) and zero ESLint errors/warnings.
+
 - **Automated Startup yt-dlp Engine Updater & Native Splash Screen (PR #36 / Issue #33 & #11)**:
   - Added lightweight frameless full-sized 980x720 native splash window (electron/splash.html + electron/splash-preload.cjs) with living audio spectrum wave, laser sweep, and smooth exit cross-fade with Obsidian Forge design tokens, eliminating cold-boot white flashes.
   - Implemented electron/engine-updater.cjs with user-space executable writing (%AppData%\\Hermanos Forge\\bin\\yt-dlp.exe), strict 2.5s network timeout version probe against GitHub releases API, and atomic replacement via backup/swap.

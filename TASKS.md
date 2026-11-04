@@ -14,6 +14,7 @@ This document tracks active engineering priorities, open GitHub issues, near-ter
 | **P1** | Frontend ESLint Cleanup | `dev` | Completed | Eliminated ESLint errors and warnings across all codebase files (0 errors, 0 warnings). |
 | **P1** | Real-Time Download Telemetry HUD (Issue #31) | `feature/download-telemetry-hud` | Completed | Real-time performance HUD: network transfer speed gauge with live beacon, ETA countdown timer, processed data volume meter, stream phase badge, and copyable status log strip. |
 | **P1** | Automated Startup Engine Updater & Splash Screen (Issue #33 & #11) | `feature/startup-engine-updater` | PR #36 | Full-sized 980x720 frameless cold boot splash screen with animated spectrum visualizer and laser sweep, automated user-space %AppData% yt-dlp updater, priority binary resolution, and on-demand updater in Settings. |
+| **P1** | Selective Duration Timeline Redesign (Issue #30) | `feature/selective-timeline-redesign` | Completed | Redesigned timeline into a studio-grade NLE trimming workstation with dual-track architecture (minimap + workstation), cinema video film track with dimmed trim masks, tactile pointer-captured In/Out brackets, sub-second keyboard nudging, social presets, and segment duplication. |
 
 ---
 
